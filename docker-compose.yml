@@ -20,17 +20,8 @@ services:
     depends_on:
       - redis
     restart: always
-    environment:
-      - SERVER_PORT=${SERVER_PORT}
-      - DEFAULT_USER=${DEFAULT_USER}
-      - DEFAULT_PASSWORD=${DEFAULT_PASSWORD}
-      - SECRET_KEY=${SECRET_KEY}
-      - API_SECRET_KEY=${API_SECRET_KEY}
-      - REDIS_ADDR=${REDIS_ADDR}
-      - REDIS_PROTOCOL=${REDIS_PROTOCOL}
-      - DEFAULT_USERNAME=${DEFAULT_USERNAME}
-      - MAX_FILE_SIZE=${MAX_FILE_SIZE}
-      - ROOT_STATIC_FOLDER=${ROOT_STATIC_FOLDER}
+    env_file:
+      - .env
     networks:
       - app-network
     volumes:
