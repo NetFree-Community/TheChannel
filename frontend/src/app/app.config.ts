@@ -16,6 +16,8 @@ import { provideAnimationsAsync } from "@angular/platform-browser/animations/asy
 import { NbEvaIconsModule } from "@nebular/eva-icons";
 import { provideMarkdown } from "ngx-markdown";
 import { MarkdownConfig } from "./markdown.config";
+import { NgIconsModule, provideIcons } from "@ng-icons/core"; // Import NgIconsModule and provideIcons
+import { heroBold, heroItalic, heroUnderline, heroCodeBracket, heroPaperClip } from "@ng-icons/heroicons/outline";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,6 +26,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideAnimationsAsync(),
     provideMarkdown(MarkdownConfig),
+    provideIcons({ heroBold, heroItalic, heroUnderline, heroCodeBracket, heroPaperClip }),
     importProvidersFrom(
       NbThemeModule.forRoot(undefined, undefined, undefined, NbLayoutDirection.RTL),
       NbIconModule,
@@ -31,6 +34,7 @@ export const appConfig: ApplicationConfig = {
       NbMenuModule.forRoot(),
       NbDialogModule.forRoot(),
       NbToastrModule.forRoot({ position: NbGlobalLogicalPosition.TOP_START }),
+      NgIconsModule
     )
   ]
 };

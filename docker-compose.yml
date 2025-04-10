@@ -31,6 +31,8 @@ services:
       - DEFAULT_USERNAME=${DEFAULT_USERNAME}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE}
       - ROOT_STATIC_FOLDER=${ROOT_STATIC_FOLDER}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN}
     networks:
       - app-network
     volumes:

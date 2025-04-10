@@ -1,8 +1,29 @@
 <nb-card>
+    <nb-card-header>
+        <h4 class="mb-0">{{ message ? 'עריכת פוסט' : 'יצירת פוסט חדש' }}</h4>
+    </nb-card-header>
     <nb-card-body>
-        <div class="d-flex flex-row mb-2">
-            <button nbButton shape="round" title="צרף קובץ" (click)="fileInput.click()">
-                <nb-icon icon="attach-2"></nb-icon>
+        <div class="toolbar">
+            <button nbButton ghost shape="round" title="הדגשה" (click)="applyFormat('bold')" class="toolbar-button">
+                <ng-icon name="heroBold" class="toolbar-icon"></ng-icon>
+            </button>
+            <button nbButton ghost shape="round" title="נטוי" (click)="applyFormat('italic')" class="toolbar-button">
+                <ng-icon name="heroItalic" class="toolbar-icon"></ng-icon>
+            </button>
+            <button nbButton ghost shape="round" title="קו תחתון" (click)="applyFormat('underline')"
+                class="toolbar-button">
+                <ng-icon name="heroUnderline" class="toolbar-icon"></ng-icon>
+            </button>
+            <button nbButton ghost shape="round" title="הוסף בלוק קוד" (click)="applyFormat('code')"
+                class="toolbar-button">
+                <ng-icon name="heroCodeBracket" class="toolbar-icon"></ng-icon>
+            </button>
+            <button nbButton ghost shape="round" title="צרף קובץ" (click)="fileInput.click()" class="toolbar-button">
+                <ng-icon name="heroPaperClip" class="toolbar-icon"></ng-icon>
+            </button>
+            <button nbButton ghost shape="round" title="עזרה לmarkdown" (click)="toggleMarkdownHelp()"
+                class="toolbar-button">
+                <ng-icon name="heroQuestionMarkCircle" class="toolbar-icon"></ng-icon>
             </button>
             <input type="file" #fileInput multiple (change)="onFileSelected($event)" hidden>
             <nb-toggle class="me-auto" labelPosition="start" [(checked)]="showMarkdownPreview">
@@ -26,19 +47,32 @@
             </div>
             }
         </div>
-        <div class="position-relative" style="height: 45svh; width: 80svh;">
-            @if (showMarkdownPreview) {
-            <nb-card style="height: 100%;">
-                <nb-card-body>
-                    <markdown [data]="input" [disableSanitizer]="true"></markdown>
-                </nb-card-body>
-            </nb-card>
-            } @else {
-            <textarea nbInput fullWidth shape="rectangle" placeholder="הקלד/י הודעה..." style="height: 100%"
-                maxlength="1024" [disabled]="showMarkdownPreview || isSending" [(ngModel)]="input"></textarea>
+        <div class="d-flex flex-row" style="height: 45svh; width: 80svh;">
+            <div class="position-relative" [ngClass]="{'flex-grow-1': true, 'me-2': showMarkdownHelp}">
+                @if (showMarkdownPreview) {
+                <nb-card style="height: 100%;">
+                    <nb-card-body>
+                        <markdown [data]="input" [disableSanitizer]="true"></markdown>
+                    </nb-card-body>
+                </nb-card>
+                } @else {
+                <textarea #inputTextArea nbInput fullWidth shape="rectangle" placeholder="הקלד/י הודעה..."
+                    style="height: 100%" maxlength="2048" [disabled]="showMarkdownPreview || isSending"
+                    [(ngModel)]="input" (input)="checkScrollbar()"></textarea>
+                }
+
+                <small class="position-absolute start-0 bottom-0 m-2 text-black-50"
+                    [ngClass]="{'ms-2': !hasScrollbar, 'ms-4': hasScrollbar}">
+                    {{ input.length }}/{{ maxMessageLength }}
+                </small>
+                <!--small class="position-absolute bottom-0 start-0 m-2 text-black-50">{{ input.length }}
+                    /{{ maxMessageLength }}</small-->
+            </div>
+            @if (showMarkdownHelp) {
+            <div class="markdown-help-container">
+                <app-markdown-help></app-markdown-help>
+            </div>
             }
-            <small class="position-absolute bottom-0 start-0 m-2 text-black-50">{{ input.length }}
-                /{{ maxMessageLength }}</small>
         </div>
     </nb-card-body>
     <nb-card-footer>

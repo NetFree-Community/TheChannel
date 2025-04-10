@@ -7,3 +7,36 @@ div button {
 nb-alert {
     font-family: 'Assistant', sans-serif;
 }
+
+.toolbar {
+    display: flex;
+    background-color: #f5f5f5;
+    border-radius: 2rem;
+    padding: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.toolbar-button {
+    margin: 0 0.25rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.toolbar-button:hover {
+    background-color: #e0e0e0;
+}
+
+.toolbar-icon {
+    font-size: 1.25rem;
+    color: #333333;
+}
+
+.markdown-help-container {
+    width: 40%;
+    min-width: 300px;
+}

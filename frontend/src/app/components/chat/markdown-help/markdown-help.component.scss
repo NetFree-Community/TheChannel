@@ -1,0 +1,40 @@
+.markdown-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .example {
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+
+    h5 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    pre {
+      margin: 0;
+      padding: 0.5rem;
+      background-color: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 0.25rem;
+      white-space: pre-wrap;
+      direction: rtl;
+      text-align: right;
+    }
+  }
+}
+
+nb-card-header {
+  a {
+    color: #3366ff;
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

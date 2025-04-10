@@ -1,0 +1,66 @@
+<nb-card style="height: 100%;">
+    <nb-card-header class="d-flex justify-content-between align-items-center">
+        <span>דוגמאות לשימוש ב-Markdown</span>
+        <a [href]="markdownDocsUrl" target="_blank" rel="noopener noreferrer">
+            תיעוד רשמי של Markdown
+        </a>
+    </nb-card-header>
+    <nb-card-body style="overflow-y: auto;">
+        <div class="markdown-examples">
+            <div class="example">
+                <h5>כותרות</h5>
+                <pre>
+# כותרת רמה 1
+## כותרת רמה 2
+### כותרת רמה 3</pre>
+            </div>
+            <div class="example">
+                <h5>עיצוב טקסט</h5>
+                <pre>
+**טקסט מודגש**
+*טקסט נטוי*
+~~טקסט מחוק~~
+&lt;u&gt;קו תחתון&lt;/u&gt;</pre>
+            </div>
+            <div class="example">
+                <h5>רשימות</h5>
+                <pre>
+- פריט 1
+- פריט 2
+  - תת פריט
+
+1. פריט ממוספר 1
+2. פריט ממוספר 2</pre>
+            </div>
+            <div class="example">
+                <h5>קישורים ותמונות</h5>
+                <pre>
+[טקסט הקישור](https://example.com)
+![טקסט אלטרנטיבי](https://example.com/image.jpg)</pre>
+            </div>
+            <div class="example">
+                <h5>בלוק קוד</h5>
+                <pre>
+```javascript
+function hello() {{ '{' }}
+  console.log("Hello World!");
+{{ '}' }}
+```</pre>
+            </div>
+            <div class="example">
+                <h5>ציטוט</h5>
+                <pre>
+&gt; זהו ציטוט
+&gt; שממשיך לשורה נוספת</pre>
+            </div>
+            <div class="example">
+                <h5>מדיה מוטמעת</h5>
+                <pre>
+[video-embedded#](url-to-video)
+[audio-embedded#](url-to-audio)
+[image-embedded#](url-to-image)
+https://www.youtube.com/watch?v=IG8BOfLOQnE</pre>
+            </div>
+        </div>
+    </nb-card-body>
+</nb-card>

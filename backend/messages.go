@@ -85,6 +85,8 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go SendWebhook(context.Background(), "create", message)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(message)
 }
@@ -111,6 +113,8 @@ func updateMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go SendWebhook(context.Background(), "update", body)
+
 	response := Response{Success: true}
 	json.NewEncoder(w).Encode(response)
 }
@@ -121,11 +125,16 @@ func deleteMessage(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
 
+	idInt, _ := strconv.Atoi(id)
+	message := Message{ID: idInt, Deleted: true}
+
 	if err := DeleteMessage(ctx, id); err != nil {
 		response := Response{Success: false}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	go SendWebhook(context.Background(), "delete", message)
 
 	response := Response{Success: true}
 	json.NewEncoder(w).Encode(response)

@@ -60,3 +60,38 @@ POST https://example.com/api/import/post
   "timestamp": "2025-04-06T12:34:56Z"
 }
 ```
+
+## וובהוק (Webhook)
+המערכת תומכת בשליחת וובהוק בעת יצירה, עדכון או מחיקה של הודעות. הוובהוק יישלח רק אם הוגדר URL לוובהוק במשתני הסביבה.
+
+### הגדרת וובהוק
+כדי להפעיל את הוובהוק, יש להגדיר את משתני הסביבה הבאים בקובץ `.env`:
+
+```
+WEBHOOK_URL=https://example.com/webhook
+WEBHOOK_VERIFY_TOKEN=your-secret-token  # Not required
+```
+
+### מבנה הנתונים שנשלחים בוובהוק
+הוובהוק נשלח כבקשת POST עם תוכן JSON במבנה הבא:
+
+```json
+{
+  "action": "create", // "create", "update", או "delete"
+  "message": {
+    "id": 123,
+    "type": "text",
+    "text": "message content",
+    "author": "username",
+    "timestamp": "2025-04-10T18:30:00Z",
+    "lastEdit": "2025-04-10T18:35:00Z",
+    "deleted": false,
+    "views": 5
+  },
+  "timestamp": "2025-04-10T18:35:05Z",
+  "verifyToken": "your-secret-token" // If defined
+}
+```
+
+### אבטחה
+אם הגדרתם `WEBHOOK_VERIFY_TOKEN`, תוכלו להשתמש בו כדי לוודא שהבקשות מגיעות אכן מהמערכת שלכם. בדקו שהערך ב-`verifyToken` תואם לערך שהגדרתם.
