@@ -1,6 +1,13 @@
 <nb-card>
     <nb-card-body>
-        <img [src]="logoUrl" class="rounded-circle" (click)="fileInput.click()">
+        <div style="position: relative;">
+            <img [src]="logoUrl" class="rounded-circle" (click)="fileInput.click()"
+                nbPopover="לחצו כאן להעלאת תמונה חדשה" nbPopoverTrigger="hover">
+            <button nbButton (click)="fileInput.click()" shape="round"
+                style="position: absolute; bottom: 0; right: 0; padding: 4px;" class="shadow">
+                <i class="bi bi-pencil-fill"></i>
+            </button>
+        </div>
         <input type="file" #fileInput accept="image/*" (change)="onFileSelected($event)" hidden>
         <div class="m-2"></div>
         <div style="width: 80svh;">

@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Channel } from '../../../models/channel.model';
-import { NbCardModule, NbDialogRef, NbButtonModule, NbSpinnerModule, NbInputModule, NbToastrService } from '@nebular/theme';
+import { NbCardModule, NbDialogRef, NbButtonModule, NbSpinnerModule, NbInputModule, NbToastrService, NbPopoverModule, NbIconModule } from '@nebular/theme';
 import { Attachment, ChatFile, ChatService } from '../../../services/chat.service';
 import { FormsModule } from '@angular/forms';
 import { HttpEventType } from '@angular/common/http';
+import { NbEvaIconsModule } from '@nebular/eva-icons';
 
 @Component({
   selector: 'app-channel-info-form',
@@ -13,6 +14,9 @@ import { HttpEventType } from '@angular/common/http';
     NbButtonModule,
     NbSpinnerModule,
     NbInputModule,
+    NbPopoverModule,
+    NbEvaIconsModule,
+    NbIconModule,
   ],
   templateUrl: './channel-info-form.component.html',
   styleUrl: './channel-info-form.component.scss'
