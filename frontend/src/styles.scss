@@ -8,10 +8,16 @@ small,
 textarea,
 button,
 h1,
+.nb-theme-default h4,
+.nb-theme-default nb-user .user-name,
 label,
 span,
 input {
     font-family: 'Assistant', sans-serif; //!important
+}
+
+.nb-theme-default nb-user .user-name {
+    color: white;
 }
 
 markdown {
