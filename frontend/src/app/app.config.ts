@@ -17,7 +17,7 @@ import { NbEvaIconsModule } from "@nebular/eva-icons";
 import { provideMarkdown } from "ngx-markdown";
 import { MarkdownConfig } from "./markdown.config";
 import { NgIconsModule, provideIcons } from "@ng-icons/core"; // Import NgIconsModule and provideIcons
-import { heroBold, heroItalic, heroUnderline, heroCodeBracket, heroPaperClip } from "@ng-icons/heroicons/outline";
+import { heroBold, heroItalic, heroUnderline, heroCodeBracket, heroPaperClip, heroQuestionMarkCircle } from "@ng-icons/heroicons/outline";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -26,7 +26,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideAnimationsAsync(),
     provideMarkdown(MarkdownConfig),
-    provideIcons({ heroBold, heroItalic, heroUnderline, heroCodeBracket, heroPaperClip }),
+    provideIcons({ heroBold, heroItalic, heroUnderline, heroCodeBracket, heroPaperClip, heroQuestionMarkCircle }),
     importProvidersFrom(
       NbThemeModule.forRoot(undefined, undefined, undefined, NbLayoutDirection.RTL),
       NbIconModule,
