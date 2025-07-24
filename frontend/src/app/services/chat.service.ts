@@ -50,9 +50,6 @@ export class ChatService {
 
   async updateChannelInfo() {
     this.channelInfo = await firstValueFrom(this.http.get<Channel>('/api/channel/info'));
-    if (this.channelInfo.logoUrl === "") {
-      this.channelInfo.logoUrl = "/assets/favicon.ico";
-    }
     return;
   }
 

@@ -1,6 +1,7 @@
-.ads {
-    position: fixed;
-    top: auto;
-    left: 20px;
-    z-index: 1000;
+nb-layout-column.chat-column {
+}
+
+nb-layout-column.ad-column {
+  flex: 0 0 fit-content !important;
+  padding: 0 !important;
 }

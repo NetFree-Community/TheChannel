@@ -1,5 +1,27 @@
-<div class="d-flex flex-row gap-2" #container>
-    <app-chat *ngIf="chatWidth" [style.width.px]="chatWidth" class=""></app-chat>
-    <app-advertising class="ads d-none d-md-block" *ngIf="advertisingWidth" [style.width.px]="advertisingWidth"
-        [src]="ads.src"></app-advertising>
-</div>
+<nb-layout id="container">
+    <nb-layout-header fixed>
+        <button *ngIf="userInfo?.privileges?.['admin'] || userInfo?.privileges?.['moderator']" nbButton ghost
+                size="large" [shape]="'round'" class="ms-2" (click)="sidebarService.toggle(true)">
+            <nb-icon icon="menu"></nb-icon>
+        </button>
+        <app-channel-header [(userInfo)]="userInfo" style="flex: auto;"></app-channel-header>
+    </nb-layout-header>
+
+    <nb-sidebar *ngIf="userInfo?.privileges?.['admin'] || userInfo?.privileges?.['moderator']" right responsive>
+        <nb-menu [items]="navigationMenu"></nb-menu>
+    </nb-sidebar>
+
+    <nb-layout-column class="chat-column">
+        <app-chat class=""></app-chat>
+    </nb-layout-column>
+
+    <nb-layout-column *ngIf="ads.src" class="ad-column">
+        <app-advertising [src]="ads.src"></app-advertising>
+    </nb-layout-column>
+
+    @if (userInfo?.privileges?.['writer']) {
+        <nb-layout-footer>
+            <app-input-form class="w-100"></app-input-form>
+        </nb-layout-footer>
+    }
+</nb-layout>

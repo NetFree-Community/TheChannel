@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { NbCardModule, NbDialogRef, NbButtonModule, NbSpinnerModule, NbInputModule, NbToastrService, NbPopoverModule } from '@nebular/theme';
 import { FormsModule } from '@angular/forms';
 import { HttpEventType } from '@angular/common/http';
-import { Channel } from '../../../../models/channel.model';
-import { AdminService } from '../../../../services/admin.service';
-import { ChatService, Attachment, ChatFile } from '../../../../services/chat.service';
+import { Channel } from '../../../models/channel.model';
+import { AdminService } from '../../../services/admin.service';
+import { ChatService, Attachment, ChatFile } from '../../../services/chat.service';
 
 
 @Component({

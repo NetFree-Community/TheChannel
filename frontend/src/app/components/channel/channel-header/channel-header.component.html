@@ -1,0 +1,41 @@
+<div class="d-flex flex-row gap-2 align-items-center justify-content-between">
+    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center"
+         style="width: 60px; height: 60px">
+        @if (chatService.channelInfo?.logoUrl?.length) {
+            <img [src]="chatService.channelInfo?.logoUrl" class="rounded-circle img-circle"
+                 (click)="viewLargeImage($event)">
+        } @else {
+            <div class="bg-light text-black fw-bold rounded-circle img-circle d-flex align-items-center justify-content-center"
+                 title="ללא תמונה">
+                {{ chatService.channelInfo?.name?.[0] || '?' }}
+            </div>
+        }
+    </div>
+    <div class="d-flex flex-column flex-grow-1">
+        <span class="fs-4 my-2 fw-bold">{{ chatService.channelInfo?.name || 'ערוץ ללא שם' }}</span>
+        <small *ngIf="chatService.channelInfo?.description">
+            {{ chatService.channelInfo?.description }}
+        </small>
+        <small>
+            {{ chatService.channelInfo?.views || 0 }} רשומים לערוץ זה
+        </small>
+    </div>
+
+    @if (notificationsService.initialized && !adminPanel) {
+        <button nbButton shape="round" class="m-2" title="התראות" status="danger"
+                (click)="notificationsService.requestPermission()">
+            <nb-icon icon="bell"></nb-icon>
+        </button>
+    }
+
+    @if (userInfo) {
+        <nb-user [name]="userInfo.username" shape="round" [nbContextMenu]="userMenu"
+                 [nbContextMenuTag]="userMenuTag" [picture]="userInfo.picture || ''" [onlyPicture]="isSmallScreen">
+        </nb-user>
+    } @else {
+        <button nbButton shape="round" class="m-2" title="התחבר" [routerLink]="['/login']">
+            <nb-icon icon="log-in"></nb-icon>
+            התחבר
+        </button>
+    }
+</div>

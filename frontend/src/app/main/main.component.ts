@@ -12,7 +12,7 @@ import {
 import { RouterOutlet } from "@angular/router";
 import { AuthService, User } from '../services/auth.service';
 import { CommonModule } from '@angular/common';
-import { ChannelHeaderComponent } from '../components/channel/chat/channel-header/channel-header.component';
+import { ChannelHeaderComponent } from '../components/channel/channel-header/channel-header.component';
 
 @Component({
   selector: 'app-main',
