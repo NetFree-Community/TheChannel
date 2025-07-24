@@ -14,7 +14,7 @@ import { InputFormComponent } from "../chat/input-form/input-form.component";
 import { filter } from "rxjs";
 import { ChannelInfoFormComponent } from '../channel-info-form/channel-info-form.component';
 import Viewer from 'viewerjs';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { AuthService, User } from '../../../services/auth.service';
 import { ChatService } from '../../../services/chat.service';
@@ -28,7 +28,6 @@ import { NotificationsService } from '../../../services/notifications.service';
     NbIconModule,
     NbUserModule,
     NbContextMenuModule,
-    RouterLink,
   ],
   templateUrl: './channel-header.component.html',
   styleUrl: './channel-header.component.scss'
@@ -103,6 +102,10 @@ export class ChannelHeaderComponent implements OnInit {
       });
 
     this.updateScreenSize();
+  }
+
+  googleLogin() {
+    this._authService.loginWithGoogle();
   }
 
   async logout() {
