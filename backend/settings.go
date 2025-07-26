@@ -17,16 +17,17 @@ type ReplaceRegex struct {
 }
 
 type SettingConfig struct {
-	AdSrc                   string
-	AdWidth                 int64
-	RequireAuth             bool
-	RequireAuthForViewFiles bool
-	RegexReplace            []*ReplaceRegex
-	WebhookURL              string
-	VerifyToken             string
-	ApiSecretKey            string
-	RootStaticFolder        string
-	CountViews              bool
+	AdSrc                     string
+	AdWidth                   int64
+	RequireAuth               bool
+	RequireAuthForViewFiles   bool
+	RegexReplace              []*ReplaceRegex
+	WebhookURL                string
+	VerifyToken               string
+	ApiSecretKey              string
+	RootStaticFolder          string
+	CountViews                bool
+	AutoGrantWriterPrivilege  bool
 }
 
 type Setting struct {
@@ -83,6 +84,9 @@ func (s *Settings) ToConfig() *SettingConfig {
 
 		case "count_views":
 			config.CountViews = setting.GetBool()
+
+		case "auto_grant_writer_privilege":
+			config.AutoGrantWriterPrivilege = setting.GetBool()
 
 		case "regex-replace":
 			if r := setting.GetString(); r != "" {
