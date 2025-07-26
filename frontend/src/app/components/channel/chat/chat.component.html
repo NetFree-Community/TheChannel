@@ -3,7 +3,8 @@
     <nb-list class="flex-column-reverse">
 
         <nb-list-item *ngFor="let message of messages">
-            <app-message [userPrivilege]="userInfo?.privileges" [message]="message"></app-message>
+            <app-message [userPrivilege]="userInfo?.privileges" [userInfo]="userInfo" [message]="message">
+            </app-message>
         </nb-list-item>
 
         <nb-list-item *ngIf="messages.length === 0" class="flex-fill align-self-center">
