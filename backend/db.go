@@ -156,6 +156,8 @@ var getMessageRange = redis.NewScript(`
 	local required_length = tonumber(ARGV[1])
 	local isAdmin = ARGV[2] == 'true'
 	local countViews = ARGV[3] == 'true'
+	local isAuthenticated = ARGV[4] == 'true'
+	local showAuthorToAuthenticated = ARGV[5] == 'true'
 
 	local start_index = redis.call('ZREVRANK', time_set_key, offset_key) or 0
 	if start_index > 0 then
@@ -193,6 +195,8 @@ var getMessageRange = redis.NewScript(`
 				elseif key == 'author' then
 				    if isAdmin then
 				        message[key] = value
+				    elseif showAuthorToAuthenticated and isAuthenticated then
+				        message[key] = value
 				    else
 				        message[key] = "Anonymous"
 				    end
@@ -220,9 +224,15 @@ var getMessageRange = redis.NewScript(`
 	return cjson.encode(messages)
 `)
 
-func funcGetMessageRange(ctx context.Context, start, stop int64, isAdmin, countViews bool) ([]Message, error) {
+func funcGetMessageRange(ctx context.Context, start, stop int64, isAdmin, countViews, isAuthenticated bool) ([]Message, error) {
 	offsetKeyName := fmt.Sprintf("messages:%d", start)
-	res, err := getMessageRange.Run(ctx, rdb, []string{"m_times:1", offsetKeyName}, []string{strconv.FormatInt(stop, 10), strconv.FormatBool(isAdmin), strconv.FormatBool(countViews)}).Result()
+	res, err := getMessageRange.Run(ctx, rdb, []string{"m_times:1", offsetKeyName}, []string{
+		strconv.FormatInt(stop, 10), 
+		strconv.FormatBool(isAdmin), 
+		strconv.FormatBool(countViews),
+		strconv.FormatBool(isAuthenticated),
+		strconv.FormatBool(settingConfig.ShowAuthorToAuthenticated),
+	}).Result()
 	if err != nil {
 		return []Message{}, err
 	}

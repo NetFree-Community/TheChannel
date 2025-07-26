@@ -217,10 +217,28 @@ func getUser(ctx context.Context, claims jwt.MapClaims) (*User, error) {
 			return nil, err
 		}
 	} else {
+		privileges := Privileges{}
+		if settingConfig.AutoGrantWriterPrivilege {
+			privileges[Writer] = true
+		}
+		
 		user = User{
-			ID:       id,
-			Username: claims["name"].(string),
-			Email:    claims["email"].(string),
+			ID:         id,
+			Username:   claims["name"].(string),
+			Email:      claims["email"].(string),
+			PublicName: claims["name"].(string),
+			Privileges: privileges,
+		}
+		
+		privilegesUsers.Store(email, user)
+		users, err := dbGetUsersList(ctx)
+		if err != nil && err != redis.Nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+		if err := dbSetUsersList(ctx, users); err != nil {
+			return nil, err
 		}
 	}
 

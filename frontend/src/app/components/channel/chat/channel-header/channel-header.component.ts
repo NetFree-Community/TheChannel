@@ -19,6 +19,7 @@ import { Title } from '@angular/platform-browser';
 import { AuthService, User } from '../../../../services/auth.service';
 import { ChatService } from '../../../../services/chat.service';
 import { NotificationsService } from '../../../../services/notifications.service';
+import { SoundService } from '../../../../services/sound.service';
 
 @Component({
   selector: 'app-channel-header',
@@ -77,6 +78,7 @@ export class ChannelHeaderComponent implements OnInit {
     private router: Router,
     public notificationsService: NotificationsService,
     private titleService: Title,
+    public soundService: SoundService,
   ) {
   }
 
@@ -154,5 +156,21 @@ export class ChannelHeaderComponent implements OnInit {
 
   updateScreenSize() {
     this.isSmallScreen = window.innerWidth < 768;
+  }
+
+  async toggleSound() {
+    if (this.soundService.isEnabled()) {
+      this.soundService.disableSound();
+      this.toastrService.info("", "צלילי התראה בוטלו");
+    } else {
+      this.soundService.enableSound();
+
+      if (!this.soundService.isInitialized()) {
+        await this.soundService.initializeAudioContext();
+      }
+
+      this.toastrService.success("", "צלילי התראה הופעלו");
+      this.soundService.playNotificationSound();
+    }
   }
 }

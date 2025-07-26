@@ -29,7 +29,15 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		limit = 20
 	}
 
-	messages, err := funcGetMessageRange(ctx, int64(offset), int64(limit), checkPrivilege(r, Writer), settingConfig.CountViews)
+	isAuthenticated := false
+	session, err := store.Get(r, cookieName)
+	if err == nil {
+		if _, ok := session.Values["user"].(Session); ok {
+			isAuthenticated = true
+		}
+	}
+
+	messages, err := funcGetMessageRange(ctx, int64(offset), int64(limit), checkPrivilege(r, Writer), settingConfig.CountViews, isAuthenticated)
 	if err != nil {
 		log.Printf("Failed to get messages: %v\n", err)
 		http.Error(w, "error", http.StatusInternalServerError)

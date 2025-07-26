@@ -9,6 +9,14 @@
         </small>
     </div>
 
+    @if (userInfo) {
+    <button nbButton shape="round" class="m-2"
+        [title]="soundService.isEnabled() ? 'בטל צלילי התראה' : 'הפעל צלילי התראה'"
+        [status]="soundService.isEnabled() ? 'success' : 'basic'" (click)="toggleSound()">
+        <nb-icon [icon]="soundService.isEnabled() ? 'volume-up' : 'volume-off'"></nb-icon>
+    </button>
+    }
+
     @if (notificationsService.initialized && !adminPanel) {
     <button nbButton shape="round" class="m-2" title="התראות" status="danger"
         (click)="notificationsService.requestPermission()">
