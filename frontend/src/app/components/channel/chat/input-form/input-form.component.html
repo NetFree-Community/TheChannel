@@ -1,93 +1,84 @@
-<nb-card>
-    <nb-card-header class="d-none d-md-block">
-        <h4 class="mb-0">{{ message ? 'עריכת הודעה' : 'הוספת הודעה חדשה' }}</h4>
-    </nb-card-header>
-    <nb-card-body>
-        <div class="toolbar">
-            <button nbButton ghost shape="round" title="הדגשה" (click)="applyFormat('bold')" class="toolbar-button">
-                <ng-icon name="heroBold" class="toolbar-icon"></ng-icon>
-            </button>
-            <button nbButton ghost shape="round" title="נטוי" (click)="applyFormat('italic')" class="toolbar-button">
-                <ng-icon name="heroItalic" class="toolbar-icon"></ng-icon>
-            </button>
-            <button nbButton ghost shape="round" title="קו תחתון" (click)="applyFormat('underline')"
-                class="toolbar-button">
-                <ng-icon name="heroUnderline" class="toolbar-icon"></ng-icon>
-            </button>
-            <button nbButton ghost shape="round" title="הוסף בלוק קוד" (click)="applyFormat('code')"
-                class="toolbar-button">
-                <ng-icon name="heroCodeBracket" class="toolbar-icon"></ng-icon>
-            </button>
-            <button nbButton ghost shape="round" title="צרף קובץ" (click)="fileInput.click()" class="toolbar-button">
-                <ng-icon name="heroPaperClip" class="toolbar-icon"></ng-icon>
-            </button>
-            <button nbButton ghost shape="round" title="עזרה לmarkdown" (click)="toggleMarkdownHelp()"
-                class="toolbar-button">
-                <ng-icon name="heroQuestionMarkCircle" class="toolbar-icon"></ng-icon>
-            </button>
-            <input type="file" #fileInput multiple (change)="onFileSelected($event)" hidden>
-            <nb-toggle class="me-auto" labelPosition="start" [(checked)]="showMarkdownPreview">
-                <span>תצוגה מקדימה</span>
-            </nb-toggle>
-        </div>
-        <div class="d-flex flex-row flex-wrap mb-2">
-            @for (attachment of attachments; track attachment) {
+<div class="d-flex flex-column gap-1">
+    @if (message?.deleted) {
+        <nb-alert status="danger">ההודעה מחוקה ומוסתרת! אישור עריכת ההודעה יפרסם אותה מחדש.</nb-alert>
+    }
+    <div class="d-flex flex-row flex-wrap">
+        @for (attachment of attachments; track attachment) {
             <div class="d-flex flex-row rounded-5 bg-primary-subtle text-primary align-items-center p-1 ms-1"
-                style="border-style: solid; border-width: 0.06rem;">
+                 style="border-style: solid; border-width: 0.06rem;">
                 @if (attachment.uploading || !attachment.url) {
-                <div class="spinner-border spinner-border-sm text-primary"></div>
+                    <div class="spinner-border spinner-border-sm text-primary"></div>
                 } @else {
-                <img [src]="attachment.url" width="30" height="30" class="rounded-5">
+                    <img [src]="attachment.url" width="30" height="30" class="rounded-5">
                 }
                 <small class="m-1">{{ attachment.file.name.substring(attachment.file.name.length - 15) }}</small>
                 <button nbButton ghost status="primary" style="padding: 0" (click)="removeAttachment(attachment)"
-                    title="הסר קובץ">
+                        title="הסר קובץ">
                     <nb-icon icon="close"></nb-icon>
                 </button>
             </div>
-            }
-        </div>
-        <div class="d-flex flex-row input-area">
-            <div class="position-relative" [ngClass]="{'flex-grow-1': true, 'me-2': showMarkdownHelp}">
-                @if (showMarkdownPreview) {
-                <nb-card style="height: 100%;">
+        }
+    </div>
+    <div class="d-flex flex-row flex-wrap align-items-center rounded-5 bg-light px-2">
+        <button nbButton ghost shape="round" title="הדגשה" (click)="applyFormat('bold')" class="toolbar-button">
+            <ng-icon name="heroBold" class="toolbar-icon"></ng-icon>
+        </button>
+        <button nbButton ghost shape="round" title="נטוי" (click)="applyFormat('italic')" class="toolbar-button">
+            <ng-icon name="heroItalic" class="toolbar-icon"></ng-icon>
+        </button>
+        <button nbButton ghost shape="round" title="קו תחתון" (click)="applyFormat('underline')"
+                class="toolbar-button">
+            <ng-icon name="heroUnderline" class="toolbar-icon"></ng-icon>
+        </button>
+        <button nbButton ghost shape="round" title="הוסף בלוק קוד" (click)="applyFormat('code')"
+                class="toolbar-button">
+            <ng-icon name="heroCodeBracket" class="toolbar-icon"></ng-icon>
+        </button>
+        <button nbButton ghost shape="round" title="צרף קובץ" (click)="fileInput.click()" class="toolbar-button">
+            <ng-icon name="heroPaperClip" class="toolbar-icon"></ng-icon>
+        </button>
+        <button nbButton ghost shape="round" title="עזרה לmarkdown" (click)="openMarkdownDocs()"
+                class="toolbar-button">
+            <ng-icon name="heroQuestionMarkCircle" class="toolbar-icon"></ng-icon>
+        </button>
+        <input type="file" #fileInput multiple (change)="onFileSelected($event)" hidden>
+        <nb-toggle class="me-md-auto" labelPosition="start" [(checked)]="showMarkdownPreview" [disabled]="!input">
+            <span class="d-none d-md-inline-block">תצוגה מקדימה</span>
+        </nb-toggle>
+    </div>
+    <div class="d-flex flex-row">
+        <div class="flex-grow-1">
+            @if (showMarkdownPreview) {
+                <nb-card class="rounded-5 mb-0">
                     <nb-card-body>
-                        <markdown [data]="input" [disableSanitizer]="true"></markdown>
+                        <markdown [data]="input" [disableSanitizer]="true" class="fs-5"></markdown>
                     </nb-card-body>
                 </nb-card>
-                } @else {
-                <textarea #inputTextArea nbInput fullWidth shape="rectangle" placeholder="הקלד/י הודעה..."
-                    style="height: 100%" maxlength="2048" [disabled]="showMarkdownPreview || isSending"
-                    [(ngModel)]="input" (input)="checkScrollbar()"></textarea>
-                }
-
-                <small class="position-absolute start-0 bottom-0 m-2 text-black-50"
-                    [ngClass]="{'ms-2': !hasScrollbar, 'ms-4': hasScrollbar}">
-                    {{ input.length }}/{{ maxMessageLength }}
-                </small>
-                <!--small class="position-absolute bottom-0 start-0 m-2 text-black-50">{{ input.length }}
-                    /{{ maxMessageLength }}</small-->
-            </div>
-            @if (showMarkdownHelp) {
-            <div class="markdown-help-container">
-                <app-markdown-help></app-markdown-help>
-            </div>
+            } @else {
+                <div class="d-flex flex-row border rounded-5 fs-4 align-items-center">
+                        <textarea #inputTextArea autosize nbInput fullWidth placeholder="הקלד/י הודעה..."
+                                  [minRows]="1" [maxRows]="6" [maxlength]="maxMessageLength"
+                                  [disabled]="showMarkdownPreview || isSending"
+                                  class="bg-transparent border-0 flex-grow-1 fs-5"
+                                  [(ngModel)]="input" (input)="checkScrollbar()" style="resize: none"></textarea>
+                    <div class="d-flex flex-row align-self-end">
+                        @if (message?.id) {
+                            <button nbButton ghost title="בטל" shape="round" [size]="'tiny'" (click)="cancelUpdateMessage()"
+                                    [disabled]="isSending">
+                                <ng-icon class="fs-4" [name]="'heroXMark'"></ng-icon>
+                            </button>
+                            <button nbButton ghost title="ערוך" shape="round" [size]="'tiny'" (click)="sendMessage()"
+                                    [disabled]="isSending">
+                                <ng-icon class="fs-4" [name]="'heroCheck'"></ng-icon>
+                            </button>
+                        } @else {
+                            <button nbButton ghost title="שלח" shape="round" [size]="'tiny'" (click)="sendMessage()">
+                                <ng-icon class="fs-4" [name]="'heroPaperAirplane'" style="scale: -1 1"></ng-icon>
+                            </button>
+                        }
+                    </div>
+                </div>
             }
         </div>
-    </nb-card-body>
-    <nb-card-footer>
-        @if (message?.deleted) {
-        <div>
-            <nb-alert status="danger">ההודעה מחוקה ומוסתרת! אישור פרסום ההודעה יפרסם אותה מחדש.</nb-alert>
-        </div>
-        }
-        <div class="d-flex flex-row-reverse">
-            <button nbButton status="primary" shape="round" outline [nbSpinner]="isSending" [disabled]="isSending"
-                nbSpinnerStatus="primary" (click)="sendMessage()">פרסום הודעה
-            </button>
-            <div class="m-2"></div>
-            <button nbButton status="danger" shape="round" [disabled]="isSending" (click)="closeDialog()">ביטול
-            </button>
-        </div>
-    </nb-card-footer>
-</nb-card>
+    </div>
+</div>

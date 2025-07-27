@@ -1,5 +1,5 @@
 import { ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter, withHashLocation } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { routes } from './app.routes';
 import {
@@ -17,7 +17,17 @@ import { NbEvaIconsModule } from "@nebular/eva-icons";
 import { provideMarkdown } from "ngx-markdown";
 import { MarkdownConfig } from "./markdown.config";
 import { NgIconsModule, provideIcons } from "@ng-icons/core"; // Import NgIconsModule and provideIcons
-import { heroBold, heroItalic, heroUnderline, heroCodeBracket, heroPaperClip, heroQuestionMarkCircle } from "@ng-icons/heroicons/outline";
+import {
+  heroBold,
+  heroCheck,
+  heroCodeBracket,
+  heroItalic,
+  heroPaperAirplane,
+  heroPaperClip,
+  heroQuestionMarkCircle,
+  heroUnderline,
+  heroXMark
+} from "@ng-icons/heroicons/outline";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -26,7 +36,17 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideAnimationsAsync(),
     provideMarkdown(MarkdownConfig),
-    provideIcons({ heroBold, heroItalic, heroUnderline, heroCodeBracket, heroPaperClip, heroQuestionMarkCircle }),
+    provideIcons({
+      heroBold,
+      heroItalic,
+      heroUnderline,
+      heroCodeBracket,
+      heroPaperClip,
+      heroQuestionMarkCircle,
+      heroPaperAirplane,
+      heroCheck,
+      heroXMark
+    }),
     importProvidersFrom(
       NbThemeModule.forRoot({ name: 'custom' }, undefined, undefined, NbLayoutDirection.RTL),
       NbIconModule,

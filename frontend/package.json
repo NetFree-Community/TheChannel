@@ -36,6 +36,7 @@
     "firebase": "^11.10.0",
     "marked": "^15.0.0",
     "moment": "^2.30.1",
+    "ngx-autosize": "^2.0.4",
     "ngx-markdown": "^19.1.1",
     "prismjs": "^1.30.0",
     "rxjs": "~7.8.0",

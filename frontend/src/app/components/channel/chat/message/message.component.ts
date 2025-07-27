@@ -10,7 +10,6 @@ import {
   NbToastrService
 } from "@nebular/theme";
 import { filter } from "rxjs";
-import { InputFormComponent } from "../input-form/input-form.component";
 import { MarkdownComponent } from "ngx-markdown";
 import Viewer from 'viewerjs';
 import { YoutubePlayerComponent } from '../youtube-player/youtube-player.component';
@@ -143,12 +142,7 @@ export class MessageComponent implements OnInit, AfterViewInit {
   }
 
   editMessage(message: ChatMessage) {
-    this.dialogService.open(InputFormComponent, { closeOnBackdropClick: false, context: { message: message } }).onClose
-      .subscribe((result: ChatMessage | undefined) => {
-        if (result && this.message?.id == result.id) {
-          this.message = result;
-        }
-      });
+    this._chatService.setEditMessage(message);
   }
 
   deleteMessage(message: ChatMessage) {
