@@ -1,8 +1,120 @@
-<!-- TODO: Add user management functionality, including:
-           - Tracking total number of users
-           - Managing whitelist and blacklist by name -->
 <nb-card>
+    <nb-card-header class="d-flex justify-content-between align-items-center">
+        <span>ניהול משתמשים</span>
+        <div class="d-flex gap-2">
+            <nb-badge [text]="usersAmount.toString()" status="info" title="סך הכל משתמשים רשומים">
+                <nb-icon icon="people-outline"></nb-icon>
+            </nb-badge>
+            <nb-badge [text]="totalUsers.toString()" status="primary" title="משתמשים פעילים">
+                <nb-icon icon="person-outline"></nb-icon>
+            </nb-badge>
+            <nb-badge [text]="blockedCount.toString()" status="danger" title="משתמשים חסומים">
+                <nb-icon icon="slash-outline"></nb-icon>
+            </nb-badge>
+        </div>
+    </nb-card-header>
+
     <nb-card-body>
-        סך הכל משתמשים שהזדהו במערכת: {{usersAmount}}
+        <!--There is a bug in the display-->
+        <div class="mb-3">
+            <nb-alert status="info" size="small">
+                <strong>סך הכל משתמשים שהזדהו במערכת:</strong> {{usersAmount}}
+                <span class="ms-3"><strong>משתמשים פעילים:</strong> {{totalUsers - blockedCount}}</span>
+                <span *ngIf="blockedCount > 0" class="ms-3"><strong>חסומים:</strong> {{blockedCount}}</span>
+            </nb-alert>
+        </div>
+
+        <div class="d-flex gap-2 mb-3">
+            <input nbInput placeholder="חיפוש לפי שם או מייל..." [(ngModel)]="searchTerm" (input)="filterUsers()"
+                class="flex-grow-1">
+
+            <button nbButton [status]="showOnlyBlocked ? 'danger' : 'basic'" (click)="toggleBlockedFilter()" outline>
+                <nb-icon icon="funnel-outline"></nb-icon>
+                {{ showOnlyBlocked ? 'חסומים בלבד' : 'כל המשתמשים' }}
+            </button>
+
+            <button nbButton status="primary" (click)="loadUsers()" [disabled]="loading">
+                <nb-icon icon="refresh-outline"></nb-icon>
+                רענון
+            </button>
+        </div>
+
+        <div *ngIf="loading" class="text-center">
+            <nb-spinner size="large"></nb-spinner>
+            <p>טוען משתמשים...</p>
+        </div>
+
+        <nb-alert *ngIf="!loading && filteredUsers.length === 0 && searchTerm" status="info">
+            לא נמצאו משתמשים התואמים לחיפוש "{{searchTerm}}"
+        </nb-alert>
+
+        <nb-alert *ngIf="!loading && filteredUsers.length === 0 && showOnlyBlocked && !searchTerm" status="success">
+            אין משתמשים חסומים כרגע
+        </nb-alert>
+
+        <nb-list *ngIf="!loading && filteredUsers.length > 0">
+            <nb-list-item *ngFor="let user of filteredUsers; trackBy: trackByEmail" class="user-item">
+                <div class="d-flex align-items-center w-100">
+
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <nb-user [name]="user.username || 'משתמש ללא שם'" [title]="user.email" size="medium">
+                            </nb-user>
+
+                            <!--There is a bug in the display-->
+                            <!--div class="badges-container">
+                                <nb-badge *ngIf="user.isAdmin" text="מנהל ראשי" status="success" class="me-1">
+                                </nb-badge>
+                                <nb-badge *ngIf="user.blocked" text="חסום" status="danger" class="me-1">
+                                </nb-badge>
+                                <nb-badge *ngIf="user.privileges?.['moderator'] && !user.isAdmin" text="מנהל"
+                                    status="warning" class="me-1">
+                                </nb-badge>
+                                <nb-badge *ngIf="user.privileges?.['writer'] && !user.privileges?.['moderator']"
+                                    text="כותב" status="info" class="me-1">
+                                </nb-badge>
+                            </div-->
+                        </div>
+
+                        <div class="user-details">
+                            <small class="text-muted">
+                                <strong>שם ציבורי:</strong> {{ user.publicName || 'ללא שם ציבורי' }}
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button *ngIf="!user.blocked && !user.isAdmin" nbButton status="danger" size="small" outline
+                            (click)="blockUser(user)" [disabled]="actionInProgress.has(user.email)" title="חסום משתמש">
+                            <nb-spinner *ngIf="actionInProgress.has(user.email)" size="tiny"></nb-spinner>
+                            <nb-icon *ngIf="!actionInProgress.has(user.email)" icon="slash-outline"></nb-icon>
+                            <span *ngIf="!actionInProgress.has(user.email)">חסום</span>
+                        </button>
+
+                        <button *ngIf="user.blocked" nbButton status="success" size="small" outline
+                            (click)="unblockUser(user)" [disabled]="actionInProgress.has(user.email)"
+                            title="שחרר חסימה">
+                            <nb-spinner *ngIf="actionInProgress.has(user.email)" size="tiny"></nb-spinner>
+                            <nb-icon *ngIf="!actionInProgress.has(user.email)" icon="checkmark-outline"></nb-icon>
+                            <span *ngIf="!actionInProgress.has(user.email)">שחרר</span>
+                        </button>
+
+                        <button *ngIf="user.isAdmin" nbButton status="basic" size="small" disabled
+                            title="לא ניתן לחסום מנהל ראשי">
+                            <nb-icon icon="shield-outline"></nb-icon>
+                            מוגן
+                        </button>
+                    </div>
+                </div>
+            </nb-list-item>
+        </nb-list>
     </nb-card-body>
+
+    <nb-card-footer *ngIf="!loading">
+        <small class="text-muted">
+            מציג {{ filteredUsers.length }} מתוך {{ totalUsers }} משתמשים פעילים
+            <span *ngIf="blockedCount > 0"> · {{ blockedCount }} חסומים</span>
+            <span *ngIf="searchTerm"> · מסונן לפי "{{ searchTerm }}"</span>
+        </small>
+    </nb-card-footer>
 </nb-card>

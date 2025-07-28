@@ -40,6 +40,7 @@ type Session struct {
 	PublicName string     `json:"publicName"`
 	Picture    string     `json:"picture,omitempty"`
 	Privileges Privileges `json:"privileges,omitempty"`
+	Blocked    bool       `json:"blocked,omitempty"`
 }
 
 type Response struct {
@@ -58,72 +59,79 @@ func getGoogleAuthValues(w http.ResponseWriter, r *http.Request) {
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	var auth Auth
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    var auth Auth
 
-	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
-		http.Error(w, "error", http.StatusBadRequest)
-	}
+    if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
+        http.Error(w, "error", http.StatusBadRequest)
+    }
 
-	if auth.Code == "" {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
+    if auth.Code == "" {
+        http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+        return
+    }
 
-	origin := r.Header.Get("Origin")
-	var googleOAuthConfig = &oauth2.Config{
-		ClientID:     googleOAuthClientId,
-		ClientSecret: googleOAuthClientSecret,
-		RedirectURL:  origin + "/login",
-		Endpoint:     google.Endpoint,
-	}
+    origin := r.Header.Get("Origin")
+    var googleOAuthConfig = &oauth2.Config{
+        ClientID:     googleOAuthClientId,
+        ClientSecret: googleOAuthClientSecret,
+        RedirectURL:  origin + "/login",
+        Endpoint:     google.Endpoint,
+    }
 
-	token, err := googleOAuthConfig.Exchange(ctx, auth.Code)
-	if err != nil {
-		http.Error(w, "error", http.StatusInternalServerError)
-		return
-	}
+    token, err := googleOAuthConfig.Exchange(ctx, auth.Code)
+    if err != nil {
+        http.Error(w, "error", http.StatusInternalServerError)
+        return
+    }
 
-	if !token.Valid() {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
-	}
+    if !token.Valid() {
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
+        return
+    }
 
-	var claims jwt.MapClaims
-	_, _, err = jwt.NewParser().ParseUnverified(token.Extra("id_token").(string), &claims)
-	if err != nil {
-		http.Error(w, "error", http.StatusInternalServerError)
-		return
-	}
+    var claims jwt.MapClaims
+    _, _, err = jwt.NewParser().ParseUnverified(token.Extra("id_token").(string), &claims)
+    if err != nil {
+        http.Error(w, "error", http.StatusInternalServerError)
+        return
+    }
 
-	go registeringEmail(claims["email"].(string))
+    go registeringEmail(claims["email"].(string))
 
-	u, err := getUser(ctx, claims)
-	if err != nil {
-		http.Error(w, "error", http.StatusInternalServerError)
-		return
-	}
-	userSession := Session{
-		ID:         u.ID,
-		Username:   u.Username,
-		PublicName: u.PublicName,
-		Picture:    claims["picture"].(string),
-		Privileges: u.Privileges,
-	}
+    u, err := getUser(ctx, claims)
+    if err != nil {
+        http.Error(w, "error", http.StatusInternalServerError)
+        return
+    }
 
-	session, _ := store.Get(r, cookieName)
-	session.Values["user"] = userSession
-	session.Options.MaxAge = 60 * 60 * 24 * 30 // 30 days
-	if err := session.Save(r, w); err != nil {
-		http.Error(w, "error", http.StatusInternalServerError)
-		return
-	}
+    if u.Blocked {
+        http.Error(w, "User is blocked", http.StatusForbidden)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
+    userSession := Session{
+        ID:         u.ID,
+        Username:   u.Username,
+        PublicName: u.PublicName,
+        Picture:    claims["picture"].(string),
+        Privileges: u.Privileges,
+        Blocked:    u.Blocked,
+    }
 
-	response := Response{Success: true}
-	json.NewEncoder(w).Encode(response)
+    session, _ := store.Get(r, cookieName)
+    session.Values["user"] = userSession
+    session.Options.MaxAge = 60 * 60 * 24 * 30 // 30 days
+    if err := session.Save(r, w); err != nil {
+        http.Error(w, "error", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+
+    response := Response{Success: true}
+    json.NewEncoder(w).Encode(response)
 }
 
 // func isRootUser(s string) bool {
@@ -147,17 +155,22 @@ func logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func checkLogin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, _ := store.Get(r, cookieName)
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        session, _ := store.Get(r, cookieName)
 
-		_, ok := session.Values["user"].(Session)
-		if !ok {
-			http.Error(w, "User not authenticated", http.StatusUnauthorized)
-			return
-		}
+        userSession, ok := session.Values["user"].(Session)
+        if !ok {
+            http.Error(w, "User not authenticated", http.StatusUnauthorized)
+            return
+        }
 
-		next.ServeHTTP(w, r)
-	})
+        if userSession.Blocked {
+            http.Error(w, "User is blocked", http.StatusForbidden)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
 }
 
 func checkPrivilege(r *http.Request, privilege Privilege) bool {

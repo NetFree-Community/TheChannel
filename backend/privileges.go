@@ -42,12 +42,26 @@ func initializePrivilegeUsers() {
 			users = append(users, User{
 				Username: "",
 				Email:    admin,
+				Blocked:  false,
 				Privileges: Privileges{
 					Admin:     true,
 					Moderator: true,
 					Writer:    true,
 				},
 			})
+		} else {
+			for i, user := range users {
+				if user.Email == admin {
+					users[i].Blocked = false
+					if users[i].Privileges == nil {
+						users[i].Privileges = make(Privileges)
+					}
+					users[i].Privileges[Admin] = true
+					users[i].Privileges[Moderator] = true
+					users[i].Privileges[Writer] = true
+					break
+				}
+			}
 		}
 	}
 

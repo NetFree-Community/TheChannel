@@ -94,6 +94,14 @@ func main() {
 			protected.Post("/privilegs-users/set", protectedWithPrivilege(Admin, setPrivilegeUsers))
 			protected.Get("/settings/get", protectedWithPrivilege(Admin, getSettings))
 			protected.Post("/settings/set", protectedWithPrivilege(Admin, setSettings))
+
+			protected.Post("/block-user", protectedWithPrivilege(Admin, blockUser))
+			protected.Post("/unblock-user", protectedWithPrivilege(Admin, unblockUser))
+			protected.Get("/blocked-users/get-list", protectedWithPrivilege(Admin, getBlockedUsers))
+			protected.Get("/user-block-status", protectedWithPrivilege(Admin, getUserBlockStatus))
+
+			 // temporary
+			protected.Get("/users/get-list", protectedWithPrivilege(Admin, getAllUsers))
 		})
 	})
 

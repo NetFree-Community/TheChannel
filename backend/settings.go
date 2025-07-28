@@ -17,16 +17,18 @@ type ReplaceRegex struct {
 }
 
 type SettingConfig struct {
-	AdSrc                   string
-	AdWidth                 int64
-	RequireAuth             bool
-	RequireAuthForViewFiles bool
-	RegexReplace            []*ReplaceRegex
-	WebhookURL              string
-	VerifyToken             string
-	ApiSecretKey            string
-	RootStaticFolder        string
-	CountViews              bool
+	AdSrc                     string
+	AdWidth                   int64
+	RequireAuth               bool
+	RequireAuthForViewFiles   bool
+	RegexReplace              []*ReplaceRegex
+	WebhookURL                string
+	VerifyToken               string
+	ApiSecretKey              string
+	RootStaticFolder          string
+	CountViews                bool
+	ShowAuthorToAuthenticated bool
+	GoogleAnalyticsID         string
 }
 
 type Setting struct {
@@ -85,6 +87,12 @@ func (s *Settings) ToConfig() *SettingConfig {
 		case "count_views":
 			config.CountViews = setting.GetBool()
 
+		case "show_author_to_authenticated":
+			config.ShowAuthorToAuthenticated = setting.GetBool()
+
+		case "google_analytics_id":
+			config.GoogleAnalyticsID = setting.GetString()
+			
 		case "regex-replace":
 			if r := setting.GetString(); r != "" {
 				parts := strings.Split(r, "#")

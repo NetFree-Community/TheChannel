@@ -12,6 +12,16 @@ export interface PrivilegeUser {
   privileges: Record<string, boolean>;
 }
 
+export interface Users {
+  id: string;
+  username: string;
+  email: string;
+  publicName: string;
+  privileges: Record<string, boolean>;
+  blocked: boolean;
+  isAdmin: boolean;
+}
+
 export interface Setting {
   key: string
   value: string
@@ -62,6 +72,61 @@ export class AdminService {
   setPrivilegeUsers(privilegeUsers: PrivilegeUser[]): Promise<ResponseResult> {
     return firstValueFrom(this.http.post<ResponseResult>('/api/admin/privilegs-users/set', { list: privilegeUsers }));
   }
+
+
+  async getAllUsers(): Promise<Users[]> {
+    try {
+      return await firstValueFrom(
+        this.http.get<Users[]>('/api/admin/users/get-list')
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getBlockedUsers(): Promise<Users[]> {
+    try {
+      return await firstValueFrom(
+        this.http.get<Users[]>('/api/admin/blocked-users')
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async blockUser(email: string): Promise<ResponseResult> {
+    try {
+      return await firstValueFrom(
+        this.http.post<ResponseResult>('/api/admin/block-user', { email })
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async unblockUser(email: string): Promise<ResponseResult> {
+    try {
+      return await firstValueFrom(
+        this.http.post<ResponseResult>('/api/admin/unblock-user', { email })
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getUserBlockStatus(email: string): Promise<{ email: string, blocked: boolean, isAdmin: boolean }> {
+    try {
+      return await firstValueFrom(
+        this.http.get<{ email: string, blocked: boolean, isAdmin: boolean }>(
+          `/api/admin/user-block-status?email=${encodeURIComponent(email)}`
+        )
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+
 
   setEmojis(emojis: string[] | undefined) {
     return firstValueFrom(this.http.post<ResponseResult>('/api/admin/set-emojis', { emojis }));

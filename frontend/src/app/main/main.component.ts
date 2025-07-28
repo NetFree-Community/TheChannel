@@ -45,6 +45,11 @@ export class MainComponent implements OnInit {
       link: '/admin/settings',
     },
     {
+      title: 'משתמשים',
+      icon: 'people-outline',
+      link: '/admin/users',
+    },
+    {
       title: 'ניהול הרשאות',
       icon: 'shield-outline',
       link: '/admin/permissions',

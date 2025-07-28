@@ -18,7 +18,7 @@ import { NgbPopover, NgbPopoverModule } from '@ng-bootstrap/ng-bootstrap';
 import { MessageTimePipe } from '../../../../pipes/message-time.pipe';
 import { ChatMessage, ChatService } from '../../../../services/chat.service';
 import { AdminService } from '../../../../services/admin.service';
-import { AuthService } from '../../../../services/auth.service';
+import { AuthService, User } from '../../../../services/auth.service';
 import { Router } from '@angular/router';
 
 @Component({
@@ -51,10 +51,13 @@ export class MessageComponent implements OnInit, AfterViewInit {
   @Input()
   userPrivilege: Record<string, boolean> | undefined = {};
 
+  @Input()
+  userInfo?: User;
+
   @ViewChild(NgbPopover) popover!: NgbPopover;
   @ViewChild('media') mediaContainer!: ElementRef;
 
-  optionsMenu = [ // TODO: hide when X time passed
+  optionsMenu = [ 
     {
       title: 'עריכה',
       icon: 'edit',

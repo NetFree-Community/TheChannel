@@ -53,7 +53,7 @@ const customEmbedExtension = {
 }
 
 const renderer = new MarkedRenderer();
-renderer.paragraph = ({ tokens }) => Parser.parseInline(tokens);
+// renderer.paragraph = ({ tokens }) => Parser.parseInline(tokens);
 
 export const MarkdownConfig: MarkdownModuleConfig = {
   markedExtensions: [customEmbedExtension],
