@@ -1,5 +1,5 @@
-<nb-card accent="primary" nbInfiniteList (scroll)="onListScroll()" [threshold]="200" [throttleTime]="1500"
-    (topThreshold)="loadMessages()" [listenWindowScroll]="true">
+<div nbInfiniteList (scroll)="onListScroll()" [threshold]="300" [throttleTime]="1000"
+     (topThreshold)="loadMessages()" [listenWindowScroll]="true">
     <nb-list class="flex-column-reverse">
 
         <nb-list-item *ngFor="let message of messages">
@@ -13,7 +13,7 @@
         </nb-list-item>
 
         <!-- Loading indicator -->
-        <nb-list-item *ngIf="isLoading" class="flex-fill align-self-center loading-indicator">
+        <nb-list-item *ngIf="isLoading" class="align-self-center loading-indicator">
             <div class="align-self-center flex-grow-1">
                 <div class="spinner-border text-primary"></div>
             </div>
@@ -28,7 +28,4 @@
         <nb-badge *ngIf="hasNewMessages" [dotMode]="true" status="danger"></nb-badge>
     </div>
 
-    @if (userInfo?.privileges?.['writer']) {
-    <app-input-form></app-input-form>
-    }
-</nb-card>
+</div>
