@@ -11,7 +11,7 @@ import {
   NbListModule
 } from "@nebular/theme";
 import { MessageComponent } from "./message/message.component";
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, interval } from 'rxjs';
 import { ChatMessage, ChatService } from '../../../services/chat.service';
 import { AuthService, User } from '../../../services/auth.service';
 import { InputFormComponent } from "./input-form/input-form.component";
@@ -31,7 +31,7 @@ import { InputFormComponent } from "./input-form/input-form.component";
     NbBadgeModule,
     MessageComponent,
     InputFormComponent
-],
+  ],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss'
 })
@@ -46,6 +46,8 @@ export class ChatComponent implements OnInit, OnDestroy {
   hasMoreMessages: boolean = true;
   hasNewMessages: boolean = false;
   showScrollToBottom: boolean = false;
+  private lastHeartbeat: number = Date.now();
+  private subLastHeartbeat: any;
 
   constructor(
     private chatService: ChatService,
@@ -60,6 +62,18 @@ export class ChatComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.chatService.getEmojisList(true);
+
+    this.initializeMessageListener();
+    this.keepAliveSSE();
+
+    this._authService.loadUserInfo().then(res => this.userInfo = res);
+
+    this.loadMessages().then(() => {
+      this.scrollToBottom();
+    });
+  }
+
+  private async initializeMessageListener() {
     this.eventSource = this.chatService.sseListener();
     this.eventSource.onmessage = (event) => {
       const message = JSON.parse(event.data);
@@ -78,7 +92,7 @@ export class ChatComponent implements OnInit, OnDestroy {
                 this.messages[index].deleted = true;
                 this.messages[index].last_edit = message.message.last_edit;
               }
-            })
+            });
             break;
           };
           this.zone.run(() => {
@@ -102,20 +116,27 @@ export class ChatComponent implements OnInit, OnDestroy {
             if (index !== -1) this.messages[index].reactions = message.message.reactions;
           });
           break;
+        case 'heartbeat':
+          this.lastHeartbeat = Date.now();
+          break;
       }
     };
-
-    this._authService.loadUserInfo().then(res => this.userInfo = res);
-
-    this.loadMessages().then(() => {
-      this.scrollToBottom();
-    });
   }
-
-
 
   ngOnDestroy() {
     this.chatService.sseClose();
+    clearInterval(this.subLastHeartbeat);
+  }
+
+  async keepAliveSSE() {
+    clearInterval(this.subLastHeartbeat);
+    this.subLastHeartbeat = interval(3000)
+      .subscribe(() => {
+        if (Date.now() - this.lastHeartbeat > 28000) {
+          this.lastHeartbeat = Date.now();
+          this.initializeMessageListener();
+        };
+      });
   }
 
   onListScroll() {

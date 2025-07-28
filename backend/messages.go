@@ -160,6 +160,11 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
+
+	_, err := fmt.Fprintf(w, "data: {\"type\": \"heartbeat\"}\n\n")
+	if err != nil {
+		return
+	}
 	flusher.Flush()
 
 	pubsub := rdb.Subscribe(r.Context(), "events")
