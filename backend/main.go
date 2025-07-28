@@ -23,6 +23,17 @@ func protectedWithPrivilege(Privilege Privilege, handler http.HandlerFunc) http.
 	}
 }
 
+func ifRequireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check every time
+		if settingConfig.RequireAuth {
+			checkLogin(next).ServeHTTP(w, r)
+		} else {
+			next.ServeHTTP(w, r)
+		}
+	})
+}
+
 func main() {
 	gob.Register(Session{})
 	initializePrivilegeUsers()
@@ -55,9 +66,7 @@ func main() {
 
 	r.Route("/api", func(api chi.Router) {
 
-		if settingConfig.RequireAuth {
-			api.Use(checkLogin)
-		}
+		api.Use(ifRequireAuth)
 
 		api.Get("/ads/settings", getAdsSettings)
 		api.Get("/emojis/list", getEmojisList)

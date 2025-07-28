@@ -69,6 +69,7 @@ func (s *Settings) ToConfig() *SettingConfig {
 
 		case "require_auth":
 			config.RequireAuth = setting.GetBool()
+
 		case "require_auth_for_view_files":
 			config.RequireAuthForViewFiles = setting.GetBool()
 
