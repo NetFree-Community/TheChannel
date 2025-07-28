@@ -15,6 +15,7 @@ import { firstValueFrom, interval } from 'rxjs';
 import { ChatMessage, ChatService } from '../../../services/chat.service';
 import { AuthService, User } from '../../../services/auth.service';
 import { InputFormComponent } from "./input-form/input-form.component";
+import { SoundService } from '../../../services/sound.service';
 
 @Component({
   selector: 'app-chat',
@@ -53,6 +54,7 @@ export class ChatComponent implements OnInit, OnDestroy {
     private chatService: ChatService,
     private _authService: AuthService,
     private zone: NgZone,
+    private soundService: SoundService,
   ) { }
 
   @HostListener('window:scroll', [])
@@ -81,7 +83,14 @@ export class ChatComponent implements OnInit, OnDestroy {
         case 'new-message':
           this.zone.run(() => {
             this.messages.unshift(message.message);
-            this.hasNewMessages = !(message.message.author === this.userInfo?.username);
+            const isMyMessage = message.message.author === this.userInfo?.username;
+            this.hasNewMessages = !isMyMessage;
+
+            if (!isMyMessage) {
+              if (this.soundService.isInitialized()) {
+                this.soundService.playNotificationSound();
+              }
+            }
           });
           break;
         case 'delete-message':
@@ -170,5 +179,17 @@ export class ChatComponent implements OnInit, OnDestroy {
     } finally {
       this.isLoading = false;
     }
+  }
+
+  toggleSound() {
+    if (this.soundService.isEnabled()) {
+      this.soundService.disableSound();
+    } else {
+      this.soundService.enableSound();
+    }
+  }
+
+  isSoundEnabled(): boolean {
+    return this.soundService.isEnabled();
   }
 }

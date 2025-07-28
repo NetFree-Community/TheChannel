@@ -21,3 +21,18 @@ markdown {
     font-weight: 500;
     // font-size: 110%;
 }
+
+/* Styling for blockquotes inside markdown component */
+markdown blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1rem;
+  border-right: 5px solid #ccc;
+  background-color: #f9f9f9;
+  color: #666;
+  border-radius: 8px;
+}
+
+markdown blockquote p {
+  margin-bottom: 0;
+}
