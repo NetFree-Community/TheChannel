@@ -22,7 +22,6 @@
     "@angular/service-worker": "^19.2.14",
     "@angular/youtube-player": "^19.2.8",
     "@ctrl/ngx-emoji-mart": "^9.2.0",
-    "@kolkov/angular-editor": "^3.0.0-beta.2",
     "@nebular/eva-icons": "^15.0.0",
     "@nebular/theme": "^15.0.0",
     "@ng-bootstrap/ng-bootstrap": "^18.0.0",

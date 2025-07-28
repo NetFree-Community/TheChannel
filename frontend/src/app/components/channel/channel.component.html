@@ -1,15 +1,15 @@
 <nb-layout id="container">
     <nb-layout-header fixed>
-        <button *ngIf="userInfo?.privileges?.['admin'] || userInfo?.privileges?.['moderator']" nbButton ghost
-                size="large" [shape]="'round'" class="ms-2" (click)="sidebarService.toggle(true)">
-            <nb-icon icon="menu"></nb-icon>
-        </button>
+<!--        <button *ngIf="userInfo?.privileges?.['admin'] || userInfo?.privileges?.['moderator']" nbButton ghost-->
+<!--                size="large" [shape]="'round'" class="ms-2" (click)="sidebarService.toggle(true)">-->
+<!--            <nb-icon icon="menu"></nb-icon>-->
+<!--        </button>-->
         <app-channel-header [(userInfo)]="userInfo" style="flex: auto;"></app-channel-header>
     </nb-layout-header>
 
-    <nb-sidebar *ngIf="userInfo?.privileges?.['admin'] || userInfo?.privileges?.['moderator']" right responsive>
-        <nb-menu [items]="navigationMenu"></nb-menu>
-    </nb-sidebar>
+<!--    <nb-sidebar *ngIf="userInfo?.privileges?.['admin'] || userInfo?.privileges?.['moderator']" right responsive>-->
+<!--        <nb-menu [items]="navigationMenu"></nb-menu>-->
+<!--    </nb-sidebar>-->
 
     <nb-layout-column class="chat-column">
         <app-chat class=""></app-chat>
@@ -20,8 +20,8 @@
     </nb-layout-column>
 
     @if (userInfo?.privileges?.['writer']) {
-        <nb-layout-footer>
-            <app-input-form class="w-100"></app-input-form>
+        <nb-layout-footer #inputForm id="inputForm" class="fixed-footer">
+            <app-input-form class="w-100" (inputHeightChanged)="onInputHeightChanged()"></app-input-form>
         </nb-layout-footer>
     }
 </nb-layout>

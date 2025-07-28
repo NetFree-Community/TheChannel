@@ -1,7 +1,28 @@
+@use '../../../themes' as *;
+
 nb-layout-column.chat-column {
 }
 
 nb-layout-column.ad-column {
   flex: 0 0 fit-content !important;
   padding: 0 !important;
+}
+
+::ng-deep {
+  .columns {
+    position: relative !important;
+    bottom: var(--input-height, 0px) !important;
+
+    @if (variable-exists(--input-height)) {
+      //noinspection CssInvalidPropertyValue
+      padding-top: calc(nb-theme(header-height) + nb-theme(header-padding) * 2) !important;
+    }
+  }
+}
+
+.fixed-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
