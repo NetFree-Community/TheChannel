@@ -70,6 +70,8 @@ func (s *Settings) ToConfig() *SettingConfig {
 		config.RootStaticFolder = "/usr/share/ng"
 	}
 
+	config.MaxFileSize = 100
+
 	for _, setting := range *s {
 		switch setting.Key {
 		case "ad-iframe-src":
@@ -140,11 +142,7 @@ func (s *Settings) ToConfig() *SettingConfig {
 			config.ProjectDomain = setting.GetString()
 
 		case "max_file_size":
-			size := setting.GetInt()
-			if size <= 0 {
-				size = 100
-			}
-			config.MaxFileSize = size
+			config.MaxFileSize = setting.GetInt()
 
 		}
 	}
