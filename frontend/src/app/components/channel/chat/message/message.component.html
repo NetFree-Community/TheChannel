@@ -2,7 +2,7 @@
     <div class="d-flex flex-column">
         <nb-user class="pt-4" [shape]="'round'" [color]="'white'" [size]="'large'" [picture]="chatService.channelInfo?.logoUrl || ''" [name]="chatService.channelInfo?.name || ''" onlyPicture></nb-user>
     </div>
-    <div class="d-flex flex-column gap-1">
+    <div class="d-flex flex-column gap-1 overflow-auto">
         <div class="d-flex flex-row gap-2 pe-1">
             <strong class="text-black-50">{{userPrivilege?.['admin'] ? message.author : chatService.channelInfo?.name }}</strong>
             <small class="text-black-50">{{ message.timestamp | messageTime }}</small>
