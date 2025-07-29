@@ -27,6 +27,16 @@ type SettingConfig struct {
 	ApiSecretKey            string
 	RootStaticFolder        string
 	CountViews              bool
+	OnNotification          bool
+	VAPID                   string
+	FcmApiKey               string
+	FcmAuthDomain           string
+	FcmProjectId            string
+	FcmStorageBucket        string
+	FcmMessagingSenderId    string
+	FcmAppId                string
+	FcmMeasurementId        string
+	ProjectDomain           string
 }
 
 type Setting struct {
@@ -97,6 +107,36 @@ func (s *Settings) ToConfig() *SettingConfig {
 					}
 				}
 			}
+
+		case "on_notification":
+			config.OnNotification = setting.GetBool()
+
+		case "vapid":
+			config.VAPID = setting.GetString()
+
+		case "fcm_api_key":
+			config.FcmApiKey = setting.GetString()
+
+		case "fcm_auth_domain":
+			config.FcmAuthDomain = setting.GetString()
+
+		case "fcm_project_id":
+			config.FcmProjectId = setting.GetString()
+
+		case "fcm_storage_bucket":
+			config.FcmStorageBucket = setting.GetString()
+
+		case "fcm_messaging_sender_id":
+			config.FcmMessagingSenderId = setting.GetString()
+
+		case "fcm_app_id":
+			config.FcmAppId = setting.GetString()
+
+		case "fcm_measurement_id":
+			config.FcmMeasurementId = setting.GetString()
+
+		case "project_domain":
+			config.ProjectDomain = setting.GetString()
 		}
 	}
 

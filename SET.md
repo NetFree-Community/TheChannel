@@ -74,9 +74,6 @@ POST https://example.com/api/import/post
 ### אבטחה  
 אם הגדרתם `webhook_verify_token`, תוכלו להשתמש בו כדי לוודא שהבקשות מגיעות אכן מהמערכת שלכם. בדקו שהערך ב-`verifyToken` תואם לערך שהגדרתם.  
 
-## הפעלת קבלת התראות מהערוץ בכל עת  
-
-
 ## הוספת אימוג'ים להודעות
 יש להגדיר את האימוגים המורשים בממשק הניהול.  
 ניתן להוסיף אימוגים להודעות רק לאחר הזדהות בערוץ, גם בערוצים שלא מוגדרים לדרוש זאת. 
@@ -101,6 +98,24 @@ POST https://example.com/api/import/post
 כמו כן, במידה ומגדירים בהגדרות ניהול את הערך:
 `count_views` עם הערך 1, נרשם במערכת גם כמות הצפיות בכל הודעה והנתון מוצג בערוץ ליד כל הודעה.  
 
+## הפעלת קבלת התראות מהערוץ בכל עת  
+השתמשנו בשירות FCM של גוגל.  
+פרטים על יצירת חשבון והגדרתו ניתן למצוא במדריכים רבים במרחבי המרשתת, לדוגמא: [כאן](https://dev.to/this-is-angular/push-notifications-in-angular-19-with-firebase-cloud-messaging-3o3a) ו [כאן](https://youtu.be/iz5arafmatc).  
+בכדי להפעיל את השירות יש להגדיר בהגדרות הניהול:
+את `on_notification` עם הערך `1`.  
+|setting|מקור/הסבר|
+|-|-|
+|`vapid`|cloudmessaging > Web Push certificates > Key pair|
+|`fcm_api_key`|general > SDK setup and configuration > apiKey|
+|`fcm_auth_domain`|general > SDK setup and configuration > authDomain|
+|`fcm_project_id`|general > SDK setup and configuration > projectId|
+|`fcm_storage_bucket`|general > SDK setup and configuration > storageBucket|
+|`fcm_messaging_sender_id`|general > SDK setup and configuration > messagingSenderId|
+|`fcm_app_id`|general > SDK setup and configuration > appId|
+|`fcm_measurement_id`|general > SDK setup and configuration > measurementId|
+|`project_domain`|URL להפניית המשתמשים בלחיצה על התראה|
+
+
 ## ריכוז הגדרות בממשק ניהול
 |setting        |value | הסבר |
 |---------------|------|------|
@@ -113,3 +128,4 @@ POST https://example.com/api/import/post
 |`ad-iframe-width`|`300`|רוחב פרסומת|
 |`count_views`|`1`|הפעלת מונה צפיות פר הודעה|
 |`regex-replace`|`(.*?\!)(.*)#**$1**$2`|ערך של רגקס והחלפה בכדי ליצור החלפות אוטומטיות לטקסטים|
+|`on_notification`|`1`|הפעלת התראות דחיפה|

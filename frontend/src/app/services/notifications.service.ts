@@ -44,7 +44,7 @@ export class NotificationsService {
       this.initialized = true;
 
       onMessage(this.messaging, (payload) => {
-        //this.tostrService.success("", 'התראה חדשה!');
+        this.tostrService.success("", 'התראה חדשה!');
       });
       return;
     }
@@ -54,10 +54,10 @@ export class NotificationsService {
 
   async requestPermission() {
 
-    if (Notification.permission === 'granted') {
-      this.tostrService.success("", 'כבר אישרתם קבלת התראות!');
-      return;
-    }
+    // if (Notification.permission === 'granted') {
+    //   this.tostrService.success("", 'כבר אישרתם קבלת התראות!');
+    //   return;
+    // }
 
     Notification.requestPermission()
       .then((permission) => {

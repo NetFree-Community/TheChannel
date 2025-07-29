@@ -3,27 +3,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"html/template"
 	"log"
 	"net/http"
-	"os"
 	"slices"
 	"time"
 
 	"firebase.google.com/go/v4/messaging"
 	"github.com/appleboy/go-fcm"
-)
-
-var onNotification = os.Getenv("ON_NOTIFICATION") == "1"
-var (
-	vapidKey             = os.Getenv("VAPID")
-	fcmApiKey            = os.Getenv("FCM_API_KEY")
-	fcmAuthDomain        = os.Getenv("FCM_AUTH_DOMAIN")
-	fcmProjectId         = os.Getenv("FCM_PROJECT_ID")
-	fcmStorageBucket     = os.Getenv("FCM_STORAGE_BUCKET")
-	fcmMessagingSenderId = os.Getenv("FCM_MESSAGING_SENDER_ID")
-	fcmAppId             = os.Getenv("FCM_APP_ID")
-	fcmMeasurementId     = os.Getenv("FCM_MEASUREMENT_ID")
-	projectDomain        = os.Getenv("PROJECT_DOMAIN")
 )
 
 type FirebaseConfig struct {
@@ -44,21 +31,80 @@ type NotificationsConfig struct {
 
 func getNotificationsConfig(w http.ResponseWriter, r *http.Request) {
 	response := NotificationsConfig{
-		EnableNotifications: onNotification,
-		VAPID:               vapidKey,
+		EnableNotifications: settingConfig.OnNotification,
+		VAPID:               settingConfig.VAPID,
 		FirebaseConfig: FirebaseConfig{
-			ApiKey:            fcmApiKey,
-			AuthDomain:        fcmAuthDomain,
-			ProjectId:         fcmProjectId,
-			StorageBucket:     fcmStorageBucket,
-			MessagingSenderId: fcmMessagingSenderId,
-			AppId:             fcmAppId,
-			MeasurementId:     fcmMeasurementId,
+			ApiKey:            settingConfig.FcmApiKey,
+			AuthDomain:        settingConfig.FcmAuthDomain,
+			ProjectId:         settingConfig.FcmProjectId,
+			StorageBucket:     settingConfig.FcmStorageBucket,
+			MessagingSenderId: settingConfig.FcmMessagingSenderId,
+			AppId:             settingConfig.FcmAppId,
+			MeasurementId:     settingConfig.FcmMeasurementId,
 		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+const firebaseMessagingSW = `
+importScripts(
+    "https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"
+);
+importScripts(
+    "https://www.gstatic.com/firebasejs/11.4.0/firebase-messaging-compat.js"
+);
+
+const firebaseConfig = {
+    apiKey: "{{.FcmApiKey}}",
+    authDomain: "{{.FcmAuthDomain}}",
+    projectId: "{{.FcmProjectId}}",
+    storageBucket: "{{.FcmStorageBucket}}",
+    messagingSenderId: "{{.FcmMessagingSenderId}}",
+    appId: "{{.FcmAppId}}",
+    measurementId: "{{.FcmMeasurementId}}"
+};
+
+const app = firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+    self.registration.showNotification(payload.data?.title, {
+        body: payload.data?.body,
+        data: {
+            url: payload.data?.url
+        },
+    });
+});
+
+self.addEventListener('notificationclick', (event) => {
+    const url = event.notification.data.url;
+    if (url) event.waitUntil(clients.openWindow(url));
+});
+`
+
+func getFirebaseMessagingSW(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/javascript")
+	tmpl, err := template.New("firebaseSW").Parse(firebaseMessagingSW)
+	if err != nil {
+		http.Error(w, "Failed to generate service worker", http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(w, map[string]string{
+		"FcmApiKey":            settingConfig.FcmApiKey,
+		"FcmAuthDomain":        settingConfig.FcmAuthDomain,
+		"FcmProjectId":         settingConfig.FcmProjectId,
+		"FcmStorageBucket":     settingConfig.FcmStorageBucket,
+		"FcmMessagingSenderId": settingConfig.FcmMessagingSenderId,
+		"FcmAppId":             settingConfig.FcmAppId,
+		"FcmMeasurementId":     settingConfig.FcmMeasurementId,
+	})
+	if err != nil {
+		http.Error(w, "Failed to generate service worker", http.StatusInternalServerError)
+		return
+	}
 }
 
 func subscribeNotifications(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +135,7 @@ func subscribeNotifications(w http.ResponseWriter, r *http.Request) {
 }
 
 func pushFcmMessage(m Message) {
-	if !onNotification {
+	if !settingConfig.OnNotification {
 		return
 	}
 
@@ -120,7 +166,7 @@ func pushFcmMessage(m Message) {
 	}
 
 	data := map[string]string{
-		"url":   projectDomain,
+		"url":   settingConfig.ProjectDomain,
 		"title": channelName["name"],
 		"body":  m.Text,
 	}

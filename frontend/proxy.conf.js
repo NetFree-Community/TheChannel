@@ -23,6 +23,12 @@ const PROXY_CONFIG = {
         "ws": true,
         "cookieDomainRewrite": ""
     },
+    "/firebase-messaging-sw.js": {
+        "target": "http://127.0.1:3000",
+        "changeOrigin": true,
+        "ws": true,
+        "cookieDomainRewrite": ""
+    },
 };
 
 module.exports = PROXY_CONFIG;
