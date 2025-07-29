@@ -15,6 +15,6 @@ nb-list-item:first-child {
 .scroll-to-bottom-btn {
   position: fixed;
   bottom: calc(var(--input-height, 0px) + 25px);
-  left: 30px;
+  left: calc(30px + var(--ad-width, 0px));
   z-index: 1001;
 }

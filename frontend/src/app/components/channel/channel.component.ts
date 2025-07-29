@@ -59,7 +59,7 @@ export class ChannelComponent implements OnInit {
     private el: ElementRef
   ) { }
 
-  ads: Ad = { src: '', width: 0 };
+  ad: Ad = { src: '', width: 0 };
   userInfo?: User;
 
   navigationMenu: NbMenuItem[] = [
@@ -87,7 +87,7 @@ export class ChannelComponent implements OnInit {
 
   ngOnInit(): void {
     this.adsService.getAds().then(ad => {
-      this.ads = ad;
+      this.ad = ad;
     });
     this._authService.loadUserInfo().then(res => this.userInfo = res);
   }

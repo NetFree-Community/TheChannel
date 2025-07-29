@@ -15,8 +15,8 @@
         <app-chat class=""></app-chat>
     </nb-layout-column>
 
-    <nb-layout-column *ngIf="ads.src" class="ad-column">
-        <app-advertising [src]="ads.src"></app-advertising>
+    <nb-layout-column *ngIf="ad" class="ad-column d-none d-lg-flex">
+        <app-advertising [ad]="ad"></app-advertising>
     </nb-layout-column>
 
     @if (userInfo?.privileges?.['writer']) {

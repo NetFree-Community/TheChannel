@@ -6,6 +6,19 @@ nb-layout-column.chat-column {
 nb-layout-column.ad-column {
   flex: 0 0 fit-content !important;
   padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+app-advertising {
+  position: sticky;
+  bottom: var(--input-height, 0px) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  //noinspection CssInvalidPropertyValue
+  height: calc(100vh - nb-theme(header-height) - var(--input-height, 0px)) !important;
 }
 
 ::ng-deep {
