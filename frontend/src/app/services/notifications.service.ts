@@ -54,10 +54,10 @@ export class NotificationsService {
 
   async requestPermission() {
 
-    // if (Notification.permission === 'granted') {
-    //   this.tostrService.success("", 'כבר אישרתם קבלת התראות!');
-    //   return;
-    // }
+    if (Notification.permission === 'granted') {
+      this.tostrService.success("", 'כבר אישרתם קבלת התראות!');
+      return;
+    }
 
     Notification.requestPermission()
       .then((permission) => {
