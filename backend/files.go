@@ -13,7 +13,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -31,7 +30,6 @@ type FileResponse struct {
 }
 
 var maxBytesReader *http.MaxBytesError
-var limitFileSize, _ = strconv.Atoi(os.Getenv("MAX_FILE_SIZE"))
 
 func serveFile(w http.ResponseWriter, r *http.Request) {
 	fileId := chi.URLParam(r, "fileid")
@@ -63,7 +61,7 @@ func serveFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadFile(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, int64(limitFileSize)<<20)
+	r.Body = http.MaxBytesReader(w, r.Body, int64(settingConfig.MaxFileSize)<<20)
 
 	file, handler, err := r.FormFile("file")
 	if err != nil {

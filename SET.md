@@ -39,7 +39,11 @@ POST https://example.com/api/import/post
   "author": "John Doe",
   "timestamp": "2025-04-06T12:34:56Z"
 }
-```  
+``` 
+
+## הגבלת גודל קבצים להעלאה
+ברירת מחדל מוגדר כי ניתן להעלות קבצים עד 100MB, ניתן לשנות זאת על ידי הגדרת הערך הרצוי בהגדרות הניהול:  
+`max_file_size` עם הערך הרצוי בMB. לדוגמא `50` בכדי להגביל ל50 MB
 
 ## וובהוק (Webhook)  
 המערכת תומכת בשליחת וובהוק בעת יצירה, עדכון או מחיקה של הודעות. הוובהוק יישלח רק אם הוגדר URL לוובהוק במשתני הסביבה.  
@@ -115,6 +119,14 @@ POST https://example.com/api/import/post
 |`fcm_measurement_id`|general > SDK setup and configuration > measurementId|
 |`project_domain`|URL להפניית המשתמשים בלחיצה על התראה|
 
+בכדי ששליחת ההודעות תעבוד, יש להוריד קובץ JSON עם מפתח פרטי.  
+הקובץ זמין להורדה מ[כאן](https://console.firebase.google.com/), לאחר בחירת הפרויקט, תחת הלשונית:  
+`serviceaccounts >  Generate new private key`  
+לשנות את שמו ל:  
+`"thechannel-firebase-adminsdk.json"`   
+יש למקם את הקובץ בתיקייה הראשית של הפרויקט, בדומה לקובץ הדוגמא:  
+`"exemple-thechannel-firebase-adminsdk.json"`   
+
 
 ## ריכוז הגדרות בממשק ניהול
 |setting        |value | הסבר |
@@ -129,3 +141,4 @@ POST https://example.com/api/import/post
 |`count_views`|`1`|הפעלת מונה צפיות פר הודעה|
 |`regex-replace`|`(.*?\!)(.*)#**$1**$2`|ערך של רגקס והחלפה בכדי ליצור החלפות אוטומטיות לטקסטים|
 |`on_notification`|`1`|הפעלת התראות דחיפה|
+|`max_file_size`|`50`|הגבלת משקל קבצים|

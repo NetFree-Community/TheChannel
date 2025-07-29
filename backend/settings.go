@@ -37,6 +37,7 @@ type SettingConfig struct {
 	FcmAppId                string
 	FcmMeasurementId        string
 	ProjectDomain           string
+	MaxFileSize             int64
 }
 
 type Setting struct {
@@ -137,6 +138,14 @@ func (s *Settings) ToConfig() *SettingConfig {
 
 		case "project_domain":
 			config.ProjectDomain = setting.GetString()
+
+		case "max_file_size":
+			size := setting.GetInt()
+			if size <= 0 {
+				size = 100
+			}
+			config.MaxFileSize = size
+
 		}
 	}
 
