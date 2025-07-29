@@ -1,11 +1,4 @@
-import {
-  Component,
-  ElementRef,
-  OnInit,
-  Renderer2,
-  RendererStyleFlags2,
-  ViewChild
-} from '@angular/core';
+import { Component, ElementRef, OnInit, Renderer2, RendererStyleFlags2, ViewChild } from '@angular/core';
 import { AdvertisingComponent } from "./advertising/advertising.component";
 import { CommonModule } from '@angular/common';
 import { Ad, AdsService } from '../../services/ads.service';
@@ -14,7 +7,6 @@ import {
   NbIconModule,
   NbLayoutModule,
   NbListModule,
-  NbMenuItem,
   NbMenuModule,
   NbSidebarModule,
 } from "@nebular/theme";
@@ -22,6 +14,7 @@ import { InputFormComponent } from "./chat/input-form/input-form.component";
 import { AuthService, User } from "../../services/auth.service";
 import { ChannelHeaderComponent } from "./channel-header/channel-header.component";
 import { ChatComponent } from "./chat/chat.component";
+import { AdminService } from "../../services/admin.service";
 
 @Component({
   selector: 'app-channel',
@@ -55,6 +48,7 @@ export class ChannelComponent implements OnInit {
   constructor(
     private adsService: AdsService,
     private _authService: AuthService,
+    private adminService: AdminService,
     private renderer: Renderer2,
     private el: ElementRef
   ) { }
@@ -62,34 +56,17 @@ export class ChannelComponent implements OnInit {
   ad: Ad = { src: '', width: 0 };
   userInfo?: User;
 
-  navigationMenu: NbMenuItem[] = [
-    {
-      title: 'מעבר לערוץ',
-      icon: 'arrow-back-outline',
-      link: '/',
-    },
-    {
-      title: 'הגדרות ערוץ',
-      icon: 'settings-2-outline',
-      link: '/admin/settings',
-    },
-    {
-      title: 'ניהול הרשאות',
-      icon: 'shield-outline',
-      link: '/admin/permissions',
-    },
-    {
-      title: "אימוג'ים",
-      icon: 'smiling-face-outline',
-      link: '/admin/emojis',
-    },
-  ]
-
   ngOnInit(): void {
+    // print current route path
     this.adsService.getAds().then(ad => {
       this.ad = ad;
     });
-    this._authService.loadUserInfo().then(res => this.userInfo = res);
+    this._authService.loadUserInfo().then(res => {
+      this.userInfo = res
+      if (document.location.pathname.startsWith('/admin')) {
+        this.adminService.openAdminPanel();
+      }
+    });
   }
 
   onInputHeightChanged() {

@@ -1,0 +1,26 @@
+<nb-card class="admin-panel-card" [size]="'giant'">
+    <nb-card-body class="d-flex flex-row">
+        <nb-menu [items]="navigationMenu" tag="admin-panel"></nb-menu>
+
+        <!--    Divider Line    -->
+        <div class="vr text-black-50 mx-3"></div>
+
+        <div class="flex-grow-1 overflow-auto">
+            @switch (selectedMenuItem) {
+                @case (info) {
+                    <app-channel-info-form></app-channel-info-form>
+                }
+                @case (settings) {
+                    <app-settings></app-settings>
+                }
+                @case (users) {
+                    <app-users></app-users>
+                    <app-privileg-dashboard></app-privileg-dashboard>
+                }
+                @case (emojis) {
+                    <app-emojis></app-emojis>
+                }
+            }
+        </div>
+    </nb-card-body>
+</nb-card>

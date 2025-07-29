@@ -10,15 +10,14 @@ import {
   NbToastrService,
   NbUserModule
 } from "@nebular/theme";
-import { InputFormComponent } from "../chat/input-form/input-form.component";
 import { filter } from "rxjs";
-import { ChannelInfoFormComponent } from '../channel-info-form/channel-info-form.component';
 import Viewer from 'viewerjs';
 import { Router } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { AuthService, User } from '../../../services/auth.service';
 import { ChatService } from '../../../services/chat.service';
 import { NotificationsService } from '../../../services/notifications.service';
+import { AdminService } from "../../../services/admin.service";
 
 @Component({
   selector: 'app-channel-header',
@@ -39,13 +38,8 @@ export class ChannelHeaderComponent implements OnInit {
     this._userInfo = user;
     this.userMenu = [
       ...((user?.privileges?.['admin'] || user?.privileges?.['moderator']) ? [{
-        title: 'ערוך פרטי ערוץ',
-        icon: 'edit-2-outline',
-      },
-      {
         title: 'ניהול ערוץ',
         icon: 'people-outline',
-        link: '/admin/dashboard',
       }] : []),
       {
         title: 'התנתק',
@@ -76,6 +70,7 @@ export class ChannelHeaderComponent implements OnInit {
     private router: Router,
     public notificationsService: NotificationsService,
     private titleService: Title,
+    private adminService: AdminService
   ) {
   }
 
@@ -95,8 +90,8 @@ export class ChannelHeaderComponent implements OnInit {
           case 'log-out':
             this.logout();
             break;
-          case 'edit-2-outline':
-            this.openChannelEditerDialog();
+          case 'people-outline':
+            this.adminService.openAdminPanel();
             break;
         }
       });
@@ -128,14 +123,6 @@ export class ChannelHeaderComponent implements OnInit {
     } else {
       this.toastrService.danger("", "שגיאה בהתנתקות");
     }
-  }
-
-  openMessageFormDialog() {
-    this.dialogService.open(InputFormComponent, { closeOnBackdropClick: false })
-  }
-
-  openChannelEditerDialog() {
-    this.dialogService.open(ChannelInfoFormComponent, { closeOnBackdropClick: true, context: { channel: this.chatService.channelInfo } });
   }
 
   private v!: Viewer;

@@ -1,7 +1,7 @@
 <nb-card>
     <nb-card-body>
         <div style="position: relative;">
-            <img [src]="logoUrl" class="rounded-circle" (click)="fileInput.click()"
+            <img [src]="channel.logoUrl" class="rounded-circle" (click)="fileInput.click()"
                 nbPopover="לחצו כאן להעלאת תמונה חדשה" nbPopoverTrigger="hover">
             <button nbButton (click)="fileInput.click()" shape="round"
                 style="position: absolute; bottom: 0; right: 0; padding: 4px;" class="shadow">
@@ -12,10 +12,10 @@
         <div class="m-2"></div>
         <div style="width: 80svh;">
             <h6>כותרת:</h6>
-            <input type="text" nbInput fullWidth [(ngModel)]="name">
+            <input type="text" nbInput fullWidth [(ngModel)]="channel.name">
             <div class="m-2"></div>
             <h6>תיאור:</h6>
-            <input type="text" nbInput fullWidth [(ngModel)]="description">
+            <input type="text" nbInput fullWidth [(ngModel)]="channel.description">
         </div>
     </nb-card-body>
     <nb-card-footer>
@@ -23,10 +23,6 @@
             <div class="m-2"></div>
             <button nbButton status="primary" shape="round" outline [nbSpinner]="isSending" [disabled]="isSending"
                 nbSpinnerStatus="primary" (click)="editChannelInfo()">עדכן
-            </button>
-            <div class="m-2"></div>
-            <button nbButton status="danger" shape="round" [disabled]="isSending || (attachment&&attachment.uploading)"
-                (click)="closeDialog()">ביטול
             </button>
         </div>
     </nb-card-footer>

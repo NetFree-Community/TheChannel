@@ -23,42 +23,30 @@ import { ChatService, Attachment, ChatFile } from '../../../services/chat.servic
 export class ChannelInfoFormComponent implements OnInit {
 
   constructor(
-    protected dialogRef: NbDialogRef<ChannelInfoFormComponent>,
     private chatService: ChatService,
     private adminService: AdminService,
-    private taostrService: NbToastrService,
     private toastrService: NbToastrService,
   ) { }
 
   ngOnInit(): void {
-    this.channel = this.dialogRef.componentRef.instance.channel;
-    this.name = this.channel.name;
-    this.description = this.channel.description
-    this.logoUrl = this.channel.logoUrl;
+    this.channel = { ...this.chatService.channelInfo };
   }
 
   attachment!: Attachment;
-  channel!: Channel;
+  channel: Channel = {};
   isSending: boolean = false;
-  name!: string;
-  description!: string;
-  logoUrl!: string;
 
   editChannelInfo() {
     this.isSending = true;
-    this.chatService.editChannelInfo(this.name, this.description, this.logoUrl).subscribe({
+    this.chatService.editChannelInfo(this.channel.name || '', this.channel.description || '', this.channel.logoUrl || '').subscribe({
       next: () => {
-        this.channel.name = this.name;
-        this.channel.description = this.description;
-        this.channel.logoUrl = this.logoUrl;
         this.isSending = false;
-        this.taostrService.success("", "עריכת פרטי ערוץ בוצעה בהצלחה");
+        this.toastrService.success("", "עריכת פרטי ערוץ בוצעה בהצלחה");
         this.chatService.updateChannelInfo();
-        this.dialogRef.close();
       },
       error: () => {
         this.isSending = false;
-        this.taostrService.danger("", "עריכת פרטי ערוץ נכשלה");
+        this.toastrService.danger("", "עריכת פרטי ערוץ נכשלה");
       }
     });
   };
@@ -72,7 +60,7 @@ export class ChannelInfoFormComponent implements OnInit {
       reader.readAsDataURL(this.attachment.file);
       reader.onload = (event) => {
         if (event.target) {
-          this.logoUrl = event.target.result as string;
+          this.channel.logoUrl = event.target.result as string;
         }
       }
 
@@ -97,7 +85,7 @@ export class ChannelInfoFormComponent implements OnInit {
             attachment.uploading = false;
             attachment.uploadProgress = 0;
             if (!uploadedFile) return;
-            this.logoUrl = uploadedFile.url;
+            this.channel.logoUrl = uploadedFile.url;
           }
         },
         error: (error) => {
@@ -114,8 +102,4 @@ export class ChannelInfoFormComponent implements OnInit {
       this.toastrService.danger("", "שגיאה בהעלאת קובץ");
     }
   }
-
-  closeDialog() {
-    this.dialogRef.close();
-  };
 }
