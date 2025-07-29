@@ -120,7 +120,7 @@ export class ChatComponent implements OnInit, OnDestroy {
           });
           break;
         case 'heartbeat':
-          //this.lastHeartbeat = Date.now();
+          this.lastHeartbeat = Date.now();
           break;
       }
     };
@@ -135,7 +135,7 @@ export class ChatComponent implements OnInit, OnDestroy {
     clearInterval(this.subLastHeartbeat);
     this.subLastHeartbeat = interval(10000)
       .subscribe(() => {
-        if (Date.now() - this.lastHeartbeat > 40000) {
+        if (Date.now() - this.lastHeartbeat > 60000) {
           this.lastHeartbeat = Date.now();
           this.initializeMessageListener();
         };

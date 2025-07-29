@@ -44,7 +44,7 @@ export class NotificationsService {
       this.initialized = true;
 
       onMessage(this.messaging, (payload) => {
-        this.tostrService.success("", 'התראה חדשה!');
+        //this.tostrService.success("", 'התראה חדשה!');
       });
       return;
     }
