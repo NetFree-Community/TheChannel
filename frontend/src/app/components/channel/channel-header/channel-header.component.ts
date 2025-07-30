@@ -3,7 +3,6 @@ import { NgIf } from "@angular/common";
 import {
   NbButtonModule,
   NbContextMenuModule,
-  NbDialogService,
   NbIconModule,
   NbMenuItem,
   NbMenuService,
@@ -52,8 +51,6 @@ export class ChannelHeaderComponent implements OnInit {
   }
   private _userInfo?: User;
 
-  @Input() adminPanel = false;
-
   @Output()
   userInfoChange: EventEmitter<User> = new EventEmitter<User>();
 
@@ -64,7 +61,6 @@ export class ChannelHeaderComponent implements OnInit {
   constructor(
     public chatService: ChatService,
     private _authService: AuthService,
-    private dialogService: NbDialogService,
     private contextMenuService: NbMenuService,
     private toastrService: NbToastrService,
     private router: Router,

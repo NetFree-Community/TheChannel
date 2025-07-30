@@ -6,14 +6,12 @@ import (
 )
 
 type AdsSettings struct {
-	Src   string `json:"src"`
-	Width int64  `json:"width"`
+	Src string `json:"src"`
 }
 
 func getAdsSettings(w http.ResponseWriter, r *http.Request) {
 	settings := AdsSettings{
-		Src:   settingConfig.AdSrc,
-		Width: settingConfig.AdWidth,
+		Src: settingConfig.AdSrc,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

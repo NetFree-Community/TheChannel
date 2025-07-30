@@ -127,9 +127,9 @@ export class MessageComponent implements OnInit, AfterViewInit {
           overlay.style.cursor = 'pointer';
           overlay.style.zIndex = '1';
           overlay.innerHTML = '<div style="text-align: center;">יש להתחבר כדי לצפות בקבצים <br>לחצו כאן להתחברות</div>';
-          
+
           overlay.addEventListener('click', () => {
-            this.router.navigate(['/login']);
+            this._authService.loginWithGoogle();
           });
 
           const parent = item.parentElement;
