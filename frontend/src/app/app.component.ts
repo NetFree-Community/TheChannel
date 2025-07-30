@@ -14,7 +14,6 @@ import { NotificationsService } from './services/notifications.service';
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnInit {
-  title = 'channel';
 
   constructor(
     private notificationsService: NotificationsService,
