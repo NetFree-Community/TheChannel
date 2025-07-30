@@ -76,6 +76,7 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 	message.ID = getMessageNextId(ctx)
 	message.Type = body.Type
 	message.Author = user.PublicName
+	message.AuthorId = user.ID
 	message.Timestamp = time.Now()
 	message.Text = body.Text
 	message.File = body.File

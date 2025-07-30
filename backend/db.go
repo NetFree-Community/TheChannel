@@ -22,6 +22,7 @@ type Message struct {
 	Type      string       `json:"type" redis:"type"`
 	Text      string       `json:"text" redis:"text"`
 	Author    string       `json:"author" redis:"author"`
+	AuthorId  string       `json:"authorId" redis:"authorId"`
 	Timestamp time.Time    `json:"timestamp" redis:"timestamp"`
 	LastEdit  time.Time    `json:"last_edit" redis:"last_edit"`
 	File      FileResponse `json:"file" redis:"-"`
@@ -196,6 +197,12 @@ var getMessageRange = redis.NewScript(`
 				    else
 				        message[key] = "Anonymous"
 				    end
+				elseif key == 'author_id' then
+					if isAdmin then
+					   message[key] = value
+                    else
+                       message[key] = "Anonymous"
+                    end
 				elseif key == 'reactions' then
 				    local success, parsedReactions = pcall(cjson.decode, value)
 					if success then
