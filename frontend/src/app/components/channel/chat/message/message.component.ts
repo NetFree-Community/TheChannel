@@ -3,13 +3,12 @@ import { NgIf, CommonModule } from "@angular/common";
 import {
   NbButtonModule,
   NbCardModule, NbChatModule,
-  NbContextMenuModule, NbDialogService,
-  NbIconModule, NbMenuService,
+  NbDialogService,
+  NbIconModule,
   NbPopoverModule,
   NbPosition,
   NbToastrService, NbUserModule
 } from "@nebular/theme";
-import { filter } from "rxjs";
 import { MarkdownComponent } from "ngx-markdown";
 import Viewer from 'viewerjs';
 import { YoutubePlayerComponent } from '../youtube-player/youtube-player.component';
@@ -18,8 +17,6 @@ import { MessageTimePipe } from '../../../../pipes/message-time.pipe';
 import { ChatMessage, ChatService } from '../../../../services/chat.service';
 import { AdminService } from '../../../../services/admin.service';
 import { AuthService } from '../../../../services/auth.service';
-import { Router } from '@angular/router';
-
 @Component({
   selector: 'app-message',
   imports: [
@@ -29,7 +26,6 @@ import { Router } from '@angular/router';
     NbIconModule,
     NbButtonModule,
     MessageTimePipe,
-    NbContextMenuModule,
     MarkdownComponent,
     NbPopoverModule,
     NgbPopoverModule,
@@ -55,46 +51,18 @@ export class MessageComponent implements OnInit, AfterViewInit {
   @ViewChild(NgbPopover) popover!: NgbPopover;
   @ViewChild('media') mediaContainer!: ElementRef;
 
-  optionsMenu = [ // TODO: hide when X time passed
-    {
-      title: 'עריכה',
-      icon: 'edit',
-      click: (message: ChatMessage) => this.editMessage(message),
-      hidden: false
-    },
-    {
-      title: 'מחיקה',
-      icon: 'trash',
-      click: (message: ChatMessage) => this.deleteMessage(message),
-      hidden: false
-    }
-  ];
-
   constructor(
     private _adminService: AdminService,
-    private menuService: NbMenuService,
     private dialogService: NbDialogService,
     protected chatService: ChatService,
     private toastrService: NbToastrService,
     private _authService: AuthService,
-    private router: Router
   ) { }
 
   reacts: string[] = [];
   private closeEmojiMenuTimeout: any;
 
   ngOnInit() {
-    this.menuService.onItemClick().pipe(
-      filter(value => value.tag == this.message?.id?.toString())
-    ).subscribe((event) => {
-      let item = this.optionsMenu.find(value => {
-        return value.title == event.item.title;
-      });
-      if (item && this.message) {
-        item.click(this.message);
-      }
-    });
-
     this.chatService.getEmojisList()
       .then(emojis => this.reacts = emojis)
       .catch(() => this.toastrService.danger('', 'שגיאה בהגדרת אימוגים'));

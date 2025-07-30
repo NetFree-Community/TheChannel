@@ -16,8 +16,17 @@
                 <nb-icon icon="alert-circle" nbPopover="לחצו כאן לשחזור ההודעה" nbPopoverTrigger="hover"
                     (click)="editMessage(message)" status="danger"></nb-icon>
             </div>
-            <button class="copy-button" nbButton ghost shape="round" size="tiny" (click)="copyLink(message.id)" title="העתק קישור להודעה">
-                <nb-icon icon="link-2-outline"></nb-icon>
+            <button *ngIf="userPrivilege?.['writer'] && !message.deleted" class="copy-button" nbButton ghost
+                shape="round" size="small" (click)="editMessage(message)" title="ערוך הודעה">
+                <nb-icon icon="edit"></nb-icon>
+            </button>
+            <button *ngIf="userPrivilege?.['writer'] && !message.deleted" class="copy-button" nbButton ghost
+                shape="round" size="small" (click)="deleteMessage(message)" title="מחק הודעה">
+                <nb-icon icon="trash-2"></nb-icon>
+            </button>
+            <button class="copy-button" nbButton ghost shape="round" size="small" (click)="copyLink(message.id)"
+                title="העתק קישור להודעה">
+                <nb-icon icon="link-2"></nb-icon>
             </button>
         </div>
         <div [ngbPopover]="emojiMenu" [disablePopover]="!reacts.length" [triggers]="'manual'"
@@ -29,11 +38,6 @@
                 <div class="m-2" #media>
                     <markdown [data]="message.text" [disableSanitizer]="true" (click)="viewLargeImage($event)">
                     </markdown>
-                </div>
-                <div *ngIf="userPrivilege?.['writer'] && !message.deleted" class="d-flex option-mask">
-                    <nb-icon icon="arrow-ios-downward-outline" [nbContextMenu]="optionsMenu"
-                        [nbContextMenuTag]="message.id?.toString() ?? '0'"
-                        [nbContextMenuPlacement]="NbPosition.END_BOTTOM"></nb-icon>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mx-2 gap-2 mb-1">
