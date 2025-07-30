@@ -1,38 +1,44 @@
 <div *ngIf="message && message.text" class="d-flex flex-row align-content-center my-1 mx-4">
     <div class="d-flex flex-column">
-        <nb-user class="pt-4" [shape]="'round'" [color]="'white'" [size]="'large'" [picture]="chatService.channelInfo?.logoUrl || ''" [name]="chatService.channelInfo?.name || ''" onlyPicture></nb-user>
+        <nb-user class="pt-4" [shape]="'round'" [color]="'white'" [size]="'large'"
+            [picture]="chatService.channelInfo?.logoUrl || ''" [name]="chatService.channelInfo?.name || ''"
+            onlyPicture></nb-user>
     </div>
     <div class="d-flex flex-column gap-1 overflow-auto">
         <div class="d-flex flex-row gap-2 pe-1">
-            <strong class="text-black-50">{{userPrivilege?.['admin'] ? message.author : chatService.channelInfo?.name }}</strong>
+            <strong class="text-black-50">{{userPrivilege?.['admin'] ? message.author : chatService.channelInfo?.name
+                }}</strong>
             <small class="text-black-50">{{ message.timestamp | messageTime }}</small>
             <small class="text-black-50" *ngIf="isEdited(message)">
                 נערכה {{ message.last_edit | messageTime }}
             </small>
             <div *ngIf="message.deleted">
                 <nb-icon icon="alert-circle" nbPopover="לחצו כאן לשחזור ההודעה" nbPopoverTrigger="hover"
-                         (click)="editMessage(message)" status="danger"></nb-icon>
+                    (click)="editMessage(message)" status="danger"></nb-icon>
             </div>
+            <button class="copy-button" nbButton ghost shape="round" size="tiny" (click)="copyLink(message.id)" title="העתק קישור להודעה">
+                <nb-icon icon="link-2-outline"></nb-icon>
+            </button>
         </div>
         <div [ngbPopover]="emojiMenu" [disablePopover]="!reacts.length" [triggers]="'manual'"
-             [popoverContext]="{message}" [autoClose]="'outside'"
-             [placement]="getPopoverPlacement()" [popoverClass]="'emoji-picker-popover'" (mouseenter)="showEmojiMenu()"
-             (mouseleave)="scheduleEmojiMenuClose()" #p="ngbPopover">
+            [popoverContext]="{message}" [autoClose]="'outside'" [placement]="getPopoverPlacement()"
+            [popoverClass]="'emoji-picker-popover'" (mouseenter)="showEmojiMenu()"
+            (mouseleave)="scheduleEmojiMenuClose()" #p="ngbPopover">
             <div class="d-flex flex-column bg-light rounded-4 border fs-5 f lh-base message-card"
-                 [ngStyle]="{'opacity': message.deleted ? 0.5 : 1}">
+                [ngStyle]="{'opacity': message.deleted ? 0.5 : 1}">
                 <div class="m-2" #media>
                     <markdown [data]="message.text" [disableSanitizer]="true" (click)="viewLargeImage($event)">
                     </markdown>
                 </div>
                 <div *ngIf="userPrivilege?.['writer'] && !message.deleted" class="d-flex option-mask">
                     <nb-icon icon="arrow-ios-downward-outline" [nbContextMenu]="optionsMenu"
-                             [nbContextMenuTag]="message.id?.toString() ?? '0'"
-                             [nbContextMenuPlacement]="NbPosition.END_BOTTOM"></nb-icon>
+                        [nbContextMenuTag]="message.id?.toString() ?? '0'"
+                        [nbContextMenuPlacement]="NbPosition.END_BOTTOM"></nb-icon>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mx-2 gap-2 mb-1">
                     <div class="d-flex flex-row align-items-center text-black-50 gap-1" title="צפיות"
-                         *ngIf="message.views">
+                        *ngIf="message.views">
                         <small>{{ message.views }}</small>
                         <nb-icon icon="eye-outline"></nb-icon>
                     </div>
@@ -40,8 +46,8 @@
 
                 <div *ngIf="message.reactions && hasReactions(message.reactions)" class="emojis-section">
                     <div *ngFor="let reaction of message.reactions | keyvalue" class="emoji-reaction"
-                         (click)="setReact(message.id, reaction.key)"
-                         [title]="reaction.value + ' אנשים הגיבו עם ' + reaction.key">
+                        (click)="setReact(message.id, reaction.key)"
+                        [title]="reaction.value + ' אנשים הגיבו עם ' + reaction.key">
                         <span class="emoji">{{ reaction.key }}</span>
                         <span class="count">{{ reaction.value }}</span>
                     </div>
@@ -55,7 +61,7 @@
     <div class="emoji-picker-menu" (mouseenter)="cancelEmojiMenuClose()" (mouseleave)="scheduleEmojiMenuClose()">
         <div class="emoji-grid">
             <button *ngFor="let react of reacts" class="emoji-option" (click)="setReact(message.id, react)"
-                    [title]="'הגב עם ' + react">
+                [title]="'הגב עם ' + react">
                 {{ react }}
             </button>
         </div>

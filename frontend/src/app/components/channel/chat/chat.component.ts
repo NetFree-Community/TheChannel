@@ -14,6 +14,7 @@ import { MessageComponent } from "./message/message.component";
 import { firstValueFrom, interval } from 'rxjs';
 import { ChatMessage, ChatService } from '../../../services/chat.service';
 import { AuthService, User } from '../../../services/auth.service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-chat',
@@ -29,7 +30,7 @@ import { AuthService, User } from '../../../services/auth.service';
     NbListModule,
     NbBadgeModule,
     MessageComponent,
-],
+  ],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss'
 })
@@ -51,11 +52,44 @@ export class ChatComponent implements OnInit, OnDestroy {
     private chatService: ChatService,
     private _authService: AuthService,
     private zone: NgZone,
+    private router: ActivatedRoute,
   ) { }
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
     this.onListScroll();
+  }
+
+  @HostListener('document:keydown')
+  @HostListener('document:click')
+  onUserAction() {
+    this.removeMsgMarked();
+  }
+
+  async scrollToId(messageId: number) {
+    const element = document.getElementById(messageId.toString());
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      this.removeMsgMarked();
+      element.classList.add('mark_message');
+    }
+  }
+
+  private removeMsgMarked() {
+    document.querySelectorAll('.mark_message').forEach((el) => {
+      el.classList.remove('mark_message');
+    });
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.router.fragment.subscribe(fragment => {
+        if (fragment) {
+          const messageId = Number(fragment);
+          if (!isNaN(messageId)) this.scrollToId(messageId);
+        }
+      });
+    }, 800);
   }
 
   ngOnInit() {

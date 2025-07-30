@@ -24,6 +24,10 @@ nb-icon {
   cursor: pointer;
 }
 
+.copy-button {
+  padding: initial !important;
+}
+
 .message-card:hover .option-mask {
   opacity: 1;
   transition: opacity ease-in 0.1s;
@@ -43,6 +47,10 @@ nb-icon {
 
   i {
     cursor: pointer;
+  }
+
+  .mark_message {
+    border: 2px solid #6a6fff;
   }
 }
 
