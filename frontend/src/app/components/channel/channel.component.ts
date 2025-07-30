@@ -14,7 +14,6 @@ import { InputFormComponent } from "./chat/input-form/input-form.component";
 import { AuthService, User } from "../../services/auth.service";
 import { ChannelHeaderComponent } from "./channel-header/channel-header.component";
 import { ChatComponent } from "./chat/chat.component";
-import { AdminService } from "../../services/admin.service";
 
 @Component({
   selector: 'app-channel',
@@ -48,7 +47,6 @@ export class ChannelComponent implements OnInit {
   constructor(
     private adsService: AdsService,
     private _authService: AuthService,
-    private adminService: AdminService,
     private renderer: Renderer2,
     private el: ElementRef
   ) { }
@@ -57,15 +55,11 @@ export class ChannelComponent implements OnInit {
   userInfo?: User;
 
   ngOnInit(): void {
-    // print current route path
     this.adsService.getAds().then(ad => {
       this.ad = ad;
     });
     this._authService.loadUserInfo().then(res => {
       this.userInfo = res
-      if (document.location.pathname.startsWith('/admin')) {
-        this.adminService.openAdminPanel();
-      }
     });
   }
 

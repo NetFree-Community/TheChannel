@@ -2,7 +2,7 @@ import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@a
 import { NgIf } from "@angular/common";
 import {
   NbButtonModule,
-  NbContextMenuModule,
+  NbContextMenuModule, NbDialogService,
   NbIconModule,
   NbMenuItem,
   NbMenuService,
@@ -16,7 +16,7 @@ import { Title } from '@angular/platform-browser';
 import { AuthService, User } from '../../../services/auth.service';
 import { ChatService } from '../../../services/chat.service';
 import { NotificationsService } from '../../../services/notifications.service';
-import { AdminService } from "../../../services/admin.service";
+import { AdminPanelComponent } from "../../admin/admin-panel.component";
 
 @Component({
   selector: 'app-channel-header',
@@ -46,9 +46,11 @@ export class ChannelHeaderComponent implements OnInit {
       }
     ];
   }
+
   get userInfo() {
     return this._userInfo;
   }
+
   private _userInfo?: User;
 
   @Output()
@@ -66,7 +68,7 @@ export class ChannelHeaderComponent implements OnInit {
     private router: Router,
     public notificationsService: NotificationsService,
     private titleService: Title,
-    private adminService: AdminService
+    private dialogService: NbDialogService,
   ) {
   }
 
@@ -87,7 +89,7 @@ export class ChannelHeaderComponent implements OnInit {
             this.logout();
             break;
           case 'people-outline':
-            this.adminService.openAdminPanel();
+            this.dialogService.open(AdminPanelComponent, { closeOnBackdropClick: true });
             break;
         }
       });
