@@ -35,10 +35,10 @@ export class EmojisComponent implements OnInit {
   }
 
   setEmojis() {
-    if (!this.emojis?.length) {
-      this.toastrService.warning('', 'אין אימוגים להגדיר');
-      return;
-    }
+    // if (!this.emojis?.length) {
+    //   this.toastrService.warning('', 'אין אימוגים להגדיר');
+    //   return;
+    // }
 
     this.adminService.setEmojis(this.emojis)
       .then(() => {

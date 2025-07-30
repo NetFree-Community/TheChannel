@@ -353,9 +353,9 @@ func getChannelDetails(ctx context.Context) (map[string]string, error) {
 }
 
 func dbSetEmojisList(ctx context.Context, emojis []string) error {
-	if len(emojis) == 0 {
-		return fmt.Errorf("emojis list cannot be empty")
-	}
+	// if len(emojis) == 0 {
+	// 	return fmt.Errorf("emojis list cannot be empty")
+	// }
 
 	emojisJSON, err := json.Marshal(emojis)
 	if err != nil {

@@ -84,10 +84,10 @@ func setEmojis(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if len(req.Emojis) == 0 {
-		http.Error(w, "No emojis provided", http.StatusBadRequest)
-		return
-	}
+	// if len(req.Emojis) == 0 {
+	// 	http.Error(w, "No emojis provided", http.StatusBadRequest)
+	// 	return
+	// }
 
 	if err := dbSetEmojisList(ctx, req.Emojis); err != nil {
 		http.Error(w, "Failed to set emojis", http.StatusInternalServerError)
