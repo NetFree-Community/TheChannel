@@ -85,6 +85,7 @@ POST https://example.com/api/import/post
 ## הוספת פרסומות  
 בממשק הניהול יש להגדיר את 2 הערכים:  
 * `ad-iframe-src` קישור HTML להטמעה.
+* `ad-iframe-width` רוחב חלון הפרסומת בפיקסלים. רוחב מומלץ 300.  
 
 ## החלפה אוטומטית של טקסטים בעת פרסום הודעות חדשות
 ניתן להגדיר תחת הערך `regex-replace` סט רגקס#החלפה עבור טקסטים.  
@@ -136,6 +137,7 @@ POST https://example.com/api/import/post
 |`webhook_url`|`https://example.com/webhook`|כתובת לשליחת וובהוק|
 |`webhook_verify_token`|`your-secret-token`|טוקן לשליחה יחד עם וובהוק|
 |`ad-iframe-src`| |קישור HTML להטמעת פרסומת|
+|`ad-iframe-width`|`300`|רוחב פרסום|
 |`count_views`|`1`|הפעלת מונה צפיות פר הודעה|
 |`regex-replace`|`(.*?\!)(.*)#**$1**$2`|ערך של רגקס והחלפה בכדי ליצור החלפות אוטומטיות לטקסטים|
 |`on_notification`|`1`|הפעלת התראות דחיפה|
