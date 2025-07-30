@@ -27,6 +27,7 @@ services:
     volumes:
       - ./channel_data:/app/files
       - ./data:/app/data
+      - ./logs:/app/logs
 
   caddy:
     image: caddy:2-alpine
