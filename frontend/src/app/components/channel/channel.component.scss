@@ -13,7 +13,7 @@ nb-layout-column.ad-column {
 
 app-advertising {
   position: sticky;
-  bottom: var(--input-height, 0px) !important;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
