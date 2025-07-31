@@ -10,4 +10,8 @@ export const routes: Routes = [
     component: ChannelComponent,
     canActivate: [AuthGuard],
   },
+  {
+    path: '**',
+    redirectTo: ''
+  }
 ];
