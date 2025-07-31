@@ -33,7 +33,8 @@
         [picture]="userInfo.picture || ''" [onlyPicture]="isSmallScreen">
     </nb-user>
     } @else {
-    <button nbButton shape="round" appearance="outline" title="התחבר באמצעות חשבון גוגל" (click)="googleLogin()">
+    <button nbButton shape="round" appearance="outline" title="התחבר באמצעות חשבון גוגל"
+        (click)="_authService.loginWithGoogle()">
         <nb-icon icon="google"></nb-icon>
         התחבר
     </button>
