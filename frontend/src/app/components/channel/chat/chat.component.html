@@ -1,5 +1,5 @@
 <div nbInfiniteList (scroll)="onListScroll()" [threshold]="300" [throttleTime]="1000" (topThreshold)="loadMessages()"
-    [listenWindowScroll]="true">
+    (bottomThreshold)="loadMessages(true)" [listenWindowScroll]="true">
     <nb-list class="flex-column-reverse">
 
         <nb-list-item *ngFor="let message of messages">

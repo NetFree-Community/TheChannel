@@ -86,7 +86,9 @@ export class ChatComponent implements OnInit, OnDestroy {
       this.router.fragment.subscribe(fragment => {
         if (fragment) {
           const messageId = Number(fragment);
-          if (!isNaN(messageId)) this.scrollToId(messageId);
+          if (!Number.isInteger(messageId)) return;
+          const findId = this.messages.some(m => m.id === messageId);
+          findId ? this.scrollToId(messageId) : this.loadMessages(false, messageId);
         }
       });
     }, 800);
@@ -189,16 +191,53 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.hasNewMessages = false;
   }
 
-  async loadMessages() {
-    if (this.isLoading || !this.hasMoreMessages) return;
+  async loadMessages(scrollDown?: boolean, messageId?: number) {
+    if (this.isLoading || (!this.hasMoreMessages && !messageId && !scrollDown)) return;
+
+    let startId: number;
+    let resetList: boolean = false;
+
+    if (scrollDown) {
+      //const maxId = Math.max(...this.messages.map(m => m.id!));
+      //
+      startId = this.offset + this.limit + 20;
+    } else {
+      if (messageId) {
+        const maxId = Math.max(...this.messages.map(m => m.id!));
+        if (messageId > maxId + this.limit) {
+          resetList = true;
+          startId = messageId + 10;
+        } else if (messageId > maxId) {
+          startId = this.offset + this.limit;
+          scrollDown = true;
+        } else {
+          const minId = Math.min(...this.messages.map(m => m.id!));
+          if (messageId < minId - this.limit) {
+            resetList = true;
+            startId = messageId + 10;
+          } else {
+            startId = this.offset;
+          }
+        }
+      } else {
+        startId = this.offset;
+      }
+    }
 
     try {
       this.isLoading = true;
-      const response = await firstValueFrom(this.chatService.getMessages(this.offset, this.limit))
+      const response = await firstValueFrom(this.chatService.getMessages(startId, this.limit))
       if (response?.messages) {
         this.hasMoreMessages = response.hasMore;
-        this.messages.push(...response.messages);
+        if (scrollDown) {
+          resetList ? this.messages = response.messages : this.messages.unshift(...response.messages);
+        } else {
+          resetList ? this.messages = response.messages : this.messages.push(...response.messages);
+        }
         this.offset = Math.min(...this.messages.map(m => m.id!));
+        setTimeout(() => {
+          messageId && this.scrollToId(messageId);
+        }, 300);
       }
     } catch (error) {
       console.error('שגיאה בטעינת הודעות:', error);
