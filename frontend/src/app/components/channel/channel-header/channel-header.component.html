@@ -12,12 +12,12 @@
         }
     </div>
     <div class="d-flex flex-column flex-grow-1">
-        <span class="fs-4 my-2 fw-bold">{{ chatService.channelInfo?.name || 'ערוץ ללא שם' }}</span>
+        <span class="fs-4 my-2 fw-bold">{{ chatService.channelInfo?.name }}</span>
         <small *ngIf="chatService.channelInfo?.description">
             {{ chatService.channelInfo?.description }}
         </small>
         <small>
-            {{ chatService.channelInfo?.views || 0 }} משתתפים
+            {{ chatService.channelInfo?.views }} משתתפים
         </small>
     </div>
 
