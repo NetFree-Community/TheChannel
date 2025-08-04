@@ -1,17 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/gob"
-	"html"
+	"github.com/boj/redistore"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"github.com/boj/redistore"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 )
 
 var rootStaticFolder = os.Getenv("ROOT_STATIC_FOLDER")
@@ -112,11 +110,12 @@ func main() {
 				return
 			}
 
-			title := html.EscapeString(settingConfig.CustomTitle)
-			modified := strings.ReplaceAll(string(content), "<title></title>", "<title>"+title+"</title>")
+			if settingConfig.CustomTitle != "" {
+				content = bytes.ReplaceAll(content, []byte("<title></title>"), []byte(settingConfig.CustomTitle))
+			}
 
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Write([]byte(modified))
+			w.Write(content)
 		})
 	}
 

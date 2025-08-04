@@ -79,7 +79,7 @@ export class ChannelHeaderComponent implements OnInit {
 
   ngOnInit() {
     this.chatService.updateChannelInfo()
-     // .then(() => this.titleService.setTitle(this.chatService.channelInfo?.name || 'TheChannel'));
+     .then(() => this.titleService.setTitle(this.chatService.channelInfo?.name || 'TheChannel'));
 
     this.contextMenuService.onItemClick()
       .pipe(filter(({ tag }) => tag === this.userMenuTag))
