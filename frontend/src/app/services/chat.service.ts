@@ -20,10 +20,7 @@ export interface ChatMessage {
   views?: number;
   reactions?: Reactions;
 }
-export interface ChatResponse {
-  messages: ChatMessage[];
-  hasMore: boolean;
-}
+export type ChatResponse = ChatMessage[];
 
 export interface ChatFile {
   url: string;
@@ -61,11 +58,12 @@ export class ChatService {
     return this.http.post<ResponseResult>('/api/admin/edit-channel-info', { name, description, logoUrl });
   }
 
-  getMessages(offset: number, limit: number): Observable<ChatResponse> {
+  getMessages(offset: number, limit: number, direction: string): Observable<ChatResponse> {
     return this.http.get<ChatResponse>('/api/messages', {
       params: {
         offset: offset.toString(),
-        limit: limit.toString()
+        limit: limit.toString(),
+        direction: direction
       }
     });
   }

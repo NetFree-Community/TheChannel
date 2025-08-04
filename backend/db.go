@@ -157,8 +157,16 @@ var getMessageRange = redis.NewScript(`
 	local required_length = tonumber(ARGV[1])
 	local isAdmin = ARGV[2] == 'true'
 	local countViews = ARGV[3] == 'true'
+	local direction = ARGV[4] or 'desc'
 
-	local start_index = redis.call('ZREVRANK', time_set_key, offset_key) or 0
+
+	local start_index
+	if direction == 'asc' then
+	    start_index = redis.call('ZRANK', time_set_key, offset_key) or 0
+	else
+	    start_index = redis.call('ZREVRANK', time_set_key, offset_key) or 0
+	end
+
 	if start_index > 0 then
 		start_index = start_index + 1
 	end
@@ -167,7 +175,13 @@ var getMessageRange = redis.NewScript(`
 	repeat
 		local batch_size = required_length - #messages
 		local stop_index = start_index + batch_size
-		local message_ids = redis.call('ZREVRANGE', time_set_key, start_index, stop_index)
+		local message_ids
+		
+		if direction == 'asc' then
+		 message_ids = redis.call('ZRANGE', time_set_key, start_index, stop_index)
+		else
+		 message_ids = redis.call('ZREVRANGE', time_set_key, start_index, stop_index)
+		end
 
 		if #message_ids == 0 then
 			break
@@ -227,9 +241,9 @@ var getMessageRange = redis.NewScript(`
 	return cjson.encode(messages)
 `)
 
-func funcGetMessageRange(ctx context.Context, start, stop int64, isAdmin, countViews bool) ([]Message, error) {
+func funcGetMessageRange(ctx context.Context, start, stop int64, isAdmin, countViews bool, direction string) ([]Message, error) {
 	offsetKeyName := fmt.Sprintf("messages:%d", start)
-	res, err := getMessageRange.Run(ctx, rdb, []string{"m_times:1", offsetKeyName}, []string{strconv.FormatInt(stop, 10), strconv.FormatBool(isAdmin), strconv.FormatBool(countViews)}).Result()
+	res, err := getMessageRange.Run(ctx, rdb, []string{"m_times:1", offsetKeyName}, []string{strconv.FormatInt(stop, 10), strconv.FormatBool(isAdmin), strconv.FormatBool(countViews), direction}).Result()
 	if err != nil {
 		return []Message{}, err
 	}
