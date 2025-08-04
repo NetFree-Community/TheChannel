@@ -1,5 +1,6 @@
 frontend/.angular/
 frontend/node_modules/
+frontend/dist/*
 package-lock.json
 backend/__debug*
 thechannel-firebase-adminsdk.json
