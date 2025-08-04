@@ -111,7 +111,6 @@ func main() {
 }
 
 func serveSpaFile(w http.ResponseWriter, r *http.Request) {
-	log.Println("Serving static file for path:", r.URL.Path)
 	htmlPath := filepath.Join(settingConfig.RootStaticFolder, "index.html")
 	content, err := os.ReadFile(htmlPath)
 	if err != nil {
