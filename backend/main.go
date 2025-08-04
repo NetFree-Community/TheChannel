@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/gob"
+	"html"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/boj/redistore"
 	"github.com/go-chi/chi"
@@ -102,7 +105,18 @@ func main() {
 		r.Handle("/", http.FileServer(http.Dir(settingConfig.RootStaticFolder)))
 		r.Handle("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir(settingConfig.RootStaticFolder))))
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, settingConfig.RootStaticFolder+"/index.html")
+			htmlPath := filepath.Join(settingConfig.RootStaticFolder, "index.html")
+			content, err := os.ReadFile(htmlPath)
+			if err != nil {
+				http.Error(w, "File not found", http.StatusNotFound)
+				return
+			}
+
+			title := html.EscapeString(settingConfig.CustomTitle)
+			modified := strings.ReplaceAll(string(content), "<title></title>", "<title>"+title+"</title>")
+
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Write([]byte(modified))
 		})
 	}
 
