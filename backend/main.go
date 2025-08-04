@@ -3,13 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/gob"
-	"github.com/boj/redistore"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/boj/redistore"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 var rootStaticFolder = os.Getenv("ROOT_STATIC_FOLDER")
@@ -100,26 +101,28 @@ func main() {
 	})
 
 	if settingConfig.RootStaticFolder != "" {
-		r.Handle("/", http.FileServer(http.Dir(settingConfig.RootStaticFolder)))
 		r.Handle("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir(settingConfig.RootStaticFolder))))
-		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-			htmlPath := filepath.Join(settingConfig.RootStaticFolder, "index.html")
-			content, err := os.ReadFile(htmlPath)
-			if err != nil {
-				http.Error(w, "File not found", http.StatusNotFound)
-				return
-			}
-
-			if settingConfig.CustomTitle != "" {
-				content = bytes.ReplaceAll(content, []byte("<title></title>"), []byte(settingConfig.CustomTitle))
-			}
-
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Write(content)
-		})
+		r.NotFound(serveSpaFile)
 	}
 
 	if err := http.ListenAndServe(":"+os.Getenv("SERVER_PORT"), r); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func serveSpaFile(w http.ResponseWriter, r *http.Request) {
+	log.Println("Serving static file for path:", r.URL.Path)
+	htmlPath := filepath.Join(settingConfig.RootStaticFolder, "index.html")
+	content, err := os.ReadFile(htmlPath)
+	if err != nil {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
+	if settingConfig.CustomTitle != "" {
+		content = bytes.ReplaceAll(content, []byte("<title></title>"), []byte(settingConfig.CustomTitle))
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(content)
 }
