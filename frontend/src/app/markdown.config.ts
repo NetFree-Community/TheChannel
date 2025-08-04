@@ -43,7 +43,7 @@ const customEmbedExtension = {
         case 'image':
           return `<div style="max-width: 300px; height: auto;"><img src="${url}" class="img-fluid" width="300px"></div>`;
         case 'youtube':
-          return `<div style="position: relative;"><img youtubeid="${id}" src="https://ytimg.googleusercontent.com/vi/${id}/hqdefault.jpg" class="img-fluid" width="300px"><i
+          return `<div style="position: relative; max-width: 300px; height: auto;"><img youtubeid="${id}" src="https://ytimg.googleusercontent.com/vi/${id}/hqdefault.jpg" class="img-fluid" width="300px"><i
           class="bi bi-youtube" youtubeid="${id}" style="position: absolute; place-self: anchor-center; color: red; font-size: 70px;"></i></div>`;
         default:
           return '';
