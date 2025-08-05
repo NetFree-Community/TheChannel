@@ -43,7 +43,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   offset: number = 0;
   limit: number = 20;
   hasOldMessages: boolean = true;
-  hasNewMessages: boolean = true;
+  hasNewMessages: boolean = false;
   thereNewMessages: boolean = false;
   showScrollToBottom: boolean = false;
   private lastHeartbeat: number = Date.now();
