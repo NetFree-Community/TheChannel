@@ -21,6 +21,12 @@
         </small>
     </div>
 
+    @if (chatService.channelInfo?.contact_us) {
+    <button nbButton shape="round" class="m-2" title="צור קשר" (click)="openContactUs()" status="info">
+        <nb-icon icon="email-outline"></nb-icon>
+    </button>
+    }
+
     @if (notificationsService.initialized) {
     <button nbButton shape="round" class="m-2" title="התראות" status="danger"
         (click)="notificationsService.requestPermission()">

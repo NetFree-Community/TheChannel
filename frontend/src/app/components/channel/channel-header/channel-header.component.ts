@@ -79,7 +79,7 @@ export class ChannelHeaderComponent implements OnInit {
 
   ngOnInit() {
     this.chatService.updateChannelInfo()
-     .then(() => this.titleService.setTitle(this.chatService.channelInfo?.name || 'TheChannel'));
+      .then(() => this.titleService.setTitle(this.chatService.channelInfo?.name || 'TheChannel'));
 
     this.contextMenuService.onItemClick()
       .pipe(filter(({ tag }) => tag === this.userMenuTag))
@@ -138,5 +138,9 @@ export class ChannelHeaderComponent implements OnInit {
 
   updateScreenSize() {
     this.isSmallScreen = window.innerWidth < 768;
+  }
+
+  openContactUs() {
+    window.open(this.chatService.channelInfo?.contact_us, '_blank');
   }
 }

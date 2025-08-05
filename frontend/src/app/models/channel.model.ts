@@ -6,4 +6,5 @@ export interface Channel {
   logoUrl?: string;
   views?: number;
   require_auth_for_view_files?: boolean;
+  contact_us?: string;
 }
