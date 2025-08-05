@@ -37,6 +37,7 @@ type SettingConfig struct {
 	FcmAppId                string
 	FcmMeasurementId        string
 	ProjectDomain           string
+	FcmJson                 *FcmJsonConfing
 	MaxFileSize             int64
 	CustomTitle             string
 }
@@ -64,6 +65,7 @@ func init() {
 
 func (s *Settings) ToConfig() *SettingConfig {
 	config := &SettingConfig{}
+	config.FcmJson = &FcmJsonConfing{}
 
 	if rootStaticFolder != "" {
 		config.RootStaticFolder = rootStaticFolder
@@ -147,8 +149,40 @@ func (s *Settings) ToConfig() *SettingConfig {
 
 		case "custom_title":
 			config.CustomTitle = setting.GetString()
-		}
 
+		case "fcm_json_type":
+			config.FcmJson.Type = setting.GetString()
+
+		case "fcm_json_project_id":
+			config.FcmJson.ProjectId = setting.GetString()
+
+		case "fcm_json_private_key_id":
+			config.FcmJson.PrivateKeyId = setting.GetString()
+
+		case "fcm_json_private_key":
+			config.FcmJson.PrivateKey = strings.ReplaceAll(setting.GetString(), "\\n", "\n")
+
+		case "fcm_json_client_email":
+			config.FcmJson.ClientEmail = setting.GetString()
+
+		case "fcm_json_client_id":
+			config.FcmJson.ClientId = setting.GetString()
+
+		case "fcm_json_auth_uri":
+			config.FcmJson.AuthUri = setting.GetString()
+
+		case "fcm_json_token_uri":
+			config.FcmJson.TokenUri = setting.GetString()
+
+		case "fcm_json_auth_provider_x509_cert_url":
+			config.FcmJson.AuthProviderX509CertUrl = setting.GetString()
+
+		case "fcm_json_client_x509_cert_url":
+			config.FcmJson.ClientX509CertUrl = setting.GetString()
+
+		case "fcm_json_universe_domain":
+			config.FcmJson.UniverseDomain = setting.GetString()
+		}
 	}
 
 	return config

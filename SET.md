@@ -126,10 +126,20 @@ POST https://example.com/api/import/post
 בכדי ששליחת ההודעות תעבוד, יש להוריד קובץ JSON עם מפתח פרטי.  
 הקובץ זמין להורדה מ[כאן](https://console.firebase.google.com/), לאחר בחירת הפרויקט, תחת הלשונית:  
 `serviceaccounts >  Generate new private key`  
-לשנות את שמו ל:  
-`"thechannel-firebase-adminsdk.json"`   
-יש למקם את הקובץ בתיקייה הראשית של הפרויקט, בדומה לקובץ הדוגמא:  
-`"exemple-thechannel-firebase-adminsdk.json"`   
+יש להעתיק את הערכים ולהגדיר אותם בממשק הניהול, רשימת ההגדרות המלאה להלן:  
+|setting|
+|-------|
+|`fcm_json_type`|
+|`fcm_json_project_id`|
+|`fcm_json_private_key_id`|
+|`fcm_json_private_key`|
+|`fcm_json_client_email`|
+|`fcm_json_client_id`|
+|`fcm_json_auth_uri`|
+|`fcm_json_token_uri`|
+|`fcm_json_auth_provider_x509_cert_url`|
+|`fcm_json_client_x509_cert_url`|
+|`fcm_json_universe_domain`|
 
 
 ## ריכוז הגדרות בממשק ניהול

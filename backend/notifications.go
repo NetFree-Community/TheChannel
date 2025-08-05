@@ -16,12 +16,25 @@ import (
 type FirebaseConfig struct {
 	ApiKey            string `json:"apiKey"`
 	AuthDomain        string `json:"authDomain"`
-	DatabaseURL       string `json:"databaseURL"`
 	ProjectId         string `json:"projectId"`
 	StorageBucket     string `json:"storageBucket"`
 	MessagingSenderId string `json:"messagingSenderId"`
 	AppId             string `json:"appId"`
 	MeasurementId     string `json:"measurementId"`
+}
+
+type FcmJsonConfing struct {
+	Type                    string `json:"type"`
+	ProjectId               string `json:"project_id"`
+	PrivateKeyId            string `json:"private_key_id"`
+	PrivateKey              string `json:"private_key"`
+	ClientEmail             string `json:"client_email"`
+	ClientId                string `json:"client_id"`
+	AuthUri                 string `json:"auth_uri"`
+	TokenUri                string `json:"token_uri"`
+	AuthProviderX509CertUrl string `json:"auth_provider_x509_cert_url"`
+	ClientX509CertUrl       string `json:"client_x509_cert_url"`
+	UniverseDomain          string `json:"universe_domain"`
 }
 type NotificationsConfig struct {
 	EnableNotifications bool           `json:"enableNotifications"`
@@ -136,29 +149,53 @@ func subscribeNotifications(w http.ResponseWriter, r *http.Request) {
 
 func pushFcmMessage(m Message) {
 	if !settingConfig.OnNotification {
+
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	list, err := getSubcriptionsList()
 	if err != nil {
+		log.Println("Failed to get subscription list:", err)
 		return
 	}
 
 	if len(list) == 0 {
+		log.Println("No subscriptions found, skipping FCM push")
 		return
 	}
 
 	channelName, err := getChannelDetails(ctx)
 	if err != nil {
+		log.Println("Failed to get channel details:", err)
+		return
+	}
+
+	fcmSet := &FcmJsonConfing{
+		Type:                    settingConfig.FcmJson.Type,
+		ProjectId:               settingConfig.FcmJson.ProjectId,
+		PrivateKeyId:            settingConfig.FcmJson.PrivateKeyId,
+		PrivateKey:              settingConfig.FcmJson.PrivateKey,
+		ClientEmail:             settingConfig.FcmJson.ClientEmail,
+		ClientId:                settingConfig.FcmJson.ClientId,
+		AuthUri:                 settingConfig.FcmJson.AuthUri,
+		TokenUri:                settingConfig.FcmJson.TokenUri,
+		AuthProviderX509CertUrl: settingConfig.FcmJson.AuthProviderX509CertUrl,
+		ClientX509CertUrl:       settingConfig.FcmJson.ClientX509CertUrl,
+		UniverseDomain:          settingConfig.FcmJson.UniverseDomain,
+	}
+
+	fcmSetJson, err := json.Marshal(fcmSet)
+	if err != nil {
+		log.Println("Failed to marshal FCM credentials:", err)
 		return
 	}
 
 	client, err := fcm.NewClient(
 		ctx,
-		fcm.WithCredentialsFile("../thechannel-firebase-adminsdk.json"),
+		fcm.WithCredentialsJSON(fcmSetJson),
 	)
 	if err != nil {
 		log.Println("Failed to create FCM client:", err)
@@ -177,10 +214,15 @@ func pushFcmMessage(m Message) {
 			Data:   data,
 		}
 
-		_, err := client.SendMulticast(ctx, message)
+		r, err := client.SendMulticast(ctx, message)
 		if err != nil {
 			log.Println("Failed to send push notification:", err)
 			return
 		}
+		log.Printf("Push notification sent to %d tokens: \n", r.SuccessCount)
+		log.Printf("Failed to send to %d tokens: \n", r.FailureCount)
+		// for _, resp := range r.Responses {
+		// 	log.Printf("Response: %s, Error: %v\n", resp.MessageID, resp.Error)
+		// }
 	}
 }
