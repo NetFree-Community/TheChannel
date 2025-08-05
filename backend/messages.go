@@ -169,6 +169,7 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ch := pubsub.Channel()
 	for {
 		select {
 		case <-clientCtx.Done():
@@ -181,7 +182,7 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 			}
 			flusher.Flush()
 
-		case msg, ok := <-pubsub.Channel():
+		case msg, ok := <-ch:
 			if !ok {
 				return
 			}
