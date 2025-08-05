@@ -19,6 +19,5 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 COPY --from=builder2 /app/the-channel . 
 COPY --from=builder1 /app/dist/channel/browser /usr/share/ng
-#COPY ./thechannel-firebase-adminsdk.json  .
 RUN chmod +x the-channel
 CMD ["./the-channel"]
