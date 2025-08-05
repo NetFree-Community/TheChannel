@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/icza/dyno"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -253,7 +254,8 @@ func funcGetMessageRange(ctx context.Context, start, stop int64, isAdmin, countV
 	}
 
 	var messages []Message
-	if err := json.Unmarshal([]byte(res.(string)), &messages); err != nil {
+	resStr, _ := dyno.GetString(res)
+	if err := json.Unmarshal([]byte(resStr), &messages); err != nil {
 		return []Message{}, err
 	}
 
@@ -283,7 +285,8 @@ func funcGetSumReactions(ctx context.Context, messageId int) (Reactions, error) 
 	}
 
 	var reactions Reactions
-	if err := json.Unmarshal([]byte(res.(string)), &reactions); err != nil {
+	resStr, _ := dyno.GetString(res)
+	if err := json.Unmarshal([]byte(resStr), &reactions); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal reactions: %v", err)
 	}
 

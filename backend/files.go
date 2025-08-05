@@ -17,6 +17,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/h2non/filetype"
+	"github.com/icza/dyno"
 	"github.com/subosito/gozaru"
 	"gopkg.in/yaml.v3"
 )
@@ -52,9 +53,9 @@ func serveFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileHash := metaData["hash"].(string)
+	fileHash, _ := dyno.GetString(metaData["hash"])
 	filePath := filepath.Join(rootUploadPath, fileHash[:2], fileHash[2:4], fileHash)
-	originalFileName := metaData["filename"].(string)
+	originalFileName, _ := dyno.GetString(metaData["filename"])
 
 	w.Header().Set("Content-Disposition", `attachment; filename*=UTF-8''`+url.QueryEscape(originalFileName))
 	http.ServeFile(w, r, filePath)
@@ -221,7 +222,7 @@ func getFavicon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileHash := metaData["hash"].(string)
+	fileHash, _ := dyno.GetString(metaData["hash"])
 	filePath := filepath.Join(rootUploadPath, fileHash[:2], fileHash[2:4], fileHash)
 
 	http.ServeFile(w, r, filePath)
