@@ -244,10 +244,10 @@ export class ChatComponent implements OnInit, OnDestroy {
       if (response) {
         if (scrollDown) {
           resetList ? this.messages = response.reverse() : this.messages.unshift(...response.reverse());
-          this.hasNewMessages = response.length > this.limit;
+          this.hasNewMessages = response.length >= this.limit;
         } else {
           resetList ? this.messages = response : this.messages.push(...response);
-          this.hasOldMessages = response.length > this.limit;
+          this.hasOldMessages = response.length >= this.limit;
         }
         this.offset = Math.min(...this.messages.map(m => m.id!));
         setTimeout(() => {
