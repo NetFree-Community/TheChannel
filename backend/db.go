@@ -477,3 +477,122 @@ func dbGetUsersAmount(ctx context.Context) (int64, error) {
 	}
 	return amount, nil
 }
+
+func getReportNextID(ctx context.Context) (int64, error) {
+	return rdb.Incr(ctx, "report:next_id").Result()
+}
+
+func dbReportMessage(ctx context.Context, report *Report) error {
+	id, err := getReportNextID(ctx)
+	if err != nil {
+		return err
+	}
+	reportKey := fmt.Sprintf("report:%d", id)
+	report.Id = id
+
+	if err := rdb.HSet(ctx, reportKey, report).Err(); err != nil {
+		return err
+	}
+
+	if err := rdb.ZAdd(ctx, "reports:list", redis.Z{Score: float64(report.CreatedAt.Unix()), Member: reportKey}).Err(); err != nil {
+		return err
+	}
+
+	if err := rdb.ZAdd(ctx, "reports:open", redis.Z{Score: float64(report.CreatedAt.Unix()), Member: reportKey}).Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var getReportsScript = redis.NewScript(`
+	local status = ARGV[1]
+	local limit = tonumber(ARGV[2])
+
+	local reportsStatusKey
+	if status == 'open' then
+		reportsStatusKey = KEYS[2]
+	elseif status == 'all' then
+		reportsStatusKey = KEYS[1]
+	elseif status == 'closed' then
+		reportsStatusKey = KEYS[3]
+	end
+
+	local reports = redis.call('ZREVRANGE', reportsStatusKey, 0, limit - 1)
+
+	local result = {}
+	for _, reportKey in ipairs(reports) do
+		local report = redis.call('HGETALL', reportKey)
+
+		local reportTable = {}
+		for i = 1, #report, 2 do
+		  local key = report[i]
+		  local value = report[i + 1]
+
+		   if key == 'messageId' then
+			 reportTable[key] = tonumber(value)
+		   elseif key == 'closed' then
+			 reportTable[key] = value == '1'
+		   elseif key == 'id' then
+			 reportTable[key] = tonumber(value)
+		   else
+		     reportTable[key] = value
+		   end
+
+		end
+		table.insert(result, reportTable)
+	end
+
+	return cjson.encode(result)
+`)
+
+func dbGetReports(ctx context.Context, status ReportStatus) (Reports, error) {
+	jsonReports, err := getReportsScript.Run(ctx, rdb, []string{"reports:list", "reports:open", "reports:closed"}, []string{string(status), "100"}).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var reports Reports
+	if jsonReports == nil || jsonReports == "{}" {
+		return reports, nil
+	}
+
+	resStr, _ := dyno.GetString(jsonReports)
+	if resStr == "" {
+		return nil, nil
+	}
+
+	if err := json.Unmarshal([]byte(resStr), &reports); err != nil {
+		return nil, err
+	}
+
+	return reports, nil
+}
+
+func dbSetReports(ctx context.Context, report *Report) error {
+	reportKey := fmt.Sprintf("report:%d", report.Id)
+	switch report.Closed {
+	case true:
+		if err := rdb.ZRem(ctx, "reports:open", reportKey).Err(); err != nil {
+			return err
+		}
+		if err := rdb.ZAdd(ctx, "reports:closed", redis.Z{Score: float64(report.UpdatedAt.Unix()), Member: reportKey}).Err(); err != nil {
+			return err
+		}
+		if err := rdb.HSet(ctx, reportKey, "closed", true, "updatedAt", report.UpdatedAt).Err(); err != nil {
+			return err
+		}
+	case false:
+		if err := rdb.ZRem(ctx, "reports:closed", reportKey).Err(); err != nil {
+			return err
+		}
+		if err := rdb.ZAdd(ctx, "reports:open", redis.Z{Score: float64(report.UpdatedAt.Unix()), Member: reportKey}).Err(); err != nil {
+			return err
+		}
+		if err := rdb.HSet(ctx, reportKey, "closed", false, "updatedAt", report.UpdatedAt).Err(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

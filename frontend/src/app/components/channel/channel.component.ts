@@ -11,9 +11,10 @@ import {
   NbSidebarModule,
 } from "@nebular/theme";
 import { InputFormComponent } from "./chat/input-form/input-form.component";
-import { AuthService, User } from "../../services/auth.service";
+import { AuthService } from "../../services/auth.service";
 import { ChannelHeaderComponent } from "./channel-header/channel-header.component";
 import { ChatComponent } from "./chat/chat.component";
+import { User } from '../../models/user.model';
 
 @Component({
   selector: 'app-channel',
@@ -70,6 +71,6 @@ export class ChannelComponent implements OnInit {
   updateInputBottomOffset() {
     let inputForm = document.getElementById('inputForm');
     let h = inputForm?.clientHeight;
-    this.renderer.setStyle(this.el.nativeElement, '--input-height', `${ h }px`, RendererStyleFlags2.DashCase);
+    this.renderer.setStyle(this.el.nativeElement, '--input-height', `${h}px`, RendererStyleFlags2.DashCase);
   }
 }

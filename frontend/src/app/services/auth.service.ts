@@ -2,14 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ResponseResult } from '../models/response-result.model';
-
-export interface User {
-  id: string;
-  username: string;
-  picture: string;
-  privileges: Record<string, boolean>;
-}
-
+import { User } from '../models/user.model';
 interface GoogleAuthValues {
   googleOauthUrl: string;
   googleOauthScope: string;

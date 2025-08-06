@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { AdminService, Setting } from '../../../services/admin.service';
+import { AdminService } from '../../../services/admin.service';
 import { NbButtonModule, NbCardModule, NbToastrService, NbIconModule, NbInputModule } from "@nebular/theme";
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Setting } from '../../../models/setting.model';
 
 @Component({
   selector: 'app-settings',

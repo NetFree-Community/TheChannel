@@ -13,9 +13,10 @@ import {
 import { MessageComponent } from "./message/message.component";
 import { firstValueFrom, interval } from 'rxjs';
 import { ChatMessage, ChatService } from '../../../services/chat.service';
-import { AuthService, User } from '../../../services/auth.service';
+import { AuthService } from '../../../services/auth.service';
 import { ActivatedRoute } from '@angular/router';
 import { NotificationsService } from '../../../services/notifications.service';
+import { User } from '../../../models/user.model';
 
 @Component({
   selector: 'app-chat',

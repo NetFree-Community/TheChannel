@@ -5,6 +5,7 @@ import { SettingsComponent } from "./settings/settings.component";
 import { UsersComponent } from "./users/users.component";
 import { PrivilegDashboardComponent } from "./privileg-dashboard/privileg-dashboard.component";
 import { ChannelInfoFormComponent } from "../channel/channel-info-form/channel-info-form.component";
+import { ReportsComponent } from "./reports/reports.component";
 
 @Component({
   selector: 'admin-dashboard',
@@ -18,6 +19,7 @@ import { ChannelInfoFormComponent } from "../channel/channel-info-form/channel-i
     UsersComponent,
     PrivilegDashboardComponent,
     ChannelInfoFormComponent,
+    ReportsComponent
   ],
   templateUrl: './admin-panel.component.html',
   styleUrls: ['./admin-panel.component.scss']
@@ -28,6 +30,9 @@ export class AdminPanelComponent implements OnInit {
   readonly settings = "settings";
   readonly users = "users";
   readonly emojis = "emojis";
+  readonly openReports = "open-reports";
+  readonly closedReports = "closed-reports";
+  readonly allReports = "all-reports";
 
   selectedMenuItem = this.info;
 
@@ -49,11 +54,29 @@ export class AdminPanelComponent implements OnInit {
       title: "אימוג'ים",
       icon: 'smiling-face-outline',
     },
+    {
+      title: 'דיווחים',
+      icon: 'alert-triangle-outline',
+      children: [
+        {
+          title: 'פתוחים',
+          icon: 'alert-triangle-outline',
+        },
+        {
+          title: 'סגורים',
+          icon: 'checkmark-circle-outline',
+        },
+        {
+          title: 'כל הדיווחים',
+          icon: 'list-outline',
+        }
+      ],
+    }
   ];
 
   constructor(
     private menuService: NbMenuService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.handleMenuItemClick()
@@ -77,6 +100,14 @@ export class AdminPanelComponent implements OnInit {
         case 'smiling-face-outline':
           this.selectedMenuItem = this.emojis;
           break;
+        case 'alert-triangle-outline':
+          this.selectedMenuItem = this.openReports;
+          break;
+        case 'checkmark-circle-outline':
+          this.selectedMenuItem = this.closedReports;
+          break;
+        case 'list-outline':
+          this.selectedMenuItem = this.allReports;
       }
     });
   }

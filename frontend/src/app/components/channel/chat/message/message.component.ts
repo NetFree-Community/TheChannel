@@ -17,6 +17,7 @@ import { MessageTimePipe } from '../../../../pipes/message-time.pipe';
 import { ChatMessage, ChatService } from '../../../../services/chat.service';
 import { AdminService } from '../../../../services/admin.service';
 import { AuthService } from '../../../../services/auth.service';
+import { ReportComponent } from './report/report.component';
 @Component({
   selector: 'app-message',
   imports: [
@@ -45,9 +46,6 @@ export class MessageComponent implements OnInit, AfterViewInit {
   @Input()
   message: ChatMessage | undefined;
 
-  @Input()
-  userPrivilege: Record<string, boolean> | undefined = {};
-
   @ViewChild(NgbPopover) popover!: NgbPopover;
   @ViewChild('media') mediaContainer!: ElementRef;
 
@@ -56,7 +54,7 @@ export class MessageComponent implements OnInit, AfterViewInit {
     private dialogService: NbDialogService,
     protected chatService: ChatService,
     private toastrService: NbToastrService,
-    private _authService: AuthService,
+    public _authService: AuthService,
   ) { }
 
   reacts: string[] = [];
@@ -119,6 +117,11 @@ export class MessageComponent implements OnInit, AfterViewInit {
     const confirm = window.confirm('האם אתה בטוח שברצונך למחוק את ההודעה?');
     if (confirm)
       this._adminService.deleteMessage(message.id).subscribe();
+  }
+
+  openReportDialog(messageId?: number) {
+    if (!messageId) return;
+    this.dialogService.open(ReportComponent, { closeOnBackdropClick: true, context: { messageId } });
   }
 
   viewLargeImage(event: MouseEvent) {

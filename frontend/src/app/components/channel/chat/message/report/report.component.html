@@ -1,0 +1,14 @@
+<nb-card>
+    <nb-card-header>דיווח על הודעה #{{ messageId }}</nb-card-header>
+    <nb-card-body class="d-flex flex-column gap-3">
+        <strong>
+            שימו לב!<br>
+            חובה לציין את הסיבה לדיווח בכדי שנוכל לטפל בדיווח.
+        </strong>
+        <input [(ngModel)]="reason" nbInput fullWidth placeholder="פרט במספר מילים את הבעיה בהודעה זו..." />
+    </nb-card-body>
+    <nb-card-footer class="d-flex justify-content-end gap-2">
+        <button nbButton status="primary" (click)="dialogRef.close()">ביטול</button>
+        <button nbButton status="danger" (click)="reportMessage()" [disabled]="!reason">דווח</button>
+    </nb-card-footer>
+</nb-card>

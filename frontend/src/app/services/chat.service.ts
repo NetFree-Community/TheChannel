@@ -78,6 +78,10 @@ export class ChatService {
     return this.emojis;
   }
 
+  reportMessage(messageId: number, reason: string): Promise<ResponseResult> {
+    return firstValueFrom(this.http.post<ResponseResult>('/api/messages/report', { messageId, reason }));
+  }
+
   sseListener(): EventSource {
     if (this.eventSource) {
       this.eventSource.close();

@@ -7,19 +7,28 @@
 
         <div class="flex-grow-1 overflow-auto">
             @switch (selectedMenuItem) {
-                @case (info) {
-                    <app-channel-info-form></app-channel-info-form>
-                }
-                @case (settings) {
-                    <app-settings></app-settings>
-                }
-                @case (users) {
-                    <app-users></app-users>
-                    <app-privileg-dashboard></app-privileg-dashboard>
-                }
-                @case (emojis) {
-                    <app-emojis></app-emojis>
-                }
+            @case (info) {
+            <app-channel-info-form></app-channel-info-form>
+            }
+            @case (settings) {
+            <app-settings></app-settings>
+            }
+            @case (users) {
+            <app-users></app-users>
+            <app-privileg-dashboard></app-privileg-dashboard>
+            }
+            @case (emojis) {
+            <app-emojis></app-emojis>
+            }
+            @case (openReports) {
+            <app-reports [status]="'open'"></app-reports>
+            }
+            @case (closedReports) {
+            <app-reports [status]="'closed'"></app-reports>
+            }
+            @case (allReports) {
+            <app-reports [status]="'all'"></app-reports>
+            }
             }
         </div>
     </nb-card-body>

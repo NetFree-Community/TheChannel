@@ -1,0 +1,33 @@
+<nb-card>
+    <nb-card-header>
+        טיפול בדיווחים שהתקבלו ממשתמשים
+    </nb-card-header>
+    <nb-card-body>
+        <div *ngIf="!reports">{{status === 'open' ? 'אין דיווחים פתוחים' : 'אין דיווחים מטופלים'}}</div>
+        <div *ngFor="let report of reports" class="d-flex flex-column gap-2 mb-2 border border-secondary rounded p-2">
+            <div>
+                <strong>
+                    התקבל - {{report.createdAt | messageTime}}
+                </strong>
+                <br>
+                <strong>דווח על ידי:</strong> {{report.reporterName}}
+                <br>
+                <strong>דוא"ל:</strong> {{report.reportedEmail}}
+                <br>
+                <strong>סיבת דיווח:</strong><br> {{report.reason}}
+                <br>
+                @if (report.closed) {
+                <strong>טופל {{report.updatedAt | messageTime}}</strong>
+                }
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button nbButton size="small" status="success" (click)="toggleReport(report)">{{ report.closed ?
+                    'פתח דיווח מחדש' : 'סגור דיווח' }}</button>
+                <button nbButton size="small" status="info" (click)="viewReport(report.messageId)">צפה בהודעה</button>
+            </div>
+        </div>
+    </nb-card-body>
+    <!-- <nb-card-footer>
+        <button nbButton status="primary" status="danger">איפוס כל הדיווחים</button>
+    </nb-card-footer> -->
+</nb-card>

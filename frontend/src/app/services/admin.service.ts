@@ -3,6 +3,8 @@ import { Injectable } from '@angular/core';
 import { firstValueFrom, Observable } from 'rxjs';
 import { ChatFile, ChatMessage } from './chat.service';
 import { ResponseResult } from '../models/response-result.model';
+import { Setting } from '../models/setting.model';
+import { Reports, Report } from '../models/report.model';
 
 export interface PrivilegeUser {
   id?: string;
@@ -10,11 +12,6 @@ export interface PrivilegeUser {
   email: string;
   publicName: string;
   privileges: Record<string, boolean>;
-}
-
-export interface Setting {
-  key: string
-  value: string
 }
 
 @Injectable({
@@ -73,5 +70,17 @@ export class AdminService {
 
   setSettings(settings: Setting[]): Promise<ResponseResult> {
     return firstValueFrom(this.http.post<ResponseResult>('/api/admin/settings/set', settings));
+  }
+
+  getReports(status: string): Promise<Reports> {
+    return firstValueFrom(this.http.get<Reports>('/api/admin/reports/get', {
+      params: {
+        status: status
+      }
+    }));
+  }
+
+  setReports(report: Report): Promise<ResponseResult> {
+    return firstValueFrom(this.http.post<ResponseResult>('/api/admin/reports/set', report));
   }
 }

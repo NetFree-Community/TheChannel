@@ -13,10 +13,11 @@ import { filter } from "rxjs";
 import Viewer from 'viewerjs';
 import { Router } from '@angular/router';
 import { Title } from '@angular/platform-browser';
-import { AuthService, User } from '../../../services/auth.service';
+import { AuthService } from '../../../services/auth.service';
 import { ChatService } from '../../../services/chat.service';
 import { NotificationsService } from '../../../services/notifications.service';
 import { AdminPanelComponent } from "../../admin/admin-panel.component";
+import { User } from '../../../models/user.model';
 
 @Component({
   selector: 'app-channel-header',
