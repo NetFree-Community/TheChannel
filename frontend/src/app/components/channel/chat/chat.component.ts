@@ -15,6 +15,7 @@ import { firstValueFrom, interval } from 'rxjs';
 import { ChatMessage, ChatService } from '../../../services/chat.service';
 import { AuthService, User } from '../../../services/auth.service';
 import { ActivatedRoute } from '@angular/router';
+import { NotificationsService } from '../../../services/notifications.service';
 
 @Component({
   selector: 'app-chat',
@@ -52,6 +53,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   constructor(
     private chatService: ChatService,
     private _authService: AuthService,
+    private notificationService: NotificationsService,
     private zone: NgZone,
     private router: ActivatedRoute,
   ) { }
@@ -101,7 +103,10 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.initializeMessageListener();
     this.keepAliveSSE();
 
-    this._authService.loadUserInfo().then(res => this.userInfo = res);
+    this._authService.loadUserInfo().then((res) => {
+      this.userInfo = res;
+      this.notificationService.init();
+    });
 
     this.loadMessages().then(() => {
       this.scrollToBottom(false);
