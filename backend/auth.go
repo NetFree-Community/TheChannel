@@ -62,11 +62,13 @@ func getGoogleAuthValues(w http.ResponseWriter, r *http.Request) {
 func login(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	defer r.Body.Close()
 	var auth Auth
 
 	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
 		go saveLoginFailedLog("Decode", err)
 		http.Error(w, "error", http.StatusBadRequest)
+		return
 	}
 
 	if auth.Code == "" {
