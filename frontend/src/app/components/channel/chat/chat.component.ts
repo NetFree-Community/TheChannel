@@ -200,7 +200,6 @@ export class ChatComponent implements OnInit, OnDestroy {
 
   async loadMessages(scrollDown?: boolean, messageId?: number) {
     if (this.isLoading || (scrollDown && !this.hasNewMessages) || (!scrollDown && !this.hasOldMessages)) return;
-    console.log('Loading messages', { scrollDown, messageId });
 
     let startId: number;
     let resetList: boolean = false;
