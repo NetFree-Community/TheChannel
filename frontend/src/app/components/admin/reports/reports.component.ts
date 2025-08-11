@@ -35,9 +35,10 @@ export class ReportsComponent implements OnInit {
 
   toggleReport(report: Report) {
     report.closed = !report.closed;
+    report.updatedAt = new Date();
     this.adminService.setReports(report).then(() => {
       this.toastrService.success('', report.closed ? 'דיווח נסגר בהצלחה' : 'דיווח נפתח מחדש');
-      this.reports = this.reports.filter(r => r.id !== report.id);
+      this.status === 'all' ? this.reports[this.reports.findIndex(r => r.id === report.id)] = report : this.reports = this.reports.filter(r => r.id !== report.id);
     }).catch(() => this.toastrService.danger('', ''));
   }
 
