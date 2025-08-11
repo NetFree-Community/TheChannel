@@ -45,7 +45,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	store.SetMaxAge(60 * 60 * 24)
+	store.SetMaxAge(60 * 60 * 24 * 30)
 	store.Options.HttpOnly = true
 	defer store.Close()
 
