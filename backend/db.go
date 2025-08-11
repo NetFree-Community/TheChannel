@@ -579,9 +579,6 @@ func dbSetReports(ctx context.Context, report *Report) error {
 		if err := rdb.ZAdd(ctx, "reports:closed", redis.Z{Score: float64(report.UpdatedAt.Unix()), Member: reportKey}).Err(); err != nil {
 			return err
 		}
-		if err := rdb.HSet(ctx, reportKey, "closed", true, "updatedAt", report.UpdatedAt).Err(); err != nil {
-			return err
-		}
 	case false:
 		if err := rdb.ZRem(ctx, "reports:closed", reportKey).Err(); err != nil {
 			return err
@@ -589,9 +586,10 @@ func dbSetReports(ctx context.Context, report *Report) error {
 		if err := rdb.ZAdd(ctx, "reports:open", redis.Z{Score: float64(report.UpdatedAt.Unix()), Member: reportKey}).Err(); err != nil {
 			return err
 		}
-		if err := rdb.HSet(ctx, reportKey, "closed", false, "updatedAt", report.UpdatedAt).Err(); err != nil {
-			return err
-		}
+	}
+
+	if err := rdb.HSet(ctx, reportKey, "closed", report.Closed, "updatedAt", report.UpdatedAt).Err(); err != nil {
+		return err
 	}
 
 	return nil
