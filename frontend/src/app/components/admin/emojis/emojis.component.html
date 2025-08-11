@@ -11,7 +11,7 @@
                 <p>אין אימוג'ים מאופשרים כרגע.</p>
                 } @else if (emojis) {
                 @for (item of emojis; track $index) {
-                <button nbButton size="small" (click)="removeEmoji($index)" class="me-2 mb-2">
+                <button nbButton size="small" (click)="removeEmoji($index)" class="me-2 mb-2 emoji">
                     {{item}}
                     <nb-icon icon="close"></nb-icon>
                 </button>

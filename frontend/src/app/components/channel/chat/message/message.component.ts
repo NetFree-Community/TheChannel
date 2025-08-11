@@ -168,10 +168,6 @@ export class MessageComponent implements OnInit, AfterViewInit {
     }
   }
 
-  hasReactions(reactions: any): boolean {
-    return reactions && Object.keys(reactions).length > 0;
-  }
-
   getPopoverPlacement(): string {
     const element = document.querySelector(`[data-message-id="${this.message?.id}"]`) as HTMLElement;
     if (element) {
