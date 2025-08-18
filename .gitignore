@@ -9,3 +9,4 @@ channel_data/*
 caddy_config/
 data/kvrocks.sock
 .env
+.ds_store

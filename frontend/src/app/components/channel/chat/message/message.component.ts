@@ -60,12 +60,36 @@ export class MessageComponent implements OnInit, AfterViewInit {
 
   reacts: string[] = [];
   private closeEmojiMenuTimeout: any;
+  private isScrolling = false;
+  private hoverTimer: any;
+  private readonly minimalHoverMs = 200;
 
   ngOnInit() {
     this.chatService.getEmojisList()
       .then(emojis => this.reacts = emojis)
       .catch(() => this.toastrService.danger('', 'שגיאה בהגדרת אימוגים'));
+
+    window.addEventListener('scroll', this.onScroll, true);
   }
+
+    ngOnDestroy() {
+    window.removeEventListener('scroll', this.onScroll, true);
+    this.cancelEmojiMenuClose();
+    this.clearHoverTimer();
+  }
+  
+  private scrollTimeout: any;
+  
+  onScroll = () => {
+    this.isScrolling = true;
+    if (this.scrollTimeout) {
+      clearTimeout(this.scrollTimeout);
+    }
+    this.scrollTimeout = setTimeout(() => {
+      this.isScrolling = false;
+      this.scrollTimeout = undefined;
+    }, 150)
+  };
 
   ngAfterViewInit(): void {
     setTimeout(() => {
@@ -156,23 +180,38 @@ export class MessageComponent implements OnInit, AfterViewInit {
   }
 
   showEmojiMenu() {
-    if (!this._authService.userInfo) return;
-    this.cancelEmojiMenuClose();
-    this.popover.open()
+    if (!this._authService.userInfo || this.isScrolling) return;
+    this.clearHoverTimer();
+    this.hoverTimer = setTimeout(() => {
+      if (!this.isScrolling) {
+        this.cancelEmojiMenuClose();
+        this.popover.open();
+      }
+    }, this.minimalHoverMs);
   }
 
   scheduleEmojiMenuClose() {
+    this.clearHoverTimer();
     this.closeEmojiMenuTimeout = setTimeout(() => {
       this.popover.close();
     }, 150);
   }
 
   cancelEmojiMenuClose() {
+    this.clearHoverTimer();
     if (this.closeEmojiMenuTimeout) {
       clearTimeout(this.closeEmojiMenuTimeout);
       this.closeEmojiMenuTimeout = undefined;
     }
   }
+
+  clearHoverTimer() {
+    if (this.hoverTimer) {
+      clearTimeout(this.hoverTimer);
+      this.hoverTimer = undefined;
+    }
+  }
+
 
   isEdited(message: ChatMessage): boolean {
     if (!message.last_edit) return false;
