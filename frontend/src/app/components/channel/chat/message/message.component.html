@@ -34,8 +34,8 @@
                 <nb-icon icon="link-2"></nb-icon>
             </button>
         </div>
-        <div [ngbPopover]="emojiMenu" [disablePopover]="!reacts.length" [triggers]="'manual'"
-            [popoverContext]="{message}" [autoClose]="'outside'" [placement]="getPopoverPlacement()"
+        <div [ngbPopover]="emojiMenu" [placement]="['top', 'bottom']" [disablePopover]="!reacts.length"
+            [triggers]="'manual'" [popoverContext]="{message}" [autoClose]="'outside'"
             [popoverClass]="'emoji-picker-popover'" (mouseenter)="showEmojiMenu()"
             (mouseleave)="scheduleEmojiMenuClose()" #p="ngbPopover">
             <div class="d-flex flex-column bg-light rounded-4 border fs-5 f lh-base message-card"
@@ -68,10 +68,8 @@
 
 <ng-template #emojiMenu let-message="message">
     <div class="emoji-picker-menu" (mouseenter)="cancelEmojiMenuClose()" (mouseleave)="scheduleEmojiMenuClose()">
-        <div class="emoji-grid">
-            <button *ngFor="let react of reacts" class="emoji-option emoji" (click)="setReact(message.id, react)">
-                {{ react }}
-            </button>
-        </div>
+        <button *ngFor="let react of reacts" class="emoji-option emoji" (click)="setReact(message.id, react)">
+            {{ react }}
+        </button>
     </div>
 </ng-template>

@@ -18,6 +18,7 @@ import { ChatMessage, ChatService } from '../../../../services/chat.service';
 import { AdminService } from '../../../../services/admin.service';
 import { AuthService } from '../../../../services/auth.service';
 import { ReportComponent } from './report/report.component';
+import { ɵEmptyOutletComponent } from "../../../../../../node_modules/@angular/router/router_module.d-Bx9ArA6K";
 @Component({
   selector: 'app-message',
   imports: [
@@ -166,21 +167,6 @@ export class MessageComponent implements OnInit, AfterViewInit {
       clearTimeout(this.closeEmojiMenuTimeout);
       this.closeEmojiMenuTimeout = undefined;
     }
-  }
-
-  getPopoverPlacement(): string {
-    const element = document.querySelector(`[data-message-id="${this.message?.id}"]`) as HTMLElement;
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-
-      if (spaceBelow < 150 && spaceAbove > 150) {
-        return 'top';
-      }
-    }
-
-    return 'bottom';
   }
 
   isEdited(message: ChatMessage): boolean {

@@ -87,61 +87,38 @@ nb-icon {
 
 ::ng-deep {
   .emoji-picker-popover {
-    .popover {
-      max-width: none !important;
-      border: none !important;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-    }
-
     .popover-body {
       padding: 6px !important;
-      background: #ffffff !important;
-      border: 1px solid #ddd !important;
-      border-radius: 8px !important;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
     }
+  }
 
-    .popover-arrow::before {
-      border-top-color: #ddd !important;
-    }
-
-    .popover-arrow::after {
-      border-top-color: #ffffff !important;
-    }
+  ngb-popover-window {
+    max-width: 100% !important;
+    //width: 50%;
   }
 }
 
 .emoji-picker-menu {
-  background: #ffffff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  min-width: 140px;
-  max-width: 200px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
 
-  .emoji-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 2px;
+  button.emoji-option {
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    padding: 4px;
+    transition: background-color 0.1s ease;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
 
-    .emoji-option {
-      border: none;
-      background: transparent;
-      border-radius: 4px;
-      padding: 4px;
-      transition: background-color 0.1s ease;
-      font-size: 16px;
-      line-height: 1;
-      cursor: pointer;
+    &:hover {
+      background: #f0f0f0;
+    }
 
-      &:hover {
-        background: #f0f0f0;
-      }
-
-      &:active {
-        background: #e0e0e0;
-      }
+    &:active {
+      background: #e0e0e0;
     }
   }
 }
