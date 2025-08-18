@@ -3,7 +3,6 @@
     <nb-list class="flex-column-reverse">
 
         <nb-list-item *ngFor="let message of messages" class="d-flex flex-column align-items-start">
-            <app-message class="overflow-auto" [message]="message" [id]="message.id"></app-message>
             <!-- last read indicator -->
             @if (message.id === lastReadMessageId + 1) {
             <div class="last-read-indicator">
@@ -12,7 +11,7 @@
                 <div class="line"></div>
             </div>
             }
-
+            <app-message class="overflow-auto" [message]="message" [id]="message.id"></app-message>
         </nb-list-item>
 
         <nb-list-item *ngIf="messages.length === 0" class="flex-fill align-self-center">
