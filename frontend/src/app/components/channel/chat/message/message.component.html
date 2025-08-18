@@ -67,7 +67,7 @@
 </div>
 
 <ng-template #emojiMenu let-message="message">
-    <div class="emoji-picker-menu" (mouseenter)="cancelEmojiMenuClose()">
+    <div class="emoji-picker-menu" (mouseenter)="cancelEmojiMenuClose()" (mouseleave)="scheduleEmojiMenuClose()">
         <button *ngFor="let react of reacts" class="emoji-option emoji" (click)="setReact(message.id, react)">
             {{ react }}
         </button>
