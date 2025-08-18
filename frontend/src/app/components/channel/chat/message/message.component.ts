@@ -147,11 +147,16 @@ export class MessageComponent implements OnInit, AfterViewInit {
   }
 
   setReact(id: number | undefined, react: string) {
+    if (!this._authService.userInfo) {
+      this.toastrService.danger('', "יש להתחבר לחשבון בכדי להוסיף אימוג'ים");
+      return;
+    }
     if (id && react)
-      this.chatService.setReact(id, react).catch(() => this.toastrService.danger('', "יש להתחבר לחשבון בכדי להוסיף אימוג'ים"));
+      this.chatService.setReact(id, react).catch(() => this.toastrService.danger('', "הייתה בעיה, נסו שנית."));
   }
 
   showEmojiMenu() {
+    if (!this._authService.userInfo) return;
     this.cancelEmojiMenuClose();
     this.popover.open()
   }
