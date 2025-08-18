@@ -1,9 +1,18 @@
 <div nbInfiniteList (scroll)="onListScroll()" [threshold]="300" [throttleTime]="1000" (topThreshold)="loadMessages()"
-    (bottomThreshold)="loadMessages(true)" [listenWindowScroll]="true">
+    (bottomThreshold)="loadMessages({ scrollDown: true })" [listenWindowScroll]="true">
     <nb-list class="flex-column-reverse">
 
-        <nb-list-item *ngFor="let message of messages">
+        <nb-list-item *ngFor="let message of messages" class="d-flex flex-column align-items-start">
             <app-message class="overflow-auto" [message]="message" [id]="message.id"></app-message>
+            <!-- last read indicator -->
+            @if (message.id === lastReadMessageId + 1) {
+            <div class="last-read-indicator">
+                <div class="line"></div>
+                <div class="last-read-indicator-text">לא נקראו</div>
+                <div class="line"></div>
+            </div>
+            }
+
         </nb-list-item>
 
         <nb-list-item *ngIf="messages.length === 0" class="flex-fill align-self-center">

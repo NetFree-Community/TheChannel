@@ -18,3 +18,24 @@ nb-list-item:first-child {
   left: calc(30px + var(--ad-width, 0px));
   z-index: 1001;
 }
+
+.last-read-indicator {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  gap: 8px;
+  align-items: center;
+  padding-top: 2rem;
+}
+
+.last-read-indicator-text {
+  color: #6a6fff !important;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.line {
+  height: 1px;
+  width: 100%;
+  background-color: #6a6fff;
+}
