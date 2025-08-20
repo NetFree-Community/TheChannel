@@ -18,7 +18,6 @@ import { ChatMessage, ChatService } from '../../../../services/chat.service';
 import { AdminService } from '../../../../services/admin.service';
 import { AuthService } from '../../../../services/auth.service';
 import { ReportComponent } from './report/report.component';
-import { ɵEmptyOutletComponent } from "../../../../../../node_modules/@angular/router/router_module.d-Bx9ArA6K";
 @Component({
   selector: 'app-message',
   imports: [
@@ -39,9 +38,6 @@ import { ɵEmptyOutletComponent } from "../../../../../../node_modules/@angular/
 })
 
 export class MessageComponent implements OnInit, AfterViewInit {
-
-  private v!: Viewer;
-
   protected readonly NbPosition = NbPosition;
 
   @Input()
@@ -72,14 +68,14 @@ export class MessageComponent implements OnInit, AfterViewInit {
     window.addEventListener('scroll', this.onScroll, true);
   }
 
-    ngOnDestroy() {
+  ngOnDestroy() {
     window.removeEventListener('scroll', this.onScroll, true);
     this.cancelEmojiMenuClose();
     this.clearHoverTimer();
   }
-  
+
   private scrollTimeout: any;
-  
+
   onScroll = () => {
     this.isScrolling = true;
     if (this.scrollTimeout) {
@@ -158,15 +154,17 @@ export class MessageComponent implements OnInit, AfterViewInit {
         this.dialogService.open(YoutubePlayerComponent, { closeOnBackdropClick: true, context: { videoId: youtubeId } })
         return;
       }
-      if (!this.v) {
-        this.v = new Viewer(target, {
-          toolbar: false,
-          transition: true,
-          navbar: false,
-          title: false
-        });
-      }
-      this.v.show();
+
+      let v: Viewer;
+      console.log(target);
+
+      v = new Viewer(target, {
+        toolbar: false,
+        transition: true,
+        navbar: false,
+        title: false
+      });
+      v.show();
     }
   }
 
