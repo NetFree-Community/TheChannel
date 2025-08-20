@@ -39,6 +39,7 @@ func ifRequireAuth(next http.Handler) http.Handler {
 func main() {
 	gob.Register(Session{})
 	initializePrivilegeUsers()
+	go statLogger()
 
 	var err error
 	store, err = redistore.NewRediStore(10, redisType, redisAddr, "", redisPass, []byte(secretKey))
@@ -90,7 +91,7 @@ func main() {
 				protected.Get("/delete-message/{id}", protectedWithPrivilege(Writer, deleteMessage))
 				protected.Post("/upload", protectedWithPrivilege(Writer, uploadFile))
 				protected.Post("/edit-channel-info", protectedWithPrivilege(Moderator, editChannelInfo))
-				protected.Get("/users-amount", protectedWithPrivilege(Moderator, getUsersAmount))
+				protected.Get("/statistics", protectedWithPrivilege(Moderator, getStatistics))
 				protected.Post("/set-emojis", protectedWithPrivilege(Moderator, setEmojis))
 
 				protected.Get("/privilegs-users/get-list", protectedWithPrivilege(Admin, getPrivilegeUsersList))

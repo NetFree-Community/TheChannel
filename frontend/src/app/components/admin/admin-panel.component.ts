@@ -2,10 +2,10 @@ import { Component, OnInit } from "@angular/core";
 import { NbCardModule, NbLayoutModule, NbMenuItem, NbMenuModule, NbMenuService, NbSidebarModule } from "@nebular/theme";
 import { EmojisComponent } from "./emojis/emojis.component";
 import { SettingsComponent } from "./settings/settings.component";
-import { UsersComponent } from "./users/users.component";
 import { PrivilegDashboardComponent } from "./privileg-dashboard/privileg-dashboard.component";
 import { ChannelInfoFormComponent } from "../channel/channel-info-form/channel-info-form.component";
 import { ReportsComponent } from "./reports/reports.component";
+import { StatisticsComponent } from "./statistics/statistics.component";
 
 @Component({
   selector: 'admin-dashboard',
@@ -16,11 +16,11 @@ import { ReportsComponent } from "./reports/reports.component";
     NbCardModule,
     EmojisComponent,
     SettingsComponent,
-    UsersComponent,
     PrivilegDashboardComponent,
     ChannelInfoFormComponent,
-    ReportsComponent
-  ],
+    ReportsComponent,
+    StatisticsComponent
+],
   templateUrl: './admin-panel.component.html',
   styleUrls: ['./admin-panel.component.scss']
 })
@@ -33,6 +33,7 @@ export class AdminPanelComponent implements OnInit {
   readonly openReports = "open-reports";
   readonly closedReports = "closed-reports";
   readonly allReports = "all-reports";
+  readonly statistics = "statistics";
 
   selectedMenuItem = this.info;
 
@@ -49,6 +50,10 @@ export class AdminPanelComponent implements OnInit {
     {
       title: 'הרשאות',
       icon: 'shield-outline',
+    },
+    {
+      title: 'סטטיסטיקות',
+      icon: 'bar-chart-outline',
     },
     {
       title: "אימוג'ים",
@@ -108,6 +113,10 @@ export class AdminPanelComponent implements OnInit {
           break;
         case 'list-outline':
           this.selectedMenuItem = this.allReports;
+          break;
+        case 'bar-chart-outline':
+          this.selectedMenuItem = this.statistics;
+          break;
       }
     });
   }

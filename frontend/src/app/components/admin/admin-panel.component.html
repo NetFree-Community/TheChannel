@@ -14,7 +14,6 @@
             <app-settings></app-settings>
             }
             @case (users) {
-            <app-users></app-users>
             <app-privileg-dashboard></app-privileg-dashboard>
             }
             @case (emojis) {
@@ -28,6 +27,9 @@
             }
             @case (allReports) {
             <app-reports [status]="'all'"></app-reports>
+            }
+            @case (statistics) {
+            <app-statistics></app-statistics>
             }
             }
         </div>

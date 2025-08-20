@@ -594,3 +594,34 @@ func dbSetReports(ctx context.Context, report *Report) error {
 
 	return nil
 }
+
+func dbSavePeakSSEConnections(peak *PeakSSEConnections) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	rdb.HSet(ctx, "peak_sse_connections", "value", peak.Value, "timestamp", peak.Timestamp.Unix())
+}
+
+func dbGetPeakSSEConnections(ctx context.Context) (*PeakSSEConnections, error) {
+	p, err := rdb.HGetAll(ctx, "peak_sse_connections").Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var peak PeakSSEConnections
+	vel, _ := dyno.GetInteger(p["value"])
+	timestamp, _ := dyno.GetInteger(p["timestamp"])
+
+	peak.Value = vel
+	peak.Timestamp = time.Unix(timestamp, 0)
+
+	return &peak, nil
+}
+
+func dbSaveSSEStatistics(amount int64) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	key := fmt.Sprintf("sse_statistics:%d:%d", time.Now().Month(), time.Now().Year())
+
+	rdb.ZAdd(ctx, key, redis.Z{Score: float64(time.Now().Unix()), Member: amount})
+}

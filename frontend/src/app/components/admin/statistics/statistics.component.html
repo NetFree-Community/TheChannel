@@ -1,0 +1,10 @@
+<nb-card>
+    <nb-card-body>
+        סך הכל משתמשים שהזדהו במערכת: <strong>{{statistics?.usersAmount}}</strong>
+        <br />
+        סך הכל משתמשים מחוברים כעת למערכת: <strong>{{statistics?.connectedUsersAmount}}</strong>
+        <br />
+        שיא חיבורים למערכת היה ב: <strong>{{statistics?.peakSSEConnections?.timestamp | messageTime }}</strong> ועמד על
+        <strong>{{statistics?.peakSSEConnections?.value}}</strong> משתמשים.
+    </nb-card-body>
+</nb-card>

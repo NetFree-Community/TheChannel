@@ -5,6 +5,7 @@ import { ChatFile, ChatMessage } from './chat.service';
 import { ResponseResult } from '../models/response-result.model';
 import { Setting } from '../models/setting.model';
 import { Reports, Report } from '../models/report.model';
+import { Statistics } from '../models/statistics.model';
 
 export interface PrivilegeUser {
   id?: string;
@@ -23,13 +24,8 @@ export class AdminService {
     private http: HttpClient,
   ) { }
 
-  async getUsersAmount(): Promise<number> {
-    try {
-      const response = await firstValueFrom(this.http.get<{ amount: number }>('/api/admin/users-amount'));
-      return response.amount;
-    } catch (error) {
-      throw error;
-    }
+  getStatistics(): Promise<Statistics> {
+    return firstValueFrom(this.http.get<Statistics>('/api/admin/statistics'));
   }
 
   addMessage(message: ChatMessage): Observable<ChatMessage> {
