@@ -156,8 +156,6 @@ export class MessageComponent implements OnInit, AfterViewInit {
       }
 
       let v: Viewer;
-      console.log(target);
-
       v = new Viewer(target, {
         toolbar: false,
         transition: true,
