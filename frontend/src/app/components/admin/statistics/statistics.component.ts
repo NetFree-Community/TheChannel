@@ -4,7 +4,10 @@ import { AdminService } from '../../../services/admin.service';
 import { Statistics } from '../../../models/statistics.model';
 import { MessageTimePipe } from '../../../pipes/message-time.pipe';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartComponent, ChartConfiguration } from 'chart.js';
+import { Chart, ChartConfiguration } from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
+
+Chart.register(zoomPlugin);
 
 @Component({
   selector: 'app-statistics',
@@ -36,6 +39,23 @@ export class StatisticsComponent implements OnInit {
   }
   lineChartOptions: ChartConfiguration['options'] = {
     responsive: true,
+    plugins: {
+      zoom: {
+        zoom: {
+          wheel: {
+            enabled: true,
+          },
+          pinch: {
+            enabled: true,
+          },
+          mode: 'x',
+        },
+        pan: {
+          enabled: true,
+          mode: 'x',
+        }
+      }
+    }
   }
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
 
