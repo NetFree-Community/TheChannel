@@ -18,6 +18,8 @@ import { ChatMessage, ChatService } from '../../../../services/chat.service';
 import { AdminService } from '../../../../services/admin.service';
 import { AuthService } from '../../../../services/auth.service';
 import { ReportComponent } from './report/report.component';
+import { ScrollStateService } from '../../../../services/scroll-state.service';
+import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-message',
   imports: [
@@ -52,40 +54,29 @@ export class MessageComponent implements OnInit, AfterViewInit {
     protected chatService: ChatService,
     private toastrService: NbToastrService,
     public _authService: AuthService,
+    private scrollState: ScrollStateService,
   ) { }
 
   reacts: string[] = [];
   private closeEmojiMenuTimeout: any;
-  private isScrolling = false;
   private hoverTimer: any;
   private readonly minimalHoverMs = 200;
+  private isScrolling = false;
+  private subscScroll?: Subscription;
 
   ngOnInit() {
     this.chatService.getEmojisList()
       .then(emojis => this.reacts = emojis)
       .catch(() => this.toastrService.danger('', 'שגיאה בהגדרת אימוגים'));
 
-    window.addEventListener('scroll', this.onScroll, true);
+    this.subscScroll = this.scrollState.isScrollingObservable.subscribe(scrollState => this.isScrolling = scrollState);
   }
 
   ngOnDestroy() {
-    window.removeEventListener('scroll', this.onScroll, true);
+    this.subscScroll?.unsubscribe();
     this.cancelEmojiMenuClose();
     this.clearHoverTimer();
   }
-
-  private scrollTimeout: any;
-
-  onScroll = () => {
-    this.isScrolling = true;
-    if (this.scrollTimeout) {
-      clearTimeout(this.scrollTimeout);
-    }
-    this.scrollTimeout = setTimeout(() => {
-      this.isScrolling = false;
-      this.scrollTimeout = undefined;
-    }, 150)
-  };
 
   ngAfterViewInit(): void {
     setTimeout(() => {
