@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgIf, CommonModule } from "@angular/common";
 import {
   NbButtonModule,
@@ -37,7 +37,7 @@ import { ReportComponent } from './report/report.component';
   styleUrl: './message.component.scss'
 })
 
-export class MessageComponent implements OnInit, AfterViewInit {
+export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly NbPosition = NbPosition;
 
   @Input()
@@ -45,6 +45,9 @@ export class MessageComponent implements OnInit, AfterViewInit {
 
   @ViewChild(NgbPopover) popover!: NgbPopover;
   @ViewChild('media') mediaContainer!: ElementRef;
+
+  private viewer: Viewer | null = null;
+  private target: HTMLElement | null = null;
 
   constructor(
     private _adminService: AdminService,
@@ -72,6 +75,10 @@ export class MessageComponent implements OnInit, AfterViewInit {
     window.removeEventListener('scroll', this.onScroll, true);
     this.cancelEmojiMenuClose();
     this.clearHoverTimer();
+    if (this.viewer) {
+      this.viewer.destroy();
+      this.viewer = null;
+    }
   }
 
   private scrollTimeout: any;
@@ -155,14 +162,22 @@ export class MessageComponent implements OnInit, AfterViewInit {
         return;
       }
 
-      let v: Viewer;
-      v = new Viewer(target, {
-        toolbar: false,
-        transition: true,
-        navbar: false,
-        title: false
-      });
-      v.show();
+      if (this.target === target && this.viewer) {
+        this.viewer.show();
+      } else {
+        if (this.viewer) {
+          this.viewer.destroy();
+          this.viewer = null;
+        }
+        this.viewer = new Viewer(target, {
+          toolbar: false,
+          transition: true,
+          navbar: false,
+          title: false
+        });
+        this.target = target;
+        this.viewer.show();
+      }
     }
   }
 
