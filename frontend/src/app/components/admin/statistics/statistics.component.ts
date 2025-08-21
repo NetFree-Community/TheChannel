@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { NbCardModule } from "@nebular/theme";
+import { NbButtonModule, NbCardModule } from "@nebular/theme";
 import { AdminService } from '../../../services/admin.service';
 import { Statistics } from '../../../models/statistics.model';
 import { MessageTimePipe } from '../../../pipes/message-time.pipe';
@@ -14,7 +14,8 @@ Chart.register(zoomPlugin);
   imports: [
     NbCardModule,
     MessageTimePipe,
-    BaseChartDirective
+    BaseChartDirective,
+    NbButtonModule
   ],
   templateUrl: './statistics.component.html',
   styleUrl: './statistics.component.scss'
