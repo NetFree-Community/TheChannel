@@ -28,6 +28,7 @@ import {
   heroUnderline,
   heroXMark
 } from "@ng-icons/heroicons/outline";
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -56,6 +57,9 @@ export const appConfig: ApplicationConfig = {
       NbToastrModule.forRoot({ position: NbGlobalLogicalPosition.TOP_START }),
       NgIconsModule,
       NbSidebarModule.forRoot(),
+    ),
+    provideCharts(
+      withDefaultRegisterables()
     )
   ]
 };

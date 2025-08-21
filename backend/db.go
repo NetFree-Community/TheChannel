@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/icza/dyno"
@@ -622,6 +623,37 @@ func dbSaveSSEStatistics(amount int64) {
 	defer cancel()
 
 	key := fmt.Sprintf("sse_statistics:%d:%d", time.Now().Month(), time.Now().Year())
+	member := fmt.Sprintf("%d&%s", amount, time.Now().Format("02-01-2006 15:04"))
 
-	rdb.ZAdd(ctx, key, redis.Z{Score: float64(time.Now().Unix()), Member: amount})
+	rdb.ZAdd(ctx, key, redis.Z{Score: float64(time.Now().Unix()), Member: member})
+}
+
+func dbGetSSEStatistics(ctx context.Context, length int64) (*Statistics, error) {
+	key := fmt.Sprintf("sse_statistics:%d:%d", time.Now().Month(), time.Now().Year())
+	result := &Statistics{
+		Data:   []int64{},
+		Labels: []string{},
+	}
+
+	r, err := rdb.ZRevRangeWithScores(ctx, key, 0, length-1).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get SSE statistics: %v", err)
+	}
+
+	if len(r) == 0 {
+		return result, nil
+	}
+
+	for _, item := range r {
+		itemMember, _ := dyno.GetString(item.Member)
+		p := strings.Split(itemMember, "&")
+		if len(p) != 2 {
+			continue
+		}
+		val, _ := dyno.GetInteger(p[0])
+		result.Data = append(result.Data, val)
+		result.Labels = append(result.Labels, p[1])
+	}
+
+	return result, nil
 }

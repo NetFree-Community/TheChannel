@@ -14,8 +14,12 @@ var peakSSEConnections = &PeakSSEConnections{}
 var peakMu = sync.Mutex{}
 
 type PeakSSEConnections struct {
-	Value     int64     `json:"value"`
-	Timestamp time.Time `json:"timestamp"`
+	Value     int64     `json:"value" redis:"value"`
+	Timestamp time.Time `json:"timestamp" redis:"timestamp"`
+}
+type Statistics struct {
+	Data   []int64  `json:"date"`
+	Labels []string `json:"labels"`
 }
 
 func init() {
@@ -60,17 +64,25 @@ func getStatistics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s, err := dbGetSSEStatistics(ctx, 5000)
+	if err != nil {
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
+
 	peakMu.Lock()
 	defer peakMu.Unlock()
 
 	response := struct {
-		UsersAmount          int64               `json:"usersAmount"`
-		ConnectedUsersAmount int64               `json:"connectedUsersAmount"`
-		PeakSSEConnections   *PeakSSEConnections `json:"peakSSEConnections"`
+		UsersAmount           int64               `json:"usersAmount"`
+		ConnectedUsersAmount  int64               `json:"connectedUsersAmount"`
+		PeakSSEConnections    *PeakSSEConnections `json:"peakSSEConnections"`
+		ConnectionsStatistics Statistics          `json:"connectionsStatistics"`
 	}{
-		UsersAmount:          amount,
-		ConnectedUsersAmount: openSSEConnections.Load(),
-		PeakSSEConnections:   peakSSEConnections,
+		UsersAmount:           amount,
+		ConnectedUsersAmount:  openSSEConnections.Load(),
+		PeakSSEConnections:    peakSSEConnections,
+		ConnectionsStatistics: *s,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

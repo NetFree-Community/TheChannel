@@ -2,9 +2,13 @@
     <nb-card-body>
         סך הכל משתמשים שהזדהו במערכת: <strong>{{statistics?.usersAmount}}</strong>
         <br />
-        סך הכל משתמשים מחוברים כעת למערכת: <strong>{{statistics?.connectedUsersAmount}}</strong>
-        <br />
         שיא חיבורים למערכת היה ב: <strong>{{statistics?.peakSSEConnections?.timestamp | messageTime }}</strong> ועמד על
         <strong>{{statistics?.peakSSEConnections?.value}}</strong> משתמשים.
+        <br />
+        סך הכל משתמשים מחוברים כעת למערכת: <strong>{{statistics?.connectedUsersAmount}}</strong>
+
+        <hr />
+
+        <canvas baseChart [type]="'line'" [data]="lineChartData" [options]="lineChartOptions"></canvas>
     </nb-card-body>
 </nb-card>
