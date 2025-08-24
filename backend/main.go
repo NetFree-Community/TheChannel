@@ -39,6 +39,7 @@ func ifRequireAuth(next http.Handler) http.Handler {
 func main() {
 	gob.Register(Session{})
 	initializePrivilegeUsers()
+	go statLogger()
 
 	var err error
 	store, err = redistore.NewRediStore(10, redisType, redisAddr, "", redisPass, []byte(secretKey))

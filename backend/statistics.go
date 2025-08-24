@@ -32,20 +32,20 @@ func init() {
 	peakSSEConnections = p
 }
 
-func statLogger(c int64) {
+func statLogger() {
+	var old int64
 	for {
-		dbSaveSSEStatistics(c)
-		time.Sleep(1 * time.Minute)
+		new := openSSEConnections.Load()
+		if old != new {
+			dbSaveSSEStatistics(new)
+		}
+		old = new
+		time.Sleep(5 * time.Minute)
 	}
 }
 
 func increaseCounterSSE() {
-	old := openSSEConnections.Load()
 	new := openSSEConnections.Add(1)
-
-	if old != new {
-		go statLogger(new)
-	}
 
 	peakMu.Lock()
 	defer peakMu.Unlock()
