@@ -161,7 +161,7 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	flusher.Flush()
 
-	increaseCounterSSE()
+	go increaseCounterSSE()
 	defer decreaseCounterSSE()
 
 	pubsub := rdb.Subscribe(r.Context(), "events")

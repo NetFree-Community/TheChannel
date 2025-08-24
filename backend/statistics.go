@@ -32,21 +32,28 @@ func init() {
 	peakSSEConnections = p
 }
 
-func statLogger() {
+func statLogger(c int64) {
 	for {
-		dbSaveSSEStatistics(openSSEConnections.Load())
+		dbSaveSSEStatistics(c)
 		time.Sleep(1 * time.Minute)
 	}
 }
 
 func increaseCounterSSE() {
+	old := openSSEConnections.Load()
 	new := openSSEConnections.Add(1)
+
+	if old != new {
+		go statLogger(new)
+	}
+
+	peakMu.Lock()
+	defer peakMu.Unlock()
 	if new > peakSSEConnections.Value {
-		peakMu.Lock()
-		defer peakMu.Unlock()
 		peakSSEConnections.Value = new
 		peakSSEConnections.Timestamp = time.Now()
-		dbSavePeakSSEConnections(peakSSEConnections)
+		peak := *peakSSEConnections
+		go dbSavePeakSSEConnections(&peak)
 	}
 }
 
