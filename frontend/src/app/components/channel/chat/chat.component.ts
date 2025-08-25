@@ -17,6 +17,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ActivatedRoute } from '@angular/router';
 import { NotificationsService } from '../../../services/notifications.service';
 import { User } from '../../../models/user.model';
+import { ScrollStateService } from '../../../services/scroll-state.service';
 
 type LoadMsgOpt = {
   scrollDown?: boolean;
@@ -69,10 +70,12 @@ export class ChatComponent implements OnInit, OnDestroy {
     private notificationService: NotificationsService,
     private zone: NgZone,
     private router: ActivatedRoute,
+    private scrollState: ScrollStateService,
   ) { }
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
+    this.scrollState.setScrolling();
     this.onListScroll();
   }
 
