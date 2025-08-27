@@ -53,6 +53,11 @@ const customEmbedExtension = {
 }
 
 const renderer = new MarkedRenderer();
+
+//https://github.com/jfcere/ngx-markdown/issues/79#issuecomment-2484682034
+renderer.link = ({ href, text }) => {
+  return `<a target="_blank" href="${href}">${text}</a>`;
+}
 //renderer.paragraph = ({ tokens }) => Parser.parseInline(tokens);
 
 export const MarkdownConfig: MarkdownModuleConfig = {
