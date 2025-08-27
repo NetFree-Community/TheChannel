@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -11,7 +10,6 @@ import (
 )
 
 var openSSEConnections = atomic.Int64{}
-var totalSSEConnections = atomic.Int64{}
 var peakSSEConnections = &PeakSSEConnections{}
 var peakMu = sync.Mutex{}
 
@@ -42,14 +40,12 @@ func statLogger() {
 			dbSaveSSEStatistics(new)
 			old = new
 		}
-		log.Println("total SSE connections:", totalSSEConnections.Load())
 		time.Sleep(5 * time.Minute)
 	}
 }
 
 func increaseCounterSSE() {
 	new := openSSEConnections.Add(1)
-	totalSSEConnections.Add(1)
 
 	peakMu.Lock()
 	defer peakMu.Unlock()
