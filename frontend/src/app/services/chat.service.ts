@@ -19,6 +19,8 @@ export interface ChatMessage {
   file?: ChatFile;
   views?: number;
   reactions?: Reactions;
+  is_ads?: boolean;
+  reply_to?: number;
 }
 export type ChatResponse = ChatMessage[];
 

@@ -22,6 +22,8 @@ import {
   heroCheck,
   heroCodeBracket,
   heroItalic,
+  heroLockClosed,
+  heroLockOpen,
   heroPaperAirplane,
   heroPaperClip,
   heroQuestionMarkCircle,
@@ -46,7 +48,9 @@ export const appConfig: ApplicationConfig = {
       heroQuestionMarkCircle,
       heroPaperAirplane,
       heroCheck,
-      heroXMark
+      heroXMark,
+      heroLockClosed,
+      heroLockOpen
     }),
     importProvidersFrom(
       NbThemeModule.forRoot({ name: 'custom' }, undefined, undefined, NbLayoutDirection.RTL),

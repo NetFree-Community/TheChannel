@@ -53,6 +53,7 @@ export class InputFormComponent implements OnInit {
   attachments: Attachment[] = [];
 
   input: string = '';
+  isAds: boolean = false;
   isSending: boolean = false;
   showMarkdownPreview: boolean = false;
   hasScrollbar: boolean = false;
@@ -75,6 +76,7 @@ export class InputFormComponent implements OnInit {
     this.chatService.messageEditObservable.subscribe((message?: ChatMessage) => {
       this.message = message;
       this.input = this.message?.text || '';
+      this.isAds = this.message?.is_ads || false;
     });
   }
 
@@ -114,16 +116,16 @@ export class InputFormComponent implements OnInit {
 
             if (!uploadedFile) return;
             if (uploadedFile?.filetype === 'image') {
-              embedded = `[image-embedded#](${ uploadedFile.url })`; //`![${uploadedFile.filename}](${uploadedFile.url})`;
+              embedded = `[image-embedded#](${uploadedFile.url})`; //`![${uploadedFile.filename}](${uploadedFile.url})`;
 
             } else if (uploadedFile?.filetype === 'video') {
-              embedded = `[video-embedded#](${ uploadedFile.url })`;
+              embedded = `[video-embedded#](${uploadedFile.url})`;
 
             } else if (uploadedFile?.filetype === 'audio') {
-              embedded = `[audio-embedded#](${ uploadedFile.url })`;
+              embedded = `[audio-embedded#](${uploadedFile.url})`;
 
             } else {
-              embedded = `[${ uploadedFile.filename }](${ uploadedFile.url })`;
+              embedded = `[${uploadedFile.filename}](${uploadedFile.url})`;
             }
             this.input += (this.input ? '\n' : '') + embedded;
             attachment.embedded = embedded;
@@ -174,6 +176,7 @@ export class InputFormComponent implements OnInit {
     if (!this.message) return false;
     this.message.text = this.input;
     this.message.deleted = false;
+    this.message.is_ads = this.isAds;
     await firstValueFrom(this.adminService.editMessage(this.message));
     this.cancelUpdateMessage();
     return true;
@@ -190,6 +193,7 @@ export class InputFormComponent implements OnInit {
       type: 'md',
       text: this.input,
       file: undefined,
+      is_ads: this.isAds,
     };
 
     this.message = await firstValueFrom(this.adminService.addMessage(newMessage));

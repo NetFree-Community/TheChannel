@@ -36,7 +36,7 @@ func addNewPost(w http.ResponseWriter, r *http.Request) {
 	message.Text = body.Text
 	message.Views = 0
 	message.ReplyTo = body.ReplyTo
-	message.IsThread = body.IsThread
+	message.IsAds = body.IsAds
 
 	if err = setMessage(ctx, message, false); err != nil {
 		log.Printf("Failed to set new message: %v\n", err)

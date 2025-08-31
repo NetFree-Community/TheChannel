@@ -191,7 +191,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   showEmojiMenu() {
-    if (!this._authService.userInfo || this.isScrolling) return;
+    if (!this._authService.userInfo || this.isScrolling || this.message?.is_ads) return;
     this.clearHoverTimer();
     this.hoverTimer = setTimeout(() => {
       if (!this.isScrolling) {
