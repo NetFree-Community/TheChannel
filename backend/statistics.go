@@ -71,7 +71,7 @@ func getStatistics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, err := dbGetSSEStatistics(ctx, 5000)
+	s, err := dbGetSSEStatistics(ctx, 1000)
 	if err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
