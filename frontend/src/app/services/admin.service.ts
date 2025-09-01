@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { firstValueFrom, Observable } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 import { ChatFile, ChatMessage } from './chat.service';
 import { ResponseResult } from '../models/response-result.model';
 import { Setting } from '../models/setting.model';
@@ -15,14 +15,29 @@ export interface PrivilegeUser {
   privileges: Record<string, boolean>;
 }
 
+export type EditMsg = {
+  new?: boolean;
+  message: ChatMessage;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AdminService {
+  private messageEdit = new BehaviorSubject<EditMsg | undefined>(undefined);
+  messageEditObservable = this.messageEdit.asObservable();
 
   constructor(
     private http: HttpClient,
   ) { }
+
+  setEditMessage(edit: EditMsg | undefined) {
+    this.messageEdit.next(edit);
+  }
+
+  getEditMessage(): EditMsg | undefined {
+    return this.messageEdit.value;
+  }
 
   getStatistics(): Promise<Statistics> {
     return firstValueFrom(this.http.get<Statistics>('/api/admin/statistics'));

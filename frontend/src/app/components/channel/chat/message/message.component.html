@@ -25,6 +25,10 @@
                 nbButton ghost shape="round" size="small" (click)="deleteMessage(message)" title="מחק הודעה">
                 <nb-icon icon="trash-2"></nb-icon>
             </button>
+            <button *ngIf="_authService?.userInfo?.privileges?.['writer']" class="icon-button" nbButton ghost
+                shape="round" size="small" (click)="quoteMessage(message)" title="צטט הודעה">
+                <nb-icon icon="corner-down-left-outline"></nb-icon>
+            </button>
             <button *ngIf="_authService.userInfo" nbButton ghost shape="round" size="small"
                 (click)="openReportDialog(message.id)" title="דווח על ההודעה" class="icon-button">
                 <nb-icon icon="alert-triangle-outline"></nb-icon>

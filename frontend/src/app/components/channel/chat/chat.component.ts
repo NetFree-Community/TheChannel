@@ -76,10 +76,16 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.onListScroll();
   }
 
-  @HostListener('document:keydown')
-  @HostListener('document:click')
-  onUserAction() {
+  @HostListener('document:keydown', ['$event'])
+  @HostListener('window:click', ['$event'])
+  onUserAction(event: MouseEvent) {
     this.removeMsgMarked();
+    const target = event.target as HTMLElement;
+    const quoteElement = target.closest('[quote-id]')
+    if (quoteElement) {
+      const quoteId = quoteElement.getAttribute('quote-id');
+      this.scrollToId({ messageId: Number(quoteId), smooth: true, mark: true });
+    }
   }
 
   scrollToId(opt: ScrollOpt) {

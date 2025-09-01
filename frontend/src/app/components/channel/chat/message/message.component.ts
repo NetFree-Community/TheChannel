@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgIf, CommonModule } from "@angular/common";
 import {
   NbButtonModule,
@@ -138,7 +138,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editMessage(message: ChatMessage) {
-    this.chatService.setEditMessage(message);
+    this._adminService.setEditMessage({ message });
   }
 
   deleteMessage(message: ChatMessage) {
@@ -150,6 +150,19 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   openReportDialog(messageId?: number) {
     if (!messageId) return;
     this.dialogService.open(ReportComponent, { closeOnBackdropClick: true, context: { messageId } });
+  }
+
+  quoteMessage(message: ChatMessage) {
+    const m = this._adminService.getEditMessage();
+    if (m?.message) {
+      m.message.text = `[quote-embedded#](${message.id}@${message.text})${m.message.text}`;
+      this._adminService.setEditMessage(m);
+    } else {
+      let newMessage: ChatMessage = {
+        text: `[quote-embedded#](${message.id}@${message.text})\n`
+      }
+      this._adminService.setEditMessage({ new: true, message: newMessage });
+    }
   }
 
   viewLargeImage(event: MouseEvent) {

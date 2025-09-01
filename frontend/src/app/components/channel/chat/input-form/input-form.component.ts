@@ -1,8 +1,8 @@
-import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpEventType } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
-import { firstValueFrom } from "rxjs";
+import { firstValueFrom, Subscription } from "rxjs";
 import {
   NbAlertModule,
   NbButtonModule,
@@ -18,8 +18,8 @@ import {
 } from "@nebular/theme";
 import { MarkdownComponent } from "ngx-markdown";
 import { NgIconsModule } from "@ng-icons/core";
-import { Attachment, ChatFile, ChatMessage, ChatService } from '../../../../services/chat.service';
-import { AdminService } from '../../../../services/admin.service';
+import { Attachment, ChatFile, ChatMessage } from '../../../../services/chat.service';
+import { AdminService, EditMsg } from '../../../../services/admin.service';
 import { AutosizeModule } from "ngx-autosize";
 
 @Component({
@@ -44,7 +44,7 @@ import { AutosizeModule } from "ngx-autosize";
   templateUrl: './input-form.component.html',
   styleUrl: './input-form.component.scss'
 })
-export class InputFormComponent implements OnInit {
+export class InputFormComponent implements OnInit, OnDestroy {
 
   protected readonly maxMessageLength: number = 2048;
 
@@ -57,6 +57,7 @@ export class InputFormComponent implements OnInit {
   isSending: boolean = false;
   showMarkdownPreview: boolean = false;
   hasScrollbar: boolean = false;
+  private subscription!: Subscription;
 
   @ViewChild('inputTextArea') inputTextArea!: ElementRef<HTMLTextAreaElement>;
 
@@ -65,7 +66,6 @@ export class InputFormComponent implements OnInit {
   constructor(
     private adminService: AdminService,
     private toastrService: NbToastrService,
-    private chatService: ChatService,
   ) { }
 
   ngOnInit() {
@@ -73,11 +73,22 @@ export class InputFormComponent implements OnInit {
       this.input = this.message.text || '';
     }
 
-    this.chatService.messageEditObservable.subscribe((message?: ChatMessage) => {
-      this.message = message;
-      this.input = this.message?.text || '';
-      this.isAds = this.message?.is_ads || false;
+    this.subscription = this.adminService.messageEditObservable.subscribe((edit?: EditMsg) => {
+      if (edit?.new) {
+        console.log(edit);
+        console.log(this.message?.text);
+        this.input = edit.message.text || '';
+        console.log(this.input);
+      } else {
+        this.message = edit?.message;
+        this.input = this.message?.text || '';
+        this.isAds = this.message?.is_ads || false;
+      }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
   }
 
   onFileSelected(event: Event) {
@@ -183,7 +194,7 @@ export class InputFormComponent implements OnInit {
   }
 
   cancelUpdateMessage() {
-    this.chatService.setEditMessage(undefined);
+    this.adminService.setEditMessage(undefined);
   }
 
   async sendNewMessage(): Promise<boolean> {

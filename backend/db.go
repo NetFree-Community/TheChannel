@@ -31,7 +31,6 @@ type Message struct {
 	Deleted   bool         `json:"deleted" redis:"deleted"`
 	Views     int          `json:"views" redis:"views"`
 	Reactions Reactions    `json:"reactions" redis:"reactions"`
-	ReplyTo   int64        `json:"reply_to,omitempty" redis:"reply_to"`
 	IsAds     bool         `json:"is_ads" redis:"is_ads"`
 }
 
@@ -228,8 +227,6 @@ var getMessageRange = redis.NewScript(`
 					end
 				elseif key == 'is_ads' then
 				    message[key] = value == '1'
-				elseif key == 'reply_to' then
-				    message[key] = tonumber(value)
 				else
 					message[key] = value
 				end

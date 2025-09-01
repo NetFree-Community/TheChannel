@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, firstValueFrom, Observable, Subject } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { Channel } from '../models/channel.model';
 import { ResponseResult } from '../models/response-result.model';
 
@@ -20,7 +20,6 @@ export interface ChatMessage {
   views?: number;
   reactions?: Reactions;
   is_ads?: boolean;
-  reply_to?: number;
 }
 export type ChatResponse = ChatMessage[];
 
@@ -45,9 +44,6 @@ export class ChatService {
   private eventSource!: EventSource;
   private emojis: string[] = [];
   public channelInfo?: Channel;
-
-  private messageEdit = new BehaviorSubject<ChatMessage | undefined>(undefined);
-  messageEditObservable = this.messageEdit.asObservable();
 
   constructor(private http: HttpClient) { }
 
@@ -106,9 +102,5 @@ export class ChatService {
     if (this.eventSource) {
       this.eventSource.close();
     }
-  }
-
-  setEditMessage(message?: ChatMessage) {
-    this.messageEdit.next(message);
   }
 }

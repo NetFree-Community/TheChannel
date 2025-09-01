@@ -74,7 +74,6 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 	message.Text = body.Text
 	message.File = body.File
 	message.Views = 0
-	message.ReplyTo = body.ReplyTo
 	message.IsAds = body.IsAds
 
 	if err = setMessage(ctx, message, false); err != nil {
