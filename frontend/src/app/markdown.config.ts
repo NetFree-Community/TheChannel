@@ -2,6 +2,7 @@ import { Parser, Token, Tokens, TokensList } from "marked";
 import { MarkdownModuleConfig, MARKED_OPTIONS, MarkedRenderer } from "ngx-markdown";
 
 const matchCustomEmbedRegEx = /^\[(video|audio|image|quote)-embedded#]\((.*?)\)/;
+const matchFindCustomEmbedReg = /^\[(video|audio|image|quote)-embedded#].*/;
 
 //https://regexr.com/3dj5t
 const matchYoutubeRegEx = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)(?<id>[\w\-]+)(\S+)?$/;
@@ -17,12 +18,31 @@ const customEmbedExtension = {
       if (match) {
         switch (match[1]) {
           case 'quote':
-            const s = match[2].split('@');
+            const s = match[2].split(/@(.*)/);
+            const p = s[1].match(matchFindCustomEmbedReg);
+            let pr = s[1].slice(0, 20);
+            if (p) {
+              switch (p[1]) {
+                case 'video':
+                  pr = "וידיאו 📹";
+                  break;
+                case 'audio':
+                  pr = "אודיו 🎙️";
+                  break;
+                case 'image':
+                  pr = "תמונה 📷";
+                  break;
+                case 'quote':
+                  pr = "ציטוט 💬";
+                  break;
+              }
+            }
             return {
               type: 'custom_embed',
               raw: match[0],
-              meta: { type: 'quote', id: s[0], url: s[1] },
+              meta: { type: 'quote', id: s[0], url: pr },
             };
+
           default:
             return {
               type: 'custom_embed',

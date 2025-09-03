@@ -154,14 +154,14 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   quoteMessage(message: ChatMessage) {
     const m = this._adminService.getEditMessage();
-    if (m?.message) {
-      m.message.text = `[quote-embedded#](${message.id}@${message.text})${m.message.text}`;
-      this._adminService.setEditMessage(m);
-    } else {
+    if (m?.new || !m?.message) {
       let newMessage: ChatMessage = {
         text: `[quote-embedded#](${message.id}@${message.text})\n`
       }
       this._adminService.setEditMessage({ new: true, message: newMessage });
+    } else {
+      m.message.text = `[quote-embedded#](${message.id}@${message.text})\n${m.message.text}`;
+      this._adminService.setEditMessage(m);
     }
   }
 

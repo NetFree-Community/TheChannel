@@ -75,10 +75,7 @@ export class InputFormComponent implements OnInit, OnDestroy {
 
     this.subscription = this.adminService.messageEditObservable.subscribe((edit?: EditMsg) => {
       if (edit?.new) {
-        console.log(edit);
-        console.log(this.message?.text);
-        this.input = edit.message.text || '';
-        console.log(this.input);
+        this.input = this.input ? `${this.input}\n${edit.message.text}` : edit.message.text || '';
       } else {
         this.message = edit?.message;
         this.input = this.message?.text || '';
@@ -220,6 +217,7 @@ export class InputFormComponent implements OnInit, OnDestroy {
     this.input = '';
     this.attachments = [];
     this.message = undefined;
+    this.adminService.setEditMessage(undefined);
   }
 
   removeAttachment(attachment: Attachment) {
