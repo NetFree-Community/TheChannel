@@ -172,7 +172,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
           break;
       }
     }
-    newMsgText = newMsgText?.slice(0, 100).replaceAll(/\n/g, ' ').replaceAll('*', '');
+    newMsgText = newMsgText?.slice(0, 100).replace('>', '').replaceAll(/\n/g, ' ').replaceAll('*', '');
     if (message.text && message.text.length > 100) {
       newMsgText += '...';
     }
