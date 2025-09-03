@@ -62,6 +62,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   private isScrolling = false;
   private hoverTimer: any;
   private readonly minimalHoverMs = 200;
+  private readonly matchFindCustomEmbedReg = /^\[(video|audio|image|quote)-embedded#].*/;
 
   ngOnInit() {
     this.chatService.getEmojisList()
@@ -153,14 +154,37 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   quoteMessage(message: ChatMessage) {
+    let newMsgText: string | undefined = message.text?.trimStart();
+    let fintEmbedded = newMsgText?.match(this.matchFindCustomEmbedReg);
+    if (fintEmbedded) {
+      switch (fintEmbedded[1]) {
+        case 'video':
+          newMsgText = "וידיאו 📹";
+          break;
+        case 'audio':
+          newMsgText = "אודיו 🎙️";
+          break;
+        case 'image':
+          newMsgText = "תמונה 📷";
+          break;
+        case 'quote':
+          newMsgText = "ציטוט 💬";
+          break;
+      }
+    }
+    newMsgText = newMsgText?.slice(0, 100).replaceAll(/\n/g, ' ').replaceAll('*', '');
+    if (message.text && message.text.length > 100) {
+      newMsgText += '...';
+    }
+
     const m = this._adminService.getEditMessage();
     if (m?.new || !m?.message) {
       let newMessage: ChatMessage = {
-        text: `[quote-embedded#](${message.id}@${message.text})\n`
+        text: `[quote-embedded#](${message.id}@${newMsgText})\n`
       }
       this._adminService.setEditMessage({ new: true, message: newMessage });
     } else {
-      m.message.text = `[quote-embedded#](${message.id}@${message.text})\n${m.message.text}`;
+      m.message.text = `[quote-embedded#](${message.id}@${newMsgText})\n${m.message.text}`;
       this._adminService.setEditMessage(m);
     }
   }
