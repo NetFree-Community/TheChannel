@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -62,8 +63,10 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, regex := range settingConfig.RegexReplace {
-		t := regex.Pattern.ReplaceAllString(body.Text, regex.Replace)
-		body.Text = t
+		if !strings.HasPrefix(body.Text, "[quote-embedded#]") {
+			t := regex.Pattern.ReplaceAllString(body.Text, regex.Replace)
+			body.Text = t
+		}
 	}
 
 	message.ID = getMessageNextId(ctx)
