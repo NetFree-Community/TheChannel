@@ -85,7 +85,7 @@ export class ChatService {
       this.eventSource.close();
     }
 
-    this.eventSource = new EventSource('/api/events');
+    this.eventSource = new EventSource('/api/events/ws');
 
     this.eventSource.onopen = () => {
       console.log('Connection opened');

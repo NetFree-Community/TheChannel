@@ -199,3 +199,6 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func getEventsWS(w http.ResponseWriter, r *http.Request) {
+}
