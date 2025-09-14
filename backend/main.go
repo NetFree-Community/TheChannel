@@ -79,7 +79,6 @@ func main() {
 
 			api.Get("/channel/info", getChannelInfo)
 			api.Get("/messages", getMessages)
-			api.Get("/events", getEvents)
 			api.Get("/events/ws", getEventsWS)
 			api.Get("/files/{fileid}", serveFile)
 			api.Get("/user-info", getUserInfo)

@@ -72,6 +72,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-chi/chi v1.5.5
 	github.com/golang-jwt/jwt/v5 v5.2.2
+	github.com/gorilla/websocket v1.5.3
 	github.com/h2non/filetype v1.1.3
 	github.com/icza/dyno v0.0.0-20230330125955-09f820a8d9c0
 	github.com/subosito/gozaru v0.0.0-20190625071150-416082cce636

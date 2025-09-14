@@ -49,7 +49,7 @@ type ScrollOpt = {
   styleUrl: './chat.component.scss'
 })
 export class ChatComponent implements OnInit, OnDestroy {
-  private eventSource!: EventSource;
+  private eventSource!: WebSocket;
   messages: ChatMessage[] = [];
   userInfo?: User;
   isLoading: boolean = false;
@@ -59,7 +59,6 @@ export class ChatComponent implements OnInit, OnDestroy {
   hasNewMessages: boolean = false;
   thereNewMessages: boolean = false;
   showScrollToBottom: boolean = false;
-  private lastHeartbeat: number = Date.now();
   private subLastHeartbeat: any;
   lastReadMessageId: number = 0;
 
@@ -121,7 +120,7 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.chatService.getEmojisList(true);
 
     this.initializeMessageListener();
-    this.keepAliveSSE();
+    this.keepAliveWebSocket();
 
     this._authService.loadUserInfo().then((res) => {
       this.userInfo = res;
@@ -149,10 +148,8 @@ export class ChatComponent implements OnInit, OnDestroy {
   }
 
   private async initializeMessageListener() {
-    this.eventSource = this.chatService.sseListener();
+    this.eventSource = this.chatService.websocketListener();
     this.eventSource.onmessage = (event) => {
-
-      this.lastHeartbeat = Date.now();
 
       const message = JSON.parse(event.data);
       switch (message.type) {
@@ -196,26 +193,20 @@ export class ChatComponent implements OnInit, OnDestroy {
             if (index !== -1) this.messages[index].reactions = message.message.reactions;
           });
           break;
-        case 'heartbeat':
-          this.lastHeartbeat = Date.now();
-          break;
       }
     };
   }
 
   ngOnDestroy() {
-    this.chatService.sseClose();
+    this.chatService.websocketClose();
     clearInterval(this.subLastHeartbeat);
   }
 
-  async keepAliveSSE() {
+  async keepAliveWebSocket() {
     clearInterval(this.subLastHeartbeat);
     this.subLastHeartbeat = interval(10000)
       .subscribe(() => {
-        if (Date.now() - this.lastHeartbeat > 60000) {
-          this.lastHeartbeat = Date.now();
-          this.initializeMessageListener();
-        };
+        if (this.eventSource.readyState !== WebSocket.OPEN) this.initializeMessageListener();
       });
   }
 

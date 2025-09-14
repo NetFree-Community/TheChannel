@@ -41,7 +41,7 @@ export interface Attachment {
   providedIn: 'root'
 })
 export class ChatService {
-  private eventSource!: EventSource;
+  private socket!: WebSocket;
   private emojis: string[] = [];
   public channelInfo?: Channel;
 
@@ -80,27 +80,27 @@ export class ChatService {
     return firstValueFrom(this.http.post<ResponseResult>('/api/messages/report', { messageId, reason }));
   }
 
-  sseListener(): EventSource {
-    if (this.eventSource) {
-      this.eventSource.close();
+  websocketListener(): WebSocket {
+    if (this.socket) {
+      this.socket.close();
     }
 
-    this.eventSource = new EventSource('/api/events/ws');
+    this.socket = new WebSocket('/api/events/ws');
 
-    this.eventSource.onopen = () => {
+    this.socket.onopen = () => {
       console.log('Connection opened');
     };
 
-    this.eventSource.onerror = (error) => {
-      console.error('EventSource failed:', error);
+    this.socket.onerror = (error) => {
+      console.error('WebSocket failed:', error);
     };
 
-    return this.eventSource;
+    return this.socket;
   }
 
-  sseClose() {
-    if (this.eventSource) {
-      this.eventSource.close();
+  websocketClose() {
+    if (this.socket) {
+      this.socket.close();
     }
   }
 }

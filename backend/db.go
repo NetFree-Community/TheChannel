@@ -43,8 +43,8 @@ type User struct {
 }
 
 type PushMessage struct {
-	Type string  `json:"type"`
-	M    Message `json:"message"`
+	Type string   `json:"type"`
+	M    *Message `json:"message"`
 }
 
 func init() {
@@ -96,7 +96,7 @@ func setMessage(ctx context.Context, m Message, isUpdate bool) error {
 
 	pushMessage := PushMessage{
 		Type: pushType,
-		M:    m,
+		M:    &m,
 	}
 
 	pushMessageData, _ := json.Marshal(pushMessage)
@@ -139,7 +139,7 @@ func setReaction(ctx context.Context, messageId int, emoji string, userId string
 
 	pushMessage := PushMessage{
 		Type: "reaction",
-		M: Message{
+		M: &Message{
 			ID:        messageId,
 			Reactions: r,
 		},
@@ -322,7 +322,7 @@ func funcDeleteMessage(ctx context.Context, id string) error {
 	msgKey := fmt.Sprintf("messages:%s", id)
 	rdb.HSet(ctx, msgKey, "deleted", true)
 
-	var m Message
+	m := &Message{}
 	idInt, _ := strconv.Atoi(id)
 	m.ID = idInt
 	m.Deleted = true
