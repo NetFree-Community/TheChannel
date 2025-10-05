@@ -22,6 +22,7 @@ type LoadMsgOpt = {
   scrollDown?: boolean;
   messageId?: number;
   mark?: boolean;
+  resetList?: boolean;
 }
 
 type ScrollOpt = {
@@ -227,10 +228,14 @@ export class ChatComponent implements OnInit, OnDestroy {
     }
   }
 
-  scrollToBottom(smooth: boolean = true) {
+  async scrollToBottom(smooth: boolean = true) {
+    if (this.hasNewMessages) {
+      this.hasNewMessages = false;
+      await this.loadMessages({ resetList: true });
+    }
     setTimeout(() => {
       window.scrollTo({ top: document.body.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
-    }, 0);
+    }, 200);
     this.thereNewMessages = false;
   }
 
@@ -239,8 +244,10 @@ export class ChatComponent implements OnInit, OnDestroy {
     if (this.isLoading || (opt.scrollDown && !this.hasNewMessages) || (!opt.scrollDown && !this.hasOldMessages)) return;
 
     let startId: number;
-    let resetList: boolean = false;
+    let resetList: boolean = opt.resetList || false;
     let direction: string = "desc";
+
+    opt.resetList && (this.offset = 0);
 
     const maxId = Math.max(...this.messages.map(m => m.id!));
     if (opt.scrollDown) {
