@@ -16,7 +16,7 @@ RUN go build -o the-channel .
 
 FROM debian:latest
 WORKDIR /app
-RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates && apt-get install -y curl
 COPY --from=builder2 /app/the-channel . 
 COPY --from=builder1 /app/dist/channel/browser /usr/share/ng
 RUN chmod +x the-channel
