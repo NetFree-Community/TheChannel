@@ -89,18 +89,12 @@ func setMessage(ctx context.Context, m Message, isUpdate bool) error {
 		}
 	}
 
-	pushType := "new-message"
+	pushType := NewMessage
 	if isUpdate {
-		pushType = "edit-message"
+		pushType = EditMessage
 	}
 
-	pushMessage := PushMessage{
-		Type: pushType,
-		M:    m,
-	}
-
-	pushMessageData, _ := json.Marshal(pushMessage)
-	rdb.Publish(ctx, "events", pushMessageData)
+	pushSseMessage(ctx, pushType, m)
 
 	return nil
 }
@@ -137,16 +131,12 @@ func setReaction(ctx context.Context, messageId int, emoji string, userId string
 		return err
 	}
 
-	pushMessage := PushMessage{
-		Type: "reaction",
-		M: Message{
-			ID:        messageId,
-			Reactions: r,
-		},
+	m := Message{
+		ID:        messageId,
+		Reactions: r,
 	}
 
-	pushMessageData, _ := json.Marshal(pushMessage)
-	rdb.Publish(ctx, "events", pushMessageData)
+	pushSseMessage(ctx, Reaction, m)
 
 	return nil
 }
@@ -330,12 +320,7 @@ func funcDeleteMessage(ctx context.Context, id string) error {
 	m.Text = "*ההודעה נמחקה*"
 	m.File = FileResponse{}
 
-	pushMessage := PushMessage{
-		Type: "delete-message",
-		M:    m,
-	}
-	pushMessageData, _ := json.Marshal(pushMessage)
-	rdb.Publish(ctx, "events", pushMessageData)
+	pushSseMessage(ctx, DeleteMessage, m)
 
 	return nil
 }

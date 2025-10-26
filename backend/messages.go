@@ -13,6 +13,15 @@ import (
 	"github.com/go-chi/chi"
 )
 
+type PushType string
+
+const (
+	NewMessage    PushType = "new-message"
+	EditMessage   PushType = "edit-message"
+	DeleteMessage PushType = "delete-message"
+	Reaction      PushType = "reaction"
+)
+
 func getMessages(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -198,4 +207,15 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 			flusher.Flush()
 		}
 	}
+}
+
+func pushSseMessage(ctx context.Context, pushType PushType, message Message) {
+	pushMessage := PushMessage{
+		Type: string(pushType),
+		M:    message,
+	}
+
+	pushMessageData, _ := json.Marshal(pushMessage)
+	rdb.Publish(ctx, "events", pushMessageData)
+
 }
