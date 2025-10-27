@@ -147,7 +147,7 @@ func subscribeNotifications(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func pushFcmMessage(m Message) {
+func pushFcmMessage(m *Message) {
 	if !settingConfig.OnNotification {
 
 		return

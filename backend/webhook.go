@@ -20,14 +20,14 @@ type WebhookPayload struct {
 	VerifyToken string    `json:"verifyToken"`
 }
 
-func SendWebhook(ctx context.Context, action string, message Message) {
+func SendWebhook(ctx context.Context, action string, message *Message) {
 	if settingConfig.WebhookURL == "" {
 		return
 	}
 
 	payload := WebhookPayload{
 		Action:      action,
-		Message:     message,
+		Message:     *message,
 		Timestamp:   time.Now(),
 		VerifyToken: settingConfig.VerifyToken,
 	}

@@ -275,4 +275,8 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.toastrService.success('', 'הקישור הועתק ללוח');
     });
   }
+
+  needOpacity(): boolean {
+    return this.message ? this.message.deleted || (this.message.timestamp ? new Date(this.message.timestamp) > new Date() : false) : false;
+  }
 }

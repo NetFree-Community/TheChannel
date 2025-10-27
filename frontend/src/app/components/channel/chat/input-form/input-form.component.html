@@ -72,6 +72,9 @@
                         <ng-icon class="fs-4" [name]="'heroCheck'"></ng-icon>
                     </button>
                     } @else {
+                    <button nbButton ghost title="תזמן הודעה" shape="round" [size]="'medium'" (click)="openTimePicker()">
+                        <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
+                    </button>
                     <button nbButton ghost title="שלח" shape="round" [size]="'tiny'" (click)="sendMessage()">
                         <ng-icon class="fs-4" [name]="'heroPaperAirplane'" style="scale: -1 1"></ng-icon>
                     </button>
