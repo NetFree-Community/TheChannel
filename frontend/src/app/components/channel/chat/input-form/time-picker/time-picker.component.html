@@ -1,0 +1,13 @@
+<nb-card>
+    <nb-card-header>תזמון הודעה</nb-card-header>
+    <nb-card-body>
+        <input nbInput placeholder="בחר תאריך ושעה" [nbDatepicker]="dateTimePicker" />
+        <nb-date-timepicker  #dateTimePicker (dateTimeChange)="timeChange($event)"></nb-date-timepicker>
+    </nb-card-body>
+    <nb-card-footer>
+        <div class="d-flex gap-1 justify-content-end">
+            <button nbButton status="primary" [size]="'small'" (click)="close(true)">אישור</button>
+            <button nbButton status="danger" [size]="'small'" (click)="close()">ביטול</button>
+        </div>
+    </nb-card-footer>
+</nb-card>

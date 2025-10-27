@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { routes } from './app.routes';
 import {
+  NbDatepickerModule,
   NbDialogModule,
   NbGlobalLogicalPosition,
   NbIconModule,
@@ -10,6 +11,7 @@ import {
   NbMenuModule,
   NbSidebarModule,
   NbThemeModule,
+  NbTimepickerModule,
   NbToastrModule
 } from "@nebular/theme";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
@@ -61,6 +63,8 @@ export const appConfig: ApplicationConfig = {
       NbToastrModule.forRoot({ position: NbGlobalLogicalPosition.TOP_START }),
       NgIconsModule,
       NbSidebarModule.forRoot(),
+      NbDatepickerModule.forRoot(),
+      NbTimepickerModule.forRoot()
     ),
     provideCharts(
       withDefaultRegisterables()

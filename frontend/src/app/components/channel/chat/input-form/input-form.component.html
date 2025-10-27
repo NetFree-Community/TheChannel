@@ -20,7 +20,7 @@
         }
     </div>
     <div class="d-flex flex-row flex-wrap align-items-center rounded-5 bg-light px-2">
-        <button nbButton ghost shape="round" title="הגדרה הודעה כפרסום" (click)="isAds = !isAds">
+        <button nbButton ghost shape="round" title="אל תאפשר אימוג'ים להודעה זו" (click)="isAds = !isAds">
             <ng-icon [name]="isAds ? 'heroLockClosed' : 'heroLockOpen'" class="toolbar-icon"></ng-icon>
         </button>
         <button nbButton ghost shape="round" title="הדגשה" (click)="applyFormat('bold')" class="toolbar-button">
@@ -72,6 +72,9 @@
                         <ng-icon class="fs-4" [name]="'heroCheck'"></ng-icon>
                     </button>
                     } @else {
+                    <button nbButton ghost title="תזמן הודעה" shape="round" [size]="'medium'" (click)="openTimePicker()">
+                        <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
+                    </button>
                     <button nbButton ghost title="שלח" shape="round" [size]="'tiny'" (click)="sendMessage()">
                         <ng-icon class="fs-4" [name]="'heroPaperAirplane'" style="scale: -1 1"></ng-icon>
                     </button>
