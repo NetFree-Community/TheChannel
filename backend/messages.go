@@ -278,6 +278,10 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func pushMessages(pushType PushType, message *Message) {
+	if message.ID == 0 {
+		log.Println("pushMessages called with message ID 0")
+		return
+	}
 	var pt string
 	switch pushType {
 	case NewMessage, MsgAfterScheduling:
