@@ -81,7 +81,7 @@ func init() {
 				continue
 			}
 			for _, msg := range scheduledMessage {
-				go pushSseMessage(MsgAfterScheduling, msg)
+				go pushMessages(MsgAfterScheduling, msg)
 				go dbRemoveScheduledMessage(msg.ID)
 			}
 			time.Sleep(waitingTime)
@@ -277,10 +277,17 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func pushSseMessage(pushType PushType, message *Message) {
+func pushMessages(pushType PushType, message *Message) {
+	if message.ID == 0 {
+		log.Println("pushMessages called with message ID 0")
+		return
+	}
 	var pt string
 	switch pushType {
-	case NewMessage, MsgBeforeScheduling, MsgAfterScheduling:
+	case NewMessage, MsgAfterScheduling:
+		go pushFcmMessage(message)
+		pt = "new-message"
+	case MsgBeforeScheduling:
 		pt = "new-message"
 	case EditMessage:
 		pt = "edit-message"
@@ -301,7 +308,6 @@ func pushSseMessage(pushType PushType, message *Message) {
 	for client := range broadcastList.Clients {
 		switch pushType {
 		case NewMessage:
-			go pushFcmMessage(message)
 			client.Send(pmStr)
 
 		case EditMessage, DeleteMessage, Reaction:
@@ -314,7 +320,6 @@ func pushSseMessage(pushType PushType, message *Message) {
 
 		case MsgAfterScheduling:
 			if !client.Privileges[Writer] {
-				go pushFcmMessage(message)
 				client.Send(pmStr)
 			}
 		}
