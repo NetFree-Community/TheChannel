@@ -95,10 +95,10 @@ func setMessage(ctx context.Context, m *Message, isUpdate bool) error {
 	}
 
 	pushType := NewMessage
-	if isScheduling {
-		pushType = MsgBeforeScheduling
-	} else if isUpdate {
+	if isUpdate {
 		pushType = EditMessage
+	} else if isScheduling {
+		pushType = MsgBeforeScheduling
 	}
 	go pushSseMessage(pushType, m)
 
