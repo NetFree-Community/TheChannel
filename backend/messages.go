@@ -162,7 +162,6 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go SendWebhook(context.Background(), "create", message)
-	go pushFcmMessage(message)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(message)
@@ -301,7 +300,11 @@ func pushSseMessage(pushType PushType, message *Message) {
 	defer broadcastList.Unlock()
 	for client := range broadcastList.Clients {
 		switch pushType {
-		case NewMessage, EditMessage, DeleteMessage, Reaction:
+		case NewMessage:
+			go pushFcmMessage(message)
+			client.Send(pmStr)
+
+		case EditMessage, DeleteMessage, Reaction:
 			client.Send(pmStr)
 
 		case MsgBeforeScheduling:
@@ -311,6 +314,7 @@ func pushSseMessage(pushType PushType, message *Message) {
 
 		case MsgAfterScheduling:
 			if !client.Privileges[Writer] {
+				go pushFcmMessage(message)
 				client.Send(pmStr)
 			}
 		}

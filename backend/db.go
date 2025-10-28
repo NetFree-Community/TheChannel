@@ -100,7 +100,6 @@ func setMessage(ctx context.Context, m *Message, isUpdate bool) error {
 	} else if isScheduling {
 		pushType = MsgBeforeScheduling
 	}
-	log.Printf("Pushing message of type %d\n", pushType)
 	go pushSseMessage(pushType, m)
 
 	return nil
