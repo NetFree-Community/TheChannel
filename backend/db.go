@@ -100,7 +100,7 @@ func setMessage(ctx context.Context, m *Message, isUpdate bool) error {
 	} else if isUpdate {
 		pushType = EditMessage
 	}
-	pushSseMessage(pushType, m)
+	go pushSseMessage(pushType, m)
 
 	return nil
 }
@@ -142,7 +142,7 @@ func setReaction(ctx context.Context, messageId int, emoji string, userId string
 		Reactions: r,
 	}
 
-	pushSseMessage(Reaction, m)
+	go pushSseMessage(Reaction, m)
 
 	return nil
 }
@@ -340,7 +340,7 @@ func funcDeleteMessage(ctx context.Context, id string) error {
 	m.Text = "*ההודעה נמחקה*"
 	m.File = FileResponse{}
 
-	pushSseMessage(DeleteMessage, m)
+	go pushSseMessage(DeleteMessage, m)
 
 	return nil
 }

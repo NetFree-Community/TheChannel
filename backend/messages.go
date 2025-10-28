@@ -243,7 +243,8 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 		Privileges: user.Privileges,
 		ClientCh:   make(chan string, 10),
 	}
-	// חוסם את התוכנית, אחרת הלקוח לא יהיה רשום לקבלת הודעות.
+
+	/*go*/
 	el.Add()
 	defer el.Close()
 
