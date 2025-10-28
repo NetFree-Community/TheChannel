@@ -616,10 +616,9 @@ func dbGetPeakSSEConnections(ctx context.Context) (*PeakSSEConnections, error) {
 	}
 
 	var peak PeakSSEConnections
-	vel, _ := dyno.GetInt(p["value"])
+	vel, _ := dyno.GetInteger(p["value"])
 	timestamp, _ := dyno.GetInteger(p["timestamp"])
-
-	peak.Value = vel
+	peak.Value = int(vel)
 	peak.Timestamp = time.Unix(timestamp, 0)
 
 	return &peak, nil
