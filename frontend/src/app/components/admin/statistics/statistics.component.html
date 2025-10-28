@@ -10,6 +10,9 @@
         <hr />
 
         <canvas baseChart [type]="'line'" [data]="lineChartData" [options]="lineChartOptions"></canvas>
-        <button nbButton size="tiny" (click)="chart?.chart?.resetZoom()">איפוס גרף</button>
+        <div class="d-flex gap-2">
+            <button nbButton size="tiny" (click)="chart?.chart?.resetZoom()">איפוס גרף</button>
+            <button nbButton size="tiny" (click)="resetPeakCounting()">איפוס מונה שיא</button>
+        </div>
     </nb-card-body>
 </nb-card>

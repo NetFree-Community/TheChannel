@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { NbButtonModule, NbCardModule } from "@nebular/theme";
+import { NbButtonModule, NbCardModule, NbToastrService } from "@nebular/theme";
 import { AdminService } from '../../../services/admin.service';
 import { Statistics } from '../../../models/statistics.model';
 import { MessageTimePipe } from '../../../pipes/message-time.pipe';
@@ -62,9 +62,23 @@ export class StatisticsComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
+    private tostService: NbToastrService,
   ) { }
 
   ngOnInit(): void {
+    this.updateInfo();
+  }
+
+  resetPeakCounting() {
+    this.adminService.resetPeakCounting().then(() => {
+      this.updateInfo();
+      this.tostService.success("", "המונה אופס בהצלחה!");
+    }).catch(() =>
+      this.tostService.danger("שגיאה באיפוס המונה")
+    );
+  }
+
+  updateInfo() {
     this.adminService.getStatistics().then(statistics => {
       this.statistics = statistics;
       this.lineChartData.datasets[0].data = statistics.connectionsStatistics.date;

@@ -89,3 +89,15 @@ func getStatistics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+func resetPeakCounting(w http.ResponseWriter, r *http.Request) {
+	peakMu.Lock()
+	defer peakMu.Unlock()
+	peakSSEConnections = &PeakSSEConnections{}
+	peak := *peakSSEConnections
+	go dbSavePeakSSEConnections(&peak)
+
+	w.Header().Set("Content-Type", "application/json")
+	ResponseResult := Response{Success: true}
+	json.NewEncoder(w).Encode(ResponseResult)
+}

@@ -101,6 +101,7 @@ func main() {
 				protected.Post("/settings/set", protectedWithPrivilege(Admin, setSettings))
 				protected.Get("/reports/get", protectedWithPrivilege(Admin, getReports))
 				protected.Post("/reports/set", protectedWithPrivilege(Admin, setReports))
+				protected.Post("/statistics/reset-peak", protectedWithPrivilege(Admin, resetPeakCounting))
 			})
 		})
 	})
