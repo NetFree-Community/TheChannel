@@ -100,7 +100,7 @@ func setMessage(ctx context.Context, m *Message, isUpdate bool) error {
 	} else if isScheduling {
 		pushType = MsgBeforeScheduling
 	}
-	go pushSseMessage(pushType, m)
+	go pushMessages(pushType, m)
 
 	return nil
 }
@@ -142,7 +142,7 @@ func setReaction(ctx context.Context, messageId int, emoji string, userId string
 		Reactions: r,
 	}
 
-	go pushSseMessage(Reaction, m)
+	go pushMessages(Reaction, m)
 
 	return nil
 }
@@ -340,7 +340,7 @@ func funcDeleteMessage(ctx context.Context, id string) error {
 	m.Text = "*ההודעה נמחקה*"
 	m.File = FileResponse{}
 
-	go pushSseMessage(DeleteMessage, m)
+	go pushMessages(DeleteMessage, m)
 
 	return nil
 }
