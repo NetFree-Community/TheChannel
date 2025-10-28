@@ -74,7 +74,7 @@ export class StatisticsComponent implements OnInit {
       this.updateInfo();
       this.tostService.success("", "המונה אופס בהצלחה!");
     }).catch(() =>
-      this.tostService.danger("שגיאה באיפוס המונה")
+      this.tostService.danger("", "שגיאה באיפוס המונה")
     );
   }
 
