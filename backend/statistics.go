@@ -5,14 +5,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
+var openSSEConnections = atomic.Int64{}
 var peakSSEConnections = &PeakSSEConnections{}
 var peakMu = sync.Mutex{}
 
 type PeakSSEConnections struct {
-	Value     int       `json:"value" redis:"value"`
+	Value     int64     `json:"value" redis:"value"`
 	Timestamp time.Time `json:"timestamp" redis:"timestamp"`
 }
 type Statistics struct {
@@ -31,9 +33,9 @@ func init() {
 }
 
 func statLogger() {
-	var old int
+	var old int64
 	for {
-		new := broadcastList.Count()
+		new := openSSEConnections.Load()
 		if old != new {
 			dbSaveSSEStatistics(new)
 			old = new
@@ -42,8 +44,8 @@ func statLogger() {
 	}
 }
 
-func upCounterSSE() {
-	new := broadcastList.Count()
+func increaseCounterSSE() {
+	new := openSSEConnections.Add(1)
 
 	peakMu.Lock()
 	defer peakMu.Unlock()
@@ -53,6 +55,10 @@ func upCounterSSE() {
 		peak := *peakSSEConnections
 		go dbSavePeakSSEConnections(&peak)
 	}
+}
+
+func decreaseCounterSSE() {
+	openSSEConnections.Add(-1)
 }
 
 func getStatistics(w http.ResponseWriter, r *http.Request) {
@@ -76,28 +82,16 @@ func getStatistics(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		UsersAmount           int64               `json:"usersAmount"`
-		ConnectedUsersAmount  int                 `json:"connectedUsersAmount"`
+		ConnectedUsersAmount  int64               `json:"connectedUsersAmount"`
 		PeakSSEConnections    *PeakSSEConnections `json:"peakSSEConnections"`
 		ConnectionsStatistics Statistics          `json:"connectionsStatistics"`
 	}{
 		UsersAmount:           amount,
-		ConnectedUsersAmount:  broadcastList.Count(),
+		ConnectedUsersAmount:  openSSEConnections.Load(),
 		PeakSSEConnections:    peakSSEConnections,
 		ConnectionsStatistics: *s,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
-}
-
-func resetPeakCounting(w http.ResponseWriter, r *http.Request) {
-	peakMu.Lock()
-	defer peakMu.Unlock()
-	peakSSEConnections = &PeakSSEConnections{}
-	peak := *peakSSEConnections
-	go dbSavePeakSSEConnections(&peak)
-
-	w.Header().Set("Content-Type", "application/json")
-	ResponseResult := Response{Success: true}
-	json.NewEncoder(w).Encode(ResponseResult)
 }

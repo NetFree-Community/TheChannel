@@ -7,7 +7,6 @@ import {
   NbAlertModule,
   NbButtonModule,
   NbCardModule,
-  NbDialogService,
   NbFormFieldModule,
   NbIconModule,
   NbInputModule,
@@ -22,7 +21,6 @@ import { NgIconsModule } from "@ng-icons/core";
 import { Attachment, ChatFile, ChatMessage } from '../../../../services/chat.service';
 import { AdminService, EditMsg } from '../../../../services/admin.service';
 import { AutosizeModule } from "ngx-autosize";
-import { TimePickerComponent } from './time-picker/time-picker.component';
 
 @Component({
   selector: 'app-input-form',
@@ -57,7 +55,6 @@ export class InputFormComponent implements OnInit, OnDestroy {
   input: string = '';
   isAds: boolean = false;
   isSending: boolean = false;
-  schedulingMessage: Date | null = null;
   showMarkdownPreview: boolean = false;
   hasScrollbar: boolean = false;
   private subscription!: Subscription;
@@ -69,7 +66,6 @@ export class InputFormComponent implements OnInit, OnDestroy {
   constructor(
     private adminService: AdminService,
     private toastrService: NbToastrService,
-    private dialogService: NbDialogService,
   ) { }
 
   ngOnInit() {
@@ -206,7 +202,6 @@ export class InputFormComponent implements OnInit, OnDestroy {
       text: this.input,
       file: undefined,
       is_ads: this.isAds,
-      timestamp: this.schedulingMessage || undefined,
     };
 
     this.message = await firstValueFrom(this.adminService.addMessage(newMessage));
@@ -221,7 +216,6 @@ export class InputFormComponent implements OnInit, OnDestroy {
   clearInputs() {
     this.input = '';
     this.attachments = [];
-    this.schedulingMessage = null;
     this.message = undefined;
     this.adminService.setEditMessage(undefined);
   }
@@ -312,15 +306,5 @@ export class InputFormComponent implements OnInit, OnDestroy {
         textArea.focus();
       });
     }
-  }
-
-  openTimePicker() {
-    this.dialogService.open(TimePickerComponent, {
-      context: {
-        date: this.schedulingMessage,
-      }
-    }).onClose.subscribe((date: Date | null) => {
-      this.schedulingMessage = date;
-    });
   }
 }

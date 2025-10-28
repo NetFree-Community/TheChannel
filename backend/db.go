@@ -42,6 +42,11 @@ type User struct {
 	Privileges Privileges `json:"privileges"`
 }
 
+type PushMessage struct {
+	Type string  `json:"type"`
+	M    Message `json:"message"`
+}
+
 func init() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -69,18 +74,8 @@ func getMessageNextId(ctx context.Context) int {
 	return int(id)
 }
 
-func setMessage(ctx context.Context, m *Message, isUpdate bool) error {
+func setMessage(ctx context.Context, m Message, isUpdate bool) error {
 	messageKey := fmt.Sprintf("messages:%d", m.ID)
-
-	isScheduling := !m.Timestamp.IsZero()
-	if isScheduling {
-		// Add scheduled message to sorted set
-		if err := rdb.ZAdd(ctx, "scheduled_messages", redis.Z{Score: float64(m.Timestamp.Unix()), Member: messageKey}).Err(); err != nil {
-			return err
-		}
-	} else {
-		m.Timestamp = time.Now()
-	}
 
 	// Set message in hash
 	if err := rdb.HSet(ctx, messageKey, m).Err(); err != nil {
@@ -94,13 +89,18 @@ func setMessage(ctx context.Context, m *Message, isUpdate bool) error {
 		}
 	}
 
-	pushType := NewMessage
+	pushType := "new-message"
 	if isUpdate {
-		pushType = EditMessage
-	} else if isScheduling {
-		pushType = MsgBeforeScheduling
+		pushType = "edit-message"
 	}
-	go pushMessages(pushType, m)
+
+	pushMessage := PushMessage{
+		Type: pushType,
+		M:    m,
+	}
+
+	pushMessageData, _ := json.Marshal(pushMessage)
+	rdb.Publish(ctx, "events", pushMessageData)
 
 	return nil
 }
@@ -137,12 +137,16 @@ func setReaction(ctx context.Context, messageId int, emoji string, userId string
 		return err
 	}
 
-	m := &Message{
-		ID:        messageId,
-		Reactions: r,
+	pushMessage := PushMessage{
+		Type: "reaction",
+		M: Message{
+			ID:        messageId,
+			Reactions: r,
+		},
 	}
 
-	go pushMessages(Reaction, m)
+	pushMessageData, _ := json.Marshal(pushMessage)
+	rdb.Publish(ctx, "events", pushMessageData)
 
 	return nil
 }
@@ -155,7 +159,6 @@ var getMessageRange = redis.NewScript(`
 	local isAdmin = ARGV[2] == 'true'
 	local countViews = ARGV[3] == 'true'
 	local direction = ARGV[4] or 'desc'
-	local nowTime = ARGV[5] 
 
 
 	local start_index
@@ -228,8 +231,8 @@ var getMessageRange = redis.NewScript(`
 					message[key] = value
 				end
 			end
-
-			if (not message['deleted'] and message['timestamp'] < nowTime) or isAdmin then
+	
+			if not message['deleted'] or isAdmin then
 				table.insert(messages, message)
 			end
 		end
@@ -243,20 +246,7 @@ var getMessageRange = redis.NewScript(`
 
 func funcGetMessageRange(ctx context.Context, start, stop int64, isAdmin, countViews bool, direction string) ([]Message, error) {
 	offsetKeyName := fmt.Sprintf("messages:%d", start)
-	res, err := getMessageRange.Run(
-		ctx,
-		rdb,
-		[]string{
-			"m_times:1",
-			offsetKeyName,
-		},
-		[]string{
-			strconv.FormatInt(stop, 10),
-			strconv.FormatBool(isAdmin),
-			strconv.FormatBool(countViews),
-			direction,
-			time.Now().UTC().Format(time.RFC3339Nano),
-		}).Result()
+	res, err := getMessageRange.Run(ctx, rdb, []string{"m_times:1", offsetKeyName}, []string{strconv.FormatInt(stop, 10), strconv.FormatBool(isAdmin), strconv.FormatBool(countViews), direction}).Result()
 	if err != nil {
 		return []Message{}, err
 	}
@@ -332,7 +322,7 @@ func funcDeleteMessage(ctx context.Context, id string) error {
 	msgKey := fmt.Sprintf("messages:%s", id)
 	rdb.HSet(ctx, msgKey, "deleted", true)
 
-	m := &Message{}
+	var m Message
 	idInt, _ := strconv.Atoi(id)
 	m.ID = idInt
 	m.Deleted = true
@@ -340,7 +330,12 @@ func funcDeleteMessage(ctx context.Context, id string) error {
 	m.Text = "*ההודעה נמחקה*"
 	m.File = FileResponse{}
 
-	go pushMessages(DeleteMessage, m)
+	pushMessage := PushMessage{
+		Type: "delete-message",
+		M:    m,
+	}
+	pushMessageData, _ := json.Marshal(pushMessage)
+	rdb.Publish(ctx, "events", pushMessageData)
 
 	return nil
 }
@@ -617,13 +612,14 @@ func dbGetPeakSSEConnections(ctx context.Context) (*PeakSSEConnections, error) {
 	var peak PeakSSEConnections
 	vel, _ := dyno.GetInteger(p["value"])
 	timestamp, _ := dyno.GetInteger(p["timestamp"])
-	peak.Value = int(vel)
+
+	peak.Value = vel
 	peak.Timestamp = time.Unix(timestamp, 0)
 
 	return &peak, nil
 }
 
-func dbSaveSSEStatistics(amount int) {
+func dbSaveSSEStatistics(amount int64) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -661,90 +657,4 @@ func dbGetSSEStatistics(ctx context.Context, length int64) (*Statistics, error) 
 	}
 
 	return result, nil
-}
-
-var getScheduledMessagesScript = redis.NewScript(`
-    local listKey = KEYS[1]
-	local nowTime = ARGV[1]
-
-	local scheduledMessages = redis.call('ZRANGEBYSCORE', listKey, '-inf', nowTime)
-	if #scheduledMessages == 0 then
-		return '{}'
-	end
-
-	local result = {}
-	for _, messageKey in ipairs(scheduledMessages) do
-		local messageData = redis.call('HGETALL', messageKey)
-		local message = {}
-
-		for j = 1, #messageData, 2 do
-			local key = messageData[j]
-			local value = messageData[j+1]
-
-			if key == 'id' then
-				message[key] = tonumber(value)
-            elseif key == 'views' then
-				message[key] = 0
-			elseif key == 'deleted' then
-				message[key] = value == '1'
-			elseif key == 'author' then
-				message[key] = "Anonymous"
-			elseif key == 'authorId' then
-                message[key] = "Anonymous"
-			elseif key == 'reactions' then
-				local success, parsedReactions = pcall(cjson.decode, value)
-				if success then
-					message[key] = parsedReactions
-				else
-					message[key] = {}
-				end
-			elseif key == 'is_ads' then
-				message[key] = value == '1'
-			else
-				message[key] = value
-			end
-		end
-
-		if not message['deleted'] then
-			table.insert(result, message)
-		end
-	end
-
-	return cjson.encode(result)
-`)
-
-func dbGetScheduledMessages() ([]*Message, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	jsonMessages, err := getScheduledMessagesScript.Run(
-		ctx,
-		rdb,
-		[]string{
-			"scheduled_messages",
-		},
-		[]string{
-			strconv.FormatInt(time.Now().Unix(), 10),
-		},
-	).Result()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get scheduled messages: %v", err)
-	}
-
-	if jsonMessages == "{}" {
-		return []*Message{}, nil
-	}
-
-	var messages []*Message
-	if err := json.Unmarshal([]byte(jsonMessages.(string)), &messages); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal scheduled messages: %v", err)
-	}
-
-	return messages, nil
-}
-
-func dbRemoveScheduledMessage(key int) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	return rdb.ZRem(ctx, "scheduled_messages", fmt.Sprintf("messages:%d", key)).Err()
 }

@@ -8,86 +8,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-chi/chi"
 )
-
-type BroadcastList struct {
-	sync.Mutex
-	Clients map[*EventListener]bool
-}
-
-func (bl *BroadcastList) Count() int {
-	bl.Lock()
-	defer bl.Unlock()
-	return len(bl.Clients)
-}
-
-var broadcastList = &BroadcastList{
-	Clients: make(map[*EventListener]bool),
-}
-
-type EventListener struct {
-	Privileges Privileges
-	ClientCh   chan string
-}
-
-func (el *EventListener) Add() {
-	broadcastList.Lock()
-	defer broadcastList.Unlock()
-	broadcastList.Clients[el] = true
-	go upCounterSSE()
-}
-
-func (el *EventListener) Close() {
-	broadcastList.Lock()
-	defer broadcastList.Unlock()
-	delete(broadcastList.Clients, el)
-	close(el.ClientCh)
-}
-
-func (el *EventListener) Send(mp string) {
-	select {
-	case el.ClientCh <- mp:
-	default:
-	}
-}
-
-type PushType int
-
-const (
-	NewMessage PushType = iota
-	EditMessage
-	DeleteMessage
-	MsgAfterScheduling
-	MsgBeforeScheduling
-	Reaction
-)
-
-type PushMessage struct {
-	Type string  `json:"type"`
-	M    Message `json:"message"`
-}
-
-func init() {
-	const waitingTime = 30 * time.Second
-	go func() {
-		for {
-			scheduledMessage, err := dbGetScheduledMessages()
-			if err != nil {
-				time.Sleep(waitingTime)
-				continue
-			}
-			for _, msg := range scheduledMessage {
-				go pushMessages(MsgAfterScheduling, msg)
-				go dbRemoveScheduledMessage(msg.ID)
-			}
-			time.Sleep(waitingTime)
-		}
-	}()
-}
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -124,7 +48,7 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	message := &Message{}
+	var message Message
 	var err error
 	defer r.Body.Close()
 
@@ -149,7 +73,7 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 	message.Type = body.Type
 	message.Author = user.PublicName
 	message.AuthorId = user.ID
-	message.Timestamp = body.Timestamp
+	message.Timestamp = time.Now()
 	message.Text = body.Text
 	message.File = body.File
 	message.Views = 0
@@ -162,6 +86,7 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go SendWebhook(context.Background(), "create", message)
+	go pushFcmMessage(message)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(message)
@@ -174,7 +99,7 @@ func updateMessage(w http.ResponseWriter, r *http.Request) {
 	var err error
 	defer r.Body.Close()
 
-	body := &Message{}
+	body := Message{}
 	if err = json.NewDecoder(r.Body).Decode(&body); err != nil {
 		response := Response{Success: false}
 		json.NewEncoder(w).Encode(response)
@@ -202,7 +127,7 @@ func deleteMessage(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	idInt, _ := strconv.Atoi(id)
-	message := &Message{ID: idInt, Deleted: true}
+	message := Message{ID: idInt, Deleted: true}
 
 	if err := funcDeleteMessage(ctx, id); err != nil {
 		response := Response{Success: false}
@@ -217,9 +142,6 @@ func deleteMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getEvents(w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, cookieName)
-	user, _ := session.Values["user"].(Session)
-
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
@@ -241,17 +163,18 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	flusher.Flush()
 
-	el := &EventListener{
-		Privileges: user.Privileges,
-		ClientCh:   make(chan string, 10),
+	go increaseCounterSSE()
+	defer decreaseCounterSSE()
+
+	pubsub := rdb.Subscribe(r.Context(), "events")
+	defer pubsub.Close()
+
+	if _, err := pubsub.Receive(clientCtx); err != nil {
+		http.Error(w, "Failed to subscribe to events", http.StatusInternalServerError)
+		return
 	}
 
-	/*go*/
-	el.Add()
-	defer el.Close()
-
-	ch := el.ClientCh
-
+	ch := pubsub.Channel()
 	for {
 		select {
 		case <-clientCtx.Done():
@@ -268,60 +191,11 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			_, err := fmt.Fprintf(w, "data: %s\n\n", msg)
+			_, err := fmt.Fprintf(w, "data: %s\n\n", msg.Payload)
 			if err != nil {
 				return
 			}
 			flusher.Flush()
-		}
-	}
-}
-
-func pushMessages(pushType PushType, message *Message) {
-	if message.ID == 0 {
-		log.Println("pushMessages called with message ID 0")
-		return
-	}
-	var pt string
-	switch pushType {
-	case NewMessage, MsgAfterScheduling:
-		go pushFcmMessage(message)
-		pt = "new-message"
-	case MsgBeforeScheduling:
-		pt = "new-message"
-	case EditMessage:
-		pt = "edit-message"
-	case DeleteMessage:
-		pt = "delete-message"
-	case Reaction:
-		pt = "reaction"
-	}
-	pushMessage := &PushMessage{
-		Type: pt,
-		M:    *message,
-	}
-	pushMessageData, _ := json.Marshal(pushMessage)
-	pmStr := string(pushMessageData)
-
-	broadcastList.Lock()
-	defer broadcastList.Unlock()
-	for client := range broadcastList.Clients {
-		switch pushType {
-		case NewMessage:
-			client.Send(pmStr)
-
-		case EditMessage, DeleteMessage, Reaction:
-			client.Send(pmStr)
-
-		case MsgBeforeScheduling:
-			if client.Privileges[Writer] {
-				client.Send(pmStr)
-			}
-
-		case MsgAfterScheduling:
-			if !client.Privileges[Writer] {
-				client.Send(pmStr)
-			}
 		}
 	}
 }

@@ -15,7 +15,7 @@ func addNewPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := &Message{}
+	var message Message
 	var err error
 	defer r.Body.Close()
 
