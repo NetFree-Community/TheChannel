@@ -49,7 +49,10 @@ func (el *EventListener) Close() {
 }
 
 func (el *EventListener) Send(mp string) {
-	el.ClientCh <- mp
+	select {
+	case el.ClientCh <- mp:
+	default:
+	}
 }
 
 type PushType int
