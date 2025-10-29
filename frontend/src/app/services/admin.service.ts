@@ -52,7 +52,7 @@ export class AdminService {
   }
 
   deleteMessage(id: number | undefined): Observable<ChatMessage> {
-    return this.http.get<ChatMessage>(`/api/admin/delete-message/${id}`);
+    return this.http.post<ChatMessage>(`/api/admin/delete-message/${id}` ,null);
   }
 
   uploadFile(formData: FormData) {

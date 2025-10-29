@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"log"
 	"net/http"
+	"net/url"
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/boj/redistore"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/gorilla/sessions"
 )
 
 var rootStaticFolder = os.Getenv("ROOT_STATIC_FOLDER")
@@ -37,6 +39,62 @@ func ifRequireAuth(next http.Handler) http.Handler {
 	})
 }
 
+func cspFrameAncestorsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if settingConfig.FrameAncestorsDomains != "" {
+			cspValue := "frame-ancestors 'self'"
+			cspValue = cspValue + " " + settingConfig.FrameAncestorsDomains
+			w.Header().Set("Content-Security-Policy", cspValue)
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func validateOrigin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+
+		if !settingConfig.validateOrigin {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if origin == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		originURL, err := url.Parse(origin)
+		if err != nil {
+			http.Error(w, "Forbidden: Malformed Origin Header", http.StatusForbidden)
+			return
+		}
+
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		appHostOrigin := scheme + "://" + r.Host
+
+		allowed := make(map[string]struct{})
+		
+		allowed[appHostOrigin] = struct{}{}
+
+		if len(settingConfig.AllowedOrigins) > 0 {
+			for _, allowedOrigin := range settingConfig.AllowedOrigins {
+				allowed[allowedOrigin] = struct{}{}
+			}
+		}
+
+		if _, ok := allowed[originURL.String()]; !ok {
+			http.Error(w, "Forbidden: Invalid Origin", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	gob.Register(Session{})
 	initializePrivilegeUsers()
@@ -48,11 +106,27 @@ func main() {
 		panic(err)
 	}
 	store.SetMaxAge(60 * 60 * 24 * 30)
-	store.Options.HttpOnly = true
+	store.Options = &sessions.Options{
+		Path:     "/",
+		HttpOnly: true,
+	}
+
+	sameSitePolicy := os.Getenv("COOKIE_SAMESITE_POLICY")
+
+	switch sameSitePolicy {
+    case "None":
+		store.Options.SameSite = http.SameSiteNoneMode
+		store.Options.Secure = true
+	case "Strict":
+		store.Options.SameSite = http.SameSiteStrictMode
+	default:
+		store.Options.SameSite = http.SameSiteLaxMode
+	}
 	defer store.Close()
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(cspFrameAncestorsMiddleware)
 
 	// Protected with api key
 	r.Post("/api/import/post", addNewPost)
@@ -86,10 +160,11 @@ func main() {
 
 			api.Route("/admin", func(protected chi.Router) {
 				// ⚠️ WARNING: Route not check privilege use protectedWithPrivilege to check privilege.
+				protected.Use(validateOrigin)
 
 				protected.Post("/new", protectedWithPrivilege(Writer, addMessage))
 				protected.Post("/edit-message", protectedWithPrivilege(Writer, updateMessage))
-				protected.Get("/delete-message/{id}", protectedWithPrivilege(Writer, deleteMessage))
+				protected.Post("/delete-message/{id}", protectedWithPrivilege(Writer, deleteMessage))
 				protected.Post("/upload", protectedWithPrivilege(Writer, uploadFile))
 				protected.Post("/edit-channel-info", protectedWithPrivilege(Moderator, editChannelInfo))
 				protected.Get("/statistics", protectedWithPrivilege(Moderator, getStatistics))
