@@ -1,5 +1,5 @@
 import { Component, ElementRef, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HttpEventType } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
 import { firstValueFrom, Subscription } from "rxjs";
@@ -25,7 +25,6 @@ import { AutosizeModule } from "ngx-autosize";
 @Component({
   selector: 'app-input-form',
   imports: [
-    CommonModule,
     FormsModule,
     NbInputModule,
     NbIconModule,
@@ -38,9 +37,9 @@ import { AutosizeModule } from "ngx-autosize";
     MarkdownComponent,
     NbTagModule,
     NbAlertModule,
-    NgIconsModule, // Use NgIconsModule directly, icons are configured in app.config.ts
-    AutosizeModule,
-  ],
+    NgIconsModule,
+    AutosizeModule
+],
   templateUrl: './input-form.component.html',
   styleUrl: './input-form.component.scss'
 })

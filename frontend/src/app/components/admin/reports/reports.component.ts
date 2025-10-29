@@ -2,7 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { NbButtonModule, NbCardModule, NbToastrService } from "@nebular/theme";
 import { AdminService } from '../../../services/admin.service';
 import { Reports, Report } from '../../../models/report.model';
-import { CommonModule } from '@angular/common';
+
 import { MessageTimePipe } from "../../../pipes/message-time.pipe";
 
 @Component({
@@ -10,9 +10,8 @@ import { MessageTimePipe } from "../../../pipes/message-time.pipe";
   imports: [
     NbCardModule,
     NbButtonModule,
-    CommonModule,
     MessageTimePipe
-  ],
+],
   templateUrl: './reports.component.html',
   styleUrl: './reports.component.scss'
 })

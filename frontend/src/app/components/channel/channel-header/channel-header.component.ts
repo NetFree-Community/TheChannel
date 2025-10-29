@@ -1,5 +1,5 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
-import { NgIf } from "@angular/common";
+
 import {
   NbButtonModule,
   NbContextMenuModule, NbDialogService,
@@ -22,12 +22,11 @@ import { User } from '../../../models/user.model';
 @Component({
   selector: 'app-channel-header',
   imports: [
-    NgIf,
     NbButtonModule,
     NbIconModule,
     NbUserModule,
-    NbContextMenuModule,
-  ],
+    NbContextMenuModule
+],
   templateUrl: './channel-header.component.html',
   styleUrl: './channel-header.component.scss'
 })

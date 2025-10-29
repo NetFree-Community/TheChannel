@@ -1,5 +1,5 @@
-import { Parser, Token, Tokens, TokensList } from "marked";
-import { MarkdownModuleConfig, MARKED_OPTIONS, MarkedRenderer } from "ngx-markdown";
+import { Token, Tokens, TokensList } from "marked";
+import { MarkdownModuleConfig, MARKED_EXTENSIONS, MARKED_OPTIONS, MarkedRenderer } from "ngx-markdown";
 
 const matchCustomEmbedRegEx = /^\[(video|audio|image|quote)-embedded#]\((.*?)\)/;
 
@@ -75,7 +75,13 @@ renderer.link = ({ href, text }) => {
 //renderer.paragraph = ({ tokens }) => Parser.parseInline(tokens);
 
 export const MarkdownConfig: MarkdownModuleConfig = {
-  markedExtensions: [customEmbedExtension],
+  markedExtensions: [
+    {
+      provide: MARKED_EXTENSIONS,
+      useValue: customEmbedExtension,
+      multi: true,
+    },
+  ],
   markedOptions: {
     provide: MARKED_OPTIONS,
     useValue: {

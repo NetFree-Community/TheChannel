@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, NgZone, OnDestroy, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -35,7 +35,6 @@ type ScrollOpt = {
   selector: 'app-chat',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     NbLayoutModule,
     NbChatModule,
@@ -44,8 +43,8 @@ type ScrollOpt = {
     NbButtonModule,
     NbListModule,
     NbBadgeModule,
-    MessageComponent,
-  ],
+    MessageComponent
+],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss'
 })

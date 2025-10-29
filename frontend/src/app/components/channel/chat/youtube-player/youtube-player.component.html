@@ -1,2 +1,4 @@
-<youtube-player *ngIf="videoId" [videoId]="videoId" disablePlaceholder [playerVars]="playerConfig" [width]="iframeWidth"
+@if (videoId) {
+  <youtube-player [videoId]="videoId" disablePlaceholder [playerVars]="playerConfig" [width]="iframeWidth"
     [height]="iframeHeight" />
+}

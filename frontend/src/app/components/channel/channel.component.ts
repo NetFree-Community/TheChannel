@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, Renderer2, RendererStyleFlags2, ViewChild } from '@angular/core';
 import { AdvertisingComponent } from "./advertising/advertising.component";
-import { CommonModule } from '@angular/common';
+
 import { Ad, AdsService } from '../../services/ads.service';
 import {
   NbButtonModule,
@@ -20,7 +20,6 @@ import { User } from '../../models/user.model';
   selector: 'app-channel',
   imports: [
     AdvertisingComponent,
-    CommonModule,
     NbLayoutModule,
     InputFormComponent,
     ChannelHeaderComponent,
@@ -29,8 +28,8 @@ import { User } from '../../models/user.model';
     NbMenuModule,
     NbSidebarModule,
     NbListModule,
-    ChatComponent,
-  ],
+    ChatComponent
+],
   templateUrl: './channel.component.html',
   styleUrl: './channel.component.scss'
 })

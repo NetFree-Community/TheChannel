@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { NgIf, CommonModule } from "@angular/common";
+import { CommonModule } from "@angular/common";
 import {
   NbButtonModule,
   NbCardModule, NbChatModule,
@@ -21,7 +21,6 @@ import { ReportComponent } from './report/report.component';
 @Component({
   selector: 'app-message',
   imports: [
-    NgIf,
     CommonModule,
     NbCardModule,
     NbIconModule,
@@ -31,8 +30,8 @@ import { ReportComponent } from './report/report.component';
     NbPopoverModule,
     NgbPopoverModule,
     NbChatModule,
-    NbUserModule,
-  ],
+    NbUserModule
+],
   templateUrl: './message.component.html',
   styleUrl: './message.component.scss'
 })

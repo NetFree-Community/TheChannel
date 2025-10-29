@@ -1,112 +1,114 @@
 <nb-card>
-    <nb-card-header>
-        ניהול הרשאות משתמשים
-    </nb-card-header>
-    <nb-card-body>
-        <nb-card>
-            <nb-card-header>
-                <span>הוספת משתמש מורשה חדש</span>
-            </nb-card-header>
-            <nb-card-body>
-                <button nbButton status="primary" *ngIf="!addingNewUser" (click)="addingNewUser = true">
-                    <nb-icon icon="plus"></nb-icon>
-                    הוסף מורשה
-                </button>
-
-                <div *ngIf="addingNewUser" class="d-flex flex-column gap-2">
-
-                    <div>
-                        <span>שם משתמש:</span><br>
-                        <input nbInput fieldSize="small" type="text" [(ngModel)]="newUser.username" disabled><br>
-                        <small>
-                            מתעדכן עם כניסת המשתמש למערכת
-                        </small>
-                    </div>
-                    <div>
-                        <span>כתובת מייל:</span><br>
-                        <input nbInput fieldSize="small" type="text" [(ngModel)]="newUser.email">
-                    </div>
-                    <div>
-                        <span>שם שיופיע בעת פרסום הודעות:</span><br>
-                        <input nbInput fieldSize="small" type="text" [(ngModel)]="newUser.publicName">
-                    </div>
-                    <div>
-                        <span>הרשאות:</span>
-                        <div class="d-flex flex-column">
-                            <nb-checkbox [(ngModel)]="newUser.privileges['admin']">מנהל ראשי</nb-checkbox>
-                            <nb-checkbox [(ngModel)]="newUser.privileges['moderator']">מנהל</nb-checkbox>
-                            <nb-checkbox [(ngModel)]="newUser.privileges['writer']">כותב</nb-checkbox>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button nbButton status="primary" size="small" (click)="saveNewUser()">
-                            <nb-icon icon="plus"></nb-icon>
-                            הוסף משתמש
-                        </button>
-                        <button nbButton status="danger" size="small" (click)="resetNewUser()">
-                            <nb-icon icon="close"></nb-icon>
-                            ביטול
-                        </button>
-
-                    </div>
-                </div>
-            </nb-card-body>
-        </nb-card>
-
-
-        @for (item of privilegeUsersList; track $index) {
-
-        <nb-card>
-            <nb-card-body>
-                <div class="d-flex flex-column gap-2">
-                    <div>
-                        <span>
-                            שם משתמש:
-                        </span><br>
-                        <input nbInput fieldSize="small" type="text" [(ngModel)]="item.username" disabled>
-                    </div>
-                    <div>
-                        <span>
-                            כתובת מייל:
-                        </span><br>
-                        <input nbInput fieldSize="small" type="text" [(ngModel)]="item.email" disabled>
-                    </div>
-                    <div>
-                        <span>
-                            שם שיופיע בעת פרסום הודעות:
-                        </span><br>
-                        <input nbInput fieldSize="small" type="text" [(ngModel)]="item.publicName">
-                    </div>
-                    <div>
-                        <span>
-                            הרשאות:
-                        </span>
-                        <div class="d-flex flex-column">
-                            <nb-checkbox [(ngModel)]="item.privileges['admin']">
-                                מנהל ראשי
-                            </nb-checkbox>
-                            <nb-checkbox [(ngModel)]="item.privileges['moderator']">
-                                מנהל
-                            </nb-checkbox>
-                            <nb-checkbox [(ngModel)]="item.privileges['writer']">
-                                כותב
-                            </nb-checkbox>
-                        </div>
-                    </div>
-                    <div>
-                        <button nbButton status="danger" size="small" (click)="deleteUser($index)"
-                            [disabled]="!authService.userInfo?.privileges?.['admin']">
-                            <nb-icon icon="trash-2"></nb-icon>
-                            מחק משתמש
-                        </button>
-                    </div>
-                </div>
-            </nb-card-body>
-        </nb-card>
+  <nb-card-header>
+    ניהול הרשאות משתמשים
+  </nb-card-header>
+  <nb-card-body>
+    <nb-card>
+      <nb-card-header>
+        <span>הוספת משתמש מורשה חדש</span>
+      </nb-card-header>
+      <nb-card-body>
+        @if (!addingNewUser) {
+          <button nbButton status="primary" (click)="addingNewUser = true">
+            <nb-icon icon="plus"></nb-icon>
+            הוסף מורשה
+          </button>
         }
-    </nb-card-body>
-    <nb-card-footer>
-        <button nbButton status="primary" (click)="saveChanges()"
-            [disabled]="!authService.userInfo?.privileges?.['admin']">שמור</button>
-    </nb-card-footer>
+
+        @if (addingNewUser) {
+          <div class="d-flex flex-column gap-2">
+            <div>
+              <span>שם משתמש:</span><br>
+              <input nbInput fieldSize="small" type="text" [(ngModel)]="newUser.username" disabled><br>
+              <small>
+                מתעדכן עם כניסת המשתמש למערכת
+              </small>
+            </div>
+            <div>
+              <span>כתובת מייל:</span><br>
+              <input nbInput fieldSize="small" type="text" [(ngModel)]="newUser.email">
+            </div>
+            <div>
+              <span>שם שיופיע בעת פרסום הודעות:</span><br>
+              <input nbInput fieldSize="small" type="text" [(ngModel)]="newUser.publicName">
+            </div>
+            <div>
+              <span>הרשאות:</span>
+              <div class="d-flex flex-column">
+                <nb-checkbox [(ngModel)]="newUser.privileges['admin']">מנהל ראשי</nb-checkbox>
+                <nb-checkbox [(ngModel)]="newUser.privileges['moderator']">מנהל</nb-checkbox>
+                <nb-checkbox [(ngModel)]="newUser.privileges['writer']">כותב</nb-checkbox>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <button nbButton status="primary" size="small" (click)="saveNewUser()">
+                <nb-icon icon="plus"></nb-icon>
+                הוסף משתמש
+              </button>
+              <button nbButton status="danger" size="small" (click)="resetNewUser()">
+                <nb-icon icon="close"></nb-icon>
+                ביטול
+              </button>
+            </div>
+          </div>
+        }
+      </nb-card-body>
+    </nb-card>
+
+
+    @for (item of privilegeUsersList; track $index) {
+
+      <nb-card>
+        <nb-card-body>
+          <div class="d-flex flex-column gap-2">
+            <div>
+              <span>
+                שם משתמש:
+              </span><br>
+              <input nbInput fieldSize="small" type="text" [(ngModel)]="item.username" disabled>
+            </div>
+            <div>
+              <span>
+                כתובת מייל:
+              </span><br>
+              <input nbInput fieldSize="small" type="text" [(ngModel)]="item.email" disabled>
+            </div>
+            <div>
+              <span>
+                שם שיופיע בעת פרסום הודעות:
+              </span><br>
+              <input nbInput fieldSize="small" type="text" [(ngModel)]="item.publicName">
+            </div>
+            <div>
+              <span>
+                הרשאות:
+              </span>
+              <div class="d-flex flex-column">
+                <nb-checkbox [(ngModel)]="item.privileges['admin']">
+                  מנהל ראשי
+                </nb-checkbox>
+                <nb-checkbox [(ngModel)]="item.privileges['moderator']">
+                  מנהל
+                </nb-checkbox>
+                <nb-checkbox [(ngModel)]="item.privileges['writer']">
+                  כותב
+                </nb-checkbox>
+              </div>
+            </div>
+            <div>
+              <button nbButton status="danger" size="small" (click)="deleteUser($index)"
+                [disabled]="!authService.userInfo?.privileges?.['admin']">
+                <nb-icon icon="trash-2"></nb-icon>
+                מחק משתמש
+              </button>
+            </div>
+          </div>
+        </nb-card-body>
+      </nb-card>
+    }
+  </nb-card-body>
+  <nb-card-footer>
+    <button nbButton status="primary" (click)="saveChanges()"
+    [disabled]="!authService.userInfo?.privileges?.['admin']">שמור</button>
+  </nb-card-footer>
 </nb-card>

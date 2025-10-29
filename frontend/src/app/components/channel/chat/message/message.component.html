@@ -1,79 +1,99 @@
-<div *ngIf="message && message.text" class="d-flex flex-row align-content-center my-1 mx-4">
+@if (message && message.text) {
+  <div class="d-flex flex-row align-content-center my-1 mx-4">
     <div class="d-flex flex-column">
-        <nb-user class="pt-4" [shape]="'round'" [color]="'white'" [size]="'large'"
-            [picture]="chatService.channelInfo?.logoUrl || ''" [name]="chatService.channelInfo?.name || ''"
-            onlyPicture></nb-user>
+      <nb-user class="pt-4" [shape]="'round'" [color]="'white'" [size]="'large'"
+        [picture]="chatService.channelInfo?.logoUrl || ''" [name]="chatService.channelInfo?.name || ''"
+      onlyPicture></nb-user>
     </div>
     <div class="d-flex flex-column gap-1 overflow-auto">
-        <div class="d-flex flex-row gap-2 pe-1">
-            <strong class="text-black-50">{{_authService.userInfo?.privileges?.['admin'] ? message.author :
-                chatService.channelInfo?.name
-                }}</strong>
-            <small class="text-black-50">{{ message.timestamp | messageTime }}</small>
-            <small class="text-black-50" *ngIf="isEdited(message)">
-                נערכה {{ message.last_edit | messageTime }}
-            </small>
-            <div *ngIf="message.deleted">
-                <nb-icon icon="alert-circle" nbPopover="לחצו כאן לשחזור ההודעה" nbPopoverTrigger="hover"
-                    (click)="editMessage(message)" status="danger"></nb-icon>
+      <div class="d-flex flex-row gap-2 pe-1">
+        <strong class="text-black-50">{{_authService.userInfo?.privileges?.['admin'] ? message.author :
+          chatService.channelInfo?.name
+        }}</strong>
+        <small class="text-black-50">{{ message.timestamp | messageTime }}</small>
+        @if (isEdited(message)) {
+          <small class="text-black-50">
+            נערכה {{ message.last_edit | messageTime }}
+          </small>
+        }
+        @if (message.deleted) {
+          <div>
+            <nb-icon icon="alert-circle" nbPopover="לחצו כאן לשחזור ההודעה" nbPopoverTrigger="hover"
+            (click)="editMessage(message)" status="danger"></nb-icon>
+          </div>
+        }
+        @if (_authService.userInfo?.privileges?.['writer']) {
+          <button class="icon-button" nbButton ghost
+            shape="round" size="small" (click)="editMessage(message)" title="ערוך הודעה">
+            <nb-icon icon="edit"></nb-icon>
+          </button>
+        }
+        @if (_authService.userInfo?.privileges?.['writer'] && !message.deleted) {
+          <button class="icon-button"
+            nbButton ghost shape="round" size="small" (click)="deleteMessage(message)" title="מחק הודעה">
+            <nb-icon icon="trash-2"></nb-icon>
+          </button>
+        }
+        @if (_authService.userInfo?.privileges?.['writer']) {
+          <button class="icon-button" nbButton ghost
+            shape="round" size="small" (click)="quoteMessage(message)" title="צטט הודעה">
+            <nb-icon icon="corner-down-left-outline"></nb-icon>
+          </button>
+        }
+        @if (_authService.userInfo) {
+          <button nbButton ghost shape="round" size="small"
+            (click)="openReportDialog(message.id)" title="דווח על ההודעה" class="icon-button">
+            <nb-icon icon="alert-triangle-outline"></nb-icon>
+          </button>
+        }
+        <button class="icon-button" nbButton ghost shape="round" size="small" (click)="copyLink(message.id)"
+          title="העתק קישור להודעה">
+          <nb-icon icon="link-2"></nb-icon>
+        </button>
+      </div>
+      <div [ngbPopover]="emojiMenu" [placement]="['top', 'bottom']" [disablePopover]="!reacts.length"
+        [triggers]="'manual'" [popoverContext]="{message}" [autoClose]="'outside'"
+        [popoverClass]="'emoji-picker-popover'" (mouseenter)="showEmojiMenu()"
+        (mouseleave)="scheduleEmojiMenuClose()" #p="ngbPopover">
+        <div class="d-flex flex-column bg-light rounded-4 border fs-5 f lh-base message-card"
+          [ngStyle]="{'opacity': message.deleted ? 0.5 : 1}">
+          <div class="m-2" #media>
+            <markdown [data]="message.text" [disableSanitizer]="true" (click)="viewLargeImage($event)">
+            </markdown>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mx-2 gap-2 mb-1">
+            @if (message.views) {
+              <div class="d-flex flex-row align-items-center text-black-50 gap-1" title="צפיות"
+                >
+                <small>{{ message.views }}</small>
+                <nb-icon icon="eye-outline"></nb-icon>
+              </div>
+            }
+          </div>
+          @if (message.reactions) {
+            <div class="emojis-section">
+              @for (reaction of message.reactions | keyvalue; track reaction) {
+                <div class="emoji-reaction"
+                  (click)="setReact(message.id, reaction.key)"
+                  [title]="reaction.value + ' אנשים הגיבו עם ' + reaction.key">
+                  <span class="emoji">{{ reaction.key }}</span>
+                  <span class="count">{{ reaction.value }}</span>
+                </div>
+              }
             </div>
-            <button *ngIf="_authService?.userInfo?.privileges?.['writer']" class="icon-button" nbButton ghost
-                shape="round" size="small" (click)="editMessage(message)" title="ערוך הודעה">
-                <nb-icon icon="edit"></nb-icon>
-            </button>
-            <button *ngIf="_authService?.userInfo?.privileges?.['writer'] && !message.deleted" class="icon-button"
-                nbButton ghost shape="round" size="small" (click)="deleteMessage(message)" title="מחק הודעה">
-                <nb-icon icon="trash-2"></nb-icon>
-            </button>
-            <button *ngIf="_authService?.userInfo?.privileges?.['writer']" class="icon-button" nbButton ghost
-                shape="round" size="small" (click)="quoteMessage(message)" title="צטט הודעה">
-                <nb-icon icon="corner-down-left-outline"></nb-icon>
-            </button>
-            <button *ngIf="_authService.userInfo" nbButton ghost shape="round" size="small"
-                (click)="openReportDialog(message.id)" title="דווח על ההודעה" class="icon-button">
-                <nb-icon icon="alert-triangle-outline"></nb-icon>
-            </button>
-            <button class="icon-button" nbButton ghost shape="round" size="small" (click)="copyLink(message.id)"
-                title="העתק קישור להודעה">
-                <nb-icon icon="link-2"></nb-icon>
-            </button>
+          }
         </div>
-        <div [ngbPopover]="emojiMenu" [placement]="['top', 'bottom']" [disablePopover]="!reacts.length"
-            [triggers]="'manual'" [popoverContext]="{message}" [autoClose]="'outside'"
-            [popoverClass]="'emoji-picker-popover'" (mouseenter)="showEmojiMenu()"
-            (mouseleave)="scheduleEmojiMenuClose()" #p="ngbPopover">
-            <div class="d-flex flex-column bg-light rounded-4 border fs-5 f lh-base message-card"
-                [ngStyle]="{'opacity': message.deleted ? 0.5 : 1}">
-                <div class="m-2" #media>
-                    <markdown [data]="message.text" [disableSanitizer]="true" (click)="viewLargeImage($event)">
-                    </markdown>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mx-2 gap-2 mb-1">
-                    <div class="d-flex flex-row align-items-center text-black-50 gap-1" title="צפיות"
-                        *ngIf="message.views">
-                        <small>{{ message.views }}</small>
-                        <nb-icon icon="eye-outline"></nb-icon>
-                    </div>
-                </div>
-
-                <div *ngIf="message.reactions" class="emojis-section">
-                    <div *ngFor="let reaction of message.reactions | keyvalue" class="emoji-reaction"
-                        (click)="setReact(message.id, reaction.key)"
-                        [title]="reaction.value + ' אנשים הגיבו עם ' + reaction.key">
-                        <span class="emoji">{{ reaction.key }}</span>
-                        <span class="count">{{ reaction.value }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
-</div>
+  </div>
+}
 
 <ng-template #emojiMenu let-message="message">
-    <div class="emoji-picker-menu" (mouseenter)="cancelEmojiMenuClose()" (mouseleave)="scheduleEmojiMenuClose()">
-        <button *ngFor="let react of reacts" class="emoji-option emoji" (click)="setReact(message.id, react)">
-            {{ react }}
-        </button>
-    </div>
+  <div class="emoji-picker-menu" (mouseenter)="cancelEmojiMenuClose()" (mouseleave)="scheduleEmojiMenuClose()">
+    @for (react of reacts; track react) {
+      <button class="emoji-option emoji" (click)="setReact(message.id, react)">
+        {{ react }}
+      </button>
+    }
+  </div>
 </ng-template>

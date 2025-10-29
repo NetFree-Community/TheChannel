@@ -6,15 +6,21 @@
           <h4>התחברות</h4>
         </div>
         <div class="card-body">
-          <div class="alert alert-danger" role="alert" *ngIf="status === 'failed'">
-            התחברות נכשלה, נסו שנית.
-          </div>
-          <button *ngIf="!code && !checkUserInfo" type="submit" class="btn btn-primary w-100" (click)="login()">
-            התחבר באמצעות חשבון גוגל
-          </button>
-          <div *ngIf="code || checkUserInfo" class="text-center">
-            <div class="spinner-border text-primary"></div>
-          </div>
+          @if (status === 'failed') {
+            <div class="alert alert-danger" role="alert">
+              התחברות נכשלה, נסו שנית.
+            </div>
+          }
+          @if (!code && !checkUserInfo) {
+            <button type="submit" class="btn btn-primary w-100" (click)="login()">
+              התחבר באמצעות חשבון גוגל
+            </button>
+          }
+          @if (code || checkUserInfo) {
+            <div class="text-center">
+              <div class="spinner-border text-primary"></div>
+            </div>
+          }
         </div>
       </div>
     </div>

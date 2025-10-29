@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AdminService } from '../../../services/admin.service';
 import { NbButtonModule, NbCardModule, NbToastrService, NbIconModule, NbInputModule } from "@nebular/theme";
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Setting } from '../../../models/setting.model';
 
@@ -12,9 +12,8 @@ import { Setting } from '../../../models/setting.model';
     NbButtonModule,
     NbIconModule,
     NbInputModule,
-    CommonModule,
     FormsModule
-  ],
+],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })

@@ -1,39 +1,51 @@
 <div nbInfiniteList (scroll)="onListScroll()" [threshold]="300" [throttleTime]="1000" (topThreshold)="loadMessages()"
-    (bottomThreshold)="loadMessages({ scrollDown: true })" [listenWindowScroll]="true">
-    <nb-list class="flex-column-reverse">
+  (bottomThreshold)="loadMessages({ scrollDown: true })" [listenWindowScroll]="true">
+  <nb-list class="flex-column-reverse">
 
-        <nb-list-item *ngFor="let message of messages" class="d-flex flex-column align-items-start">
-            <!-- last read indicator -->
-            @if (message.id === lastReadMessageId + 1) {
-            <div class="last-read-indicator">
-                <div class="line"></div>
-                <div class="last-read-indicator-text">לא נקראו</div>
-                <div class="line"></div>
-            </div>
-            }
-            <app-message class="overflow-auto" [message]="message" [id]="message.id"></app-message>
-        </nb-list-item>
+    @for (message of messages; track message) {
+      <nb-list-item class="d-flex flex-column align-items-start">
+        <!-- last read indicator -->
+        @if (message.id === lastReadMessageId + 1) {
+          <div class="last-read-indicator">
+            <div class="line"></div>
+            <div class="last-read-indicator-text">לא נקראו</div>
+            <div class="line"></div>
+          </div>
+        }
+        <app-message class="overflow-auto" [message]="message" [id]="message.id"></app-message>
+      </nb-list-item>
+    }
 
-        <nb-list-item *ngIf="messages.length === 0" class="flex-fill align-self-center">
-            <div *ngIf="!isLoading" class="align-self-center flex-grow-1">
-                <span>אין הודעות</span>
-            </div>
-        </nb-list-item>
+    @if (messages.length === 0) {
+      <nb-list-item class="flex-fill align-self-center">
+        @if (!isLoading) {
+          <div class="align-self-center flex-grow-1">
+            <span>אין הודעות</span>
+          </div>
+        }
+      </nb-list-item>
+    }
 
-        <!-- Loading indicator -->
-        <nb-list-item *ngIf="isLoading" class="align-self-center loading-indicator">
-            <div class="align-self-center flex-grow-1">
-                <div class="spinner-border text-primary"></div>
-            </div>
-        </nb-list-item>
-    </nb-list>
+    <!-- Loading indicator -->
+    @if (isLoading) {
+      <nb-list-item class="align-self-center loading-indicator">
+        <div class="align-self-center flex-grow-1">
+          <div class="spinner-border text-primary"></div>
+        </div>
+      </nb-list-item>
+    }
+  </nb-list>
 
-    <!-- Scroll to bottom -->
-    <div class="scroll-to-bottom-btn" *ngIf="showScrollToBottom">
-        <button nbButton status="primary" shape="round" class="shadow" (click)="scrollToBottom()">
-            <nb-icon icon="arrow-downward-outline"></nb-icon>
-        </button>
-        <nb-badge *ngIf="thereNewMessages" [dotMode]="true" status="danger"></nb-badge>
+  <!-- Scroll to bottom -->
+  @if (showScrollToBottom) {
+    <div class="scroll-to-bottom-btn">
+      <button nbButton status="primary" shape="round" class="shadow" (click)="scrollToBottom()">
+        <nb-icon icon="arrow-downward-outline"></nb-icon>
+      </button>
+      @if (thereNewMessages) {
+        <nb-badge [dotMode]="true" status="danger"></nb-badge>
+      }
     </div>
+  }
 
 </div>

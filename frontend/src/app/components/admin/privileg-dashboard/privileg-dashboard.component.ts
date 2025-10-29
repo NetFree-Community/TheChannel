@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AdminService, PrivilegeUser } from '../../../services/admin.service';
 import { NbButtonModule, NbCardModule, NbInputModule, NbToastrService, NbIconModule, NbCheckboxModule } from "@nebular/theme";
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
@@ -12,10 +12,9 @@ import { AuthService } from '../../../services/auth.service';
     NbButtonModule,
     NbInputModule,
     FormsModule,
-    CommonModule,
     NbIconModule,
     NbCheckboxModule
-  ],
+],
   templateUrl: './privileg-dashboard.component.html',
   styleUrl: './privileg-dashboard.component.scss'
 })

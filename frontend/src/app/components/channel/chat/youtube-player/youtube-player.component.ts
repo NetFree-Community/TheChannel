@@ -1,14 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { NbDialogRef } from '@nebular/theme';
 import { YouTubePlayer } from "@angular/youtube-player";
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-youtube-player',
   imports: [
-    YouTubePlayer,
-    CommonModule
-  ],
+    YouTubePlayer
+],
   templateUrl: './youtube-player.component.html',
   styleUrl: './youtube-player.component.scss'
 })
