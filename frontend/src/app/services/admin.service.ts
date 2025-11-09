@@ -43,6 +43,10 @@ export class AdminService {
     return firstValueFrom(this.http.get<Statistics>('/api/admin/statistics'));
   }
 
+  resetPeakStatistics(): Promise<ResponseResult> {
+    return firstValueFrom(this.http.post<ResponseResult>('/api/admin/statistics/reset', {}));
+  }
+
   addMessage(message: ChatMessage): Observable<ChatMessage> {
     return this.http.post<ChatMessage>('/api/admin/new', message);
   }

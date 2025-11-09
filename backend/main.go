@@ -95,6 +95,7 @@ func main() {
 				protected.Get("/statistics", protectedWithPrivilege(Moderator, getStatistics))
 				protected.Post("/set-emojis", protectedWithPrivilege(Moderator, setEmojis))
 
+				protected.Post("/statistics/reset", protectedWithPrivilege(Admin, resetStatistics))
 				protected.Get("/privilegs-users/get-list", protectedWithPrivilege(Admin, getPrivilegeUsersList))
 				protected.Post("/privilegs-users/set", protectedWithPrivilege(Admin, setPrivilegeUsers))
 				protected.Get("/settings/get", protectedWithPrivilege(Admin, getSettings))

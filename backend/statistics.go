@@ -95,3 +95,16 @@ func getStatistics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+func resetStatistics(w http.ResponseWriter, r *http.Request) {
+	peakMu.Lock()
+	defer peakMu.Unlock()
+	peakSSEConnections.Value = 0
+	peakSSEConnections.Timestamp = time.Time{}
+	p := *peakSSEConnections
+	go dbSavePeakSSEConnections(&p)
+
+	var response Response
+	response.Success = true
+	json.NewEncoder(w).Encode(response)
+}

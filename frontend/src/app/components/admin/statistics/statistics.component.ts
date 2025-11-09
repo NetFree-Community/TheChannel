@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { NbButtonModule, NbCardModule } from "@nebular/theme";
+import { NbButtonModule, NbCardModule, NbToastrService } from "@nebular/theme";
 import { AdminService } from '../../../services/admin.service';
 import { Statistics } from '../../../models/statistics.model';
 import { MessageTimePipe } from '../../../pipes/message-time.pipe';
@@ -15,7 +15,7 @@ Chart.register(zoomPlugin);
     NbCardModule,
     MessageTimePipe,
     BaseChartDirective,
-    NbButtonModule
+    NbButtonModule,
   ],
   templateUrl: './statistics.component.html',
   styleUrl: './statistics.component.scss'
@@ -62,9 +62,23 @@ export class StatisticsComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
+    private toastrService: NbToastrService
   ) { }
 
   ngOnInit(): void {
+    this.updateData();
+  }
+
+  resetPeakStatistics(): void {
+    this.adminService.resetPeakStatistics()
+      .then(() => {
+        this.toastrService.success("", 'נקודת השיא אופסה בהצלחה!');
+        this.updateData();
+      })
+      .catch(() => this.toastrService.danger("", 'שגיאה באיפוס נקודת השיא!'));
+  }
+
+  updateData() {
     this.adminService.getStatistics().then(statistics => {
       this.statistics = statistics;
       this.lineChartData.datasets[0].data = statistics.connectionsStatistics.date;
