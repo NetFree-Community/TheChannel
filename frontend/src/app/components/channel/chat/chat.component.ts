@@ -44,7 +44,7 @@ type ScrollOpt = {
     NbListModule,
     NbBadgeModule,
     MessageComponent
-],
+  ],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss'
 })
@@ -78,7 +78,7 @@ export class ChatComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   @HostListener('window:click', ['$event'])
-  onUserAction(event: MouseEvent) {
+  onUserAction(event: MouseEvent | KeyboardEvent) {
     this.removeMsgMarked();
     const target = event.target as HTMLElement;
     const quoteElement = target.closest('[quote-id]')
