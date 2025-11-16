@@ -91,6 +91,8 @@ func main() {
 				protected.Post("/edit-message", protectedWithPrivilege(Writer, updateMessage))
 				protected.Get("/delete-message/{id}", protectedWithPrivilege(Writer, deleteMessage))
 				protected.Post("/upload", protectedWithPrivilege(Writer, uploadFile))
+				protected.Get("/scheduled-messages/get", protectedWithPrivilege(Writer, getScheduledMessages))
+				protected.Post("/scheduled-messages/update", protectedWithPrivilege(Writer, updateScheduledMessages))
 
 				protected.Post("/edit-channel-info", protectedWithPrivilege(Moderator, editChannelInfo))
 				protected.Get("/statistics", protectedWithPrivilege(Moderator, getStatistics))

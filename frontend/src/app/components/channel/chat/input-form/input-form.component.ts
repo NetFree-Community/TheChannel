@@ -7,6 +7,7 @@ import {
   NbAlertModule,
   NbButtonModule,
   NbCardModule,
+  NbDialogService,
   NbFormFieldModule,
   NbIconModule,
   NbInputModule,
@@ -21,6 +22,7 @@ import { NgIconsModule } from "@ng-icons/core";
 import { Attachment, ChatFile, ChatMessage } from '../../../../services/chat.service';
 import { AdminService, EditMsg } from '../../../../services/admin.service';
 import { AutosizeModule } from "ngx-autosize";
+import { TimePickerComponent } from './time-picker/time-picker.component';
 
 @Component({
   selector: 'app-input-form',
@@ -39,7 +41,7 @@ import { AutosizeModule } from "ngx-autosize";
     NbAlertModule,
     NgIconsModule,
     AutosizeModule
-],
+  ],
   templateUrl: './input-form.component.html',
   styleUrl: './input-form.component.scss'
 })
@@ -53,6 +55,7 @@ export class InputFormComponent implements OnInit, OnDestroy {
 
   input: string = '';
   isAds: boolean = false;
+  schedulingMessage: Date | undefined = undefined;
   isSending: boolean = false;
   showMarkdownPreview: boolean = false;
   hasScrollbar: boolean = false;
@@ -65,6 +68,7 @@ export class InputFormComponent implements OnInit, OnDestroy {
   constructor(
     private adminService: AdminService,
     private toastrService: NbToastrService,
+    private dialogService: NbDialogService
   ) { }
 
   ngOnInit() {
@@ -73,6 +77,9 @@ export class InputFormComponent implements OnInit, OnDestroy {
     }
 
     this.subscription = this.adminService.messageEditObservable.subscribe((edit?: EditMsg) => {
+      if (edit?.isScheduling) {
+        this.schedulingMessage = edit.message?.timestamp;
+      }
       if (edit?.new) {
         this.input = this.input ? `${this.input}\n${edit.message.text}` : edit.message.text || '';
       } else {
@@ -165,7 +172,15 @@ export class InputFormComponent implements OnInit, OnDestroy {
         return;
       }
 
-      let result = this.message ? await this.updateMessage() : await this.sendNewMessage();
+      if (!this.input.trim() && !this.attachments.length) {
+        this.toastrService.danger("", "לא ניתן לפרסם הודעה ריקה");
+        this.isSending = false;
+        return;
+      }
+
+      let result: boolean;
+      result = this.schedulingMessage ? await this.saveSchedulingMessage() : this.message ? await this.updateMessage() : await this.sendNewMessage();
+
       if (!result) {
         throw new Error();
       }
@@ -191,11 +206,37 @@ export class InputFormComponent implements OnInit, OnDestroy {
 
   cancelUpdateMessage() {
     this.adminService.setEditMessage(undefined);
+    this.clearInputs();
+  }
+
+  async saveSchedulingMessage(): Promise<boolean> {
+    let m: ChatMessage = {
+      type: 'md',
+      text: this.input,
+      file: undefined,
+      is_ads: this.isAds,
+      timestamp: this.schedulingMessage || undefined,
+    };
+
+    try {
+      if (this.message) {
+        this.message.text = this.input;
+        this.message.is_ads = this.isAds;
+        this.message.timestamp = this.schedulingMessage;
+
+        await this.adminService.editScheduledMessage(this.message);
+      } else {
+        await this.adminService.setScheduledMessage(m);
+      }
+
+      this.adminService.reloadSchedulingMessage();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async sendNewMessage(): Promise<boolean> {
-    if (!this.input.trim() && !this.attachments.length) return false;
-
     let newMessage: ChatMessage = {
       type: 'md',
       text: this.input,
@@ -216,6 +257,8 @@ export class InputFormComponent implements OnInit, OnDestroy {
     this.input = '';
     this.attachments = [];
     this.message = undefined;
+    this.isAds = false;
+    this.schedulingMessage = undefined;
     this.adminService.setEditMessage(undefined);
   }
 
@@ -305,5 +348,15 @@ export class InputFormComponent implements OnInit, OnDestroy {
         textArea.focus();
       });
     }
+  }
+
+  openTimePicker() {
+    this.dialogService.open(TimePickerComponent, {
+      context: {
+        date: this.schedulingMessage,
+      }
+    }).onClose.subscribe((date: Date | undefined) => {
+      this.schedulingMessage = date;
+    });
   }
 }

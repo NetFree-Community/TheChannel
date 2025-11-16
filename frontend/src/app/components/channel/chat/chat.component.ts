@@ -8,7 +8,8 @@ import {
   NbChatModule,
   NbIconModule,
   NbLayoutModule,
-  NbListModule
+  NbListModule,
+  NbToastrService
 } from "@nebular/theme";
 import { MessageComponent } from "./message/message.component";
 import { firstValueFrom, interval } from 'rxjs';
@@ -17,6 +18,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ActivatedRoute } from '@angular/router';
 import { NotificationsService } from '../../../services/notifications.service';
 import { User } from '../../../models/user.model';
+import { AdminService } from '../../../services/admin.service';
 
 type LoadMsgOpt = {
   scrollDown?: boolean;
@@ -51,6 +53,7 @@ type ScrollOpt = {
 export class ChatComponent implements OnInit, OnDestroy {
   private eventSource!: EventSource;
   messages: ChatMessage[] = [];
+  scheduledMessages!: ChatMessage[];
   userInfo?: User;
   isLoading: boolean = false;
   offset: number = 0;
@@ -66,10 +69,17 @@ export class ChatComponent implements OnInit, OnDestroy {
   constructor(
     private chatService: ChatService,
     private _authService: AuthService,
+    private _adminService: AdminService,
+    private toastrService: NbToastrService,
     private notificationService: NotificationsService,
     private zone: NgZone,
     private router: ActivatedRoute,
-  ) { }
+  ) {
+    this._adminService.schedulingBusObservable.subscribe(() => {
+      //this.scheduledMessages.length = 0;
+      this.loadScheduledMessages();
+    });
+  }
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
@@ -125,6 +135,7 @@ export class ChatComponent implements OnInit, OnDestroy {
 
     this._authService.loadUserInfo().then((res) => {
       this.userInfo = res;
+      this.userInfo.privileges?.['writer'] && this.loadScheduledMessages();
       this.notificationService.init();
     });
 
@@ -162,6 +173,9 @@ export class ChatComponent implements OnInit, OnDestroy {
             this.messages.unshift(message.message);
             this.thereNewMessages = !(message.message.author === this.userInfo?.username);
             this.setLastReadMessage(message.message.id!.toString());
+            if (this.userInfo?.privileges?.['writer'] && this.scheduledMessages && message.message.author === "Scheduled") {
+              this.loadScheduledMessages(true);
+            }
           });
           break;
         case 'delete-message':
@@ -238,6 +252,12 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.thereNewMessages = false;
   }
 
+  private async loadScheduledMessages(reload: boolean = false) {
+    this._adminService.getScheduledMessages(reload)
+      .then(messages => {
+        this.scheduledMessages = messages;
+      }).catch(() => this.toastrService.danger('', "הייתה בעיה בטעינת ההודעות המתוזמנות."));
+  }
 
   async loadMessages(opt: LoadMsgOpt = {}) {
     if (this.isLoading || (opt.scrollDown && !this.hasNewMessages) || (!opt.scrollDown && !this.hasOldMessages)) return;

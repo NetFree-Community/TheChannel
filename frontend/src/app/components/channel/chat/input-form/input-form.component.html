@@ -62,16 +62,26 @@
                     class="bg-transparent border-0 flex-grow-1 fs-5" [(ngModel)]="input" (input)="checkScrollbar()"
                     style="resize: none"></textarea>
                 <div class="d-flex flex-row align-self-end">
-                    @if (message?.id) {
+                    @if (message?.id != undefined) {
                     <button nbButton ghost title="בטל" shape="round" [size]="'tiny'" (click)="cancelUpdateMessage()"
                         [disabled]="isSending">
                         <ng-icon class="fs-4" [name]="'heroXMark'"></ng-icon>
                     </button>
+                    @if (schedulingMessage) {
+                    <button nbButton ghost title="שנה שעת תזמון הודעה" shape="round" [size]="'medium'"
+                        (click)="openTimePicker()">
+                        <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
+                    </button>
+                    }
                     <button nbButton ghost title="ערוך" shape="round" [size]="'tiny'" (click)="sendMessage()"
                         [disabled]="isSending">
                         <ng-icon class="fs-4" [name]="'heroCheck'"></ng-icon>
                     </button>
                     } @else {
+                    <button nbButton ghost title="תזמן הודעה" shape="round" [size]="'medium'"
+                        (click)="openTimePicker()">
+                        <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
+                    </button>
                     <button nbButton ghost title="שלח" shape="round" [size]="'tiny'" (click)="sendMessage()">
                         <ng-icon class="fs-4" [name]="'heroPaperAirplane'" style="scale: -1 1"></ng-icon>
                     </button>

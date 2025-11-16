@@ -74,7 +74,7 @@ func getMessageNextId(ctx context.Context) int {
 	return int(id)
 }
 
-func setMessage(ctx context.Context, m Message, isUpdate bool) error {
+func setMessage(ctx context.Context, m *Message, isUpdate bool) error {
 	messageKey := fmt.Sprintf("messages:%d", m.ID)
 
 	// Set message in hash
@@ -96,7 +96,7 @@ func setMessage(ctx context.Context, m Message, isUpdate bool) error {
 
 	pushMessage := PushMessage{
 		Type: pushType,
-		M:    m,
+		M:    *m,
 	}
 
 	pushMessageData, _ := json.Marshal(pushMessage)
@@ -657,4 +657,34 @@ func dbGetSSEStatistics(ctx context.Context, length int64) (*Statistics, error) 
 	}
 
 	return result, nil
+}
+
+func dbSaveScheduledMessages(ctx context.Context, messages *[]Message) error {
+	jsonMessages, err := json.Marshal(messages)
+	if err != nil {
+		return fmt.Errorf("failed to marshal scheduled messages: %v", err)
+	}
+
+	if err := rdb.Set(ctx, "scheduled_messages:list", jsonMessages, 0).Err(); err != nil {
+		return fmt.Errorf("failed to set scheduled messages in db: %v", err)
+	}
+
+	return nil
+}
+
+func dbGetScheduledMessages(ctx context.Context) (*[]Message, error) {
+	messagesJSON, err := rdb.Get(ctx, "scheduled_messages:list").Result()
+	if err != nil {
+		if err == redis.Nil {
+			return &[]Message{}, nil
+		}
+		return nil, fmt.Errorf("failed to get scheduled messages from db: %v", err)
+	}
+
+	var messages []Message
+	if err := json.Unmarshal([]byte(messagesJSON), &messages); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal scheduled messages: %v", err)
+	}
+
+	return &messages, nil
 }

@@ -79,14 +79,14 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 	message.Views = 0
 	message.IsAds = body.IsAds
 
-	if err = setMessage(ctx, message, false); err != nil {
+	if err = setMessage(ctx, &message, false); err != nil {
 		log.Printf("Failed to set new message: %v\n", err)
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
 
-	go SendWebhook(context.Background(), "create", message)
-	go pushFcmMessage(message)
+	go SendWebhook(context.Background(), "create", &message)
+	go pushFcmMessage(&message)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(message)
@@ -108,13 +108,13 @@ func updateMessage(w http.ResponseWriter, r *http.Request) {
 
 	body.LastEdit = time.Now()
 
-	if err := setMessage(ctx, body, true); err != nil {
+	if err := setMessage(ctx, &body, true); err != nil {
 		response := Response{Success: false}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	go SendWebhook(context.Background(), "update", body)
+	go SendWebhook(context.Background(), "update", &body)
 
 	response := Response{Success: true}
 	json.NewEncoder(w).Encode(response)
@@ -135,7 +135,7 @@ func deleteMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go SendWebhook(context.Background(), "delete", message)
+	go SendWebhook(context.Background(), "delete", &message)
 
 	response := Response{Success: true}
 	json.NewEncoder(w).Encode(response)

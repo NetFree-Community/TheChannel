@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, Observable, Subject } from 'rxjs';
 import { ChatFile, ChatMessage } from './chat.service';
 import { ResponseResult } from '../models/response-result.model';
 import { Setting } from '../models/setting.model';
@@ -17,6 +17,7 @@ export interface PrivilegeUser {
 
 export type EditMsg = {
   new?: boolean;
+  isScheduling?: boolean;
   message: ChatMessage;
 }
 
@@ -27,9 +28,18 @@ export class AdminService {
   private messageEdit = new BehaviorSubject<EditMsg | undefined>(undefined);
   messageEditObservable = this.messageEdit.asObservable();
 
+  private schedulingBus = new Subject<void>();
+  schedulingBusObservable = this.schedulingBus.asObservable();
+
+  private schedulingMessages: ChatMessage[] | null = null;
+
   constructor(
     private http: HttpClient,
   ) { }
+
+  reloadSchedulingMessage() {
+    this.schedulingBus.next();
+  }
 
   setEditMessage(edit: EditMsg | undefined) {
     this.messageEdit.next(edit);
@@ -97,5 +107,39 @@ export class AdminService {
 
   setReports(report: Report): Promise<ResponseResult> {
     return firstValueFrom(this.http.post<ResponseResult>('/api/admin/reports/set', report));
+  }
+
+  async getScheduledMessages(reload?: boolean): Promise<ChatMessage[]> {
+    if (this.schedulingMessages && !reload) {
+      return this.schedulingMessages;
+    }
+
+    try {
+      this.schedulingMessages = await firstValueFrom(this.http.get<ChatMessage[]>('/api/admin/scheduled-messages/get'));
+      return this.schedulingMessages;
+    } catch {
+      return this.schedulingMessages || [];
+    }
+  }
+
+  setScheduledMessage(message: ChatMessage): Promise<ResponseResult> {
+    this.schedulingMessages?.unshift(message);
+    return this.updateSchedulingMessages();
+  }
+
+  editScheduledMessage(message: ChatMessage): Promise<ResponseResult> {
+    if (message.id === undefined || !this.schedulingMessages) return Promise.reject('Message ID is undefined');
+    this.schedulingMessages[message.id] = message;
+    return this.updateSchedulingMessages();
+  }
+
+  deleteScheduledMessage(id: number | undefined): Promise<ResponseResult> {
+    if (id === undefined || !this.schedulingMessages) return Promise.reject('Message ID is undefined');
+    this.schedulingMessages.splice(id, 1);
+    return this.updateSchedulingMessages();
+  }
+
+  private updateSchedulingMessages(): Promise<ResponseResult> {
+    return firstValueFrom(this.http.post<ResponseResult>('/api/admin/scheduled-messages/update', this.schedulingMessages));
   }
 }

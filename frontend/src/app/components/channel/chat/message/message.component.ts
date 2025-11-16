@@ -31,7 +31,7 @@ import { ReportComponent } from './report/report.component';
     NgbPopoverModule,
     NbChatModule,
     NbUserModule
-],
+  ],
   templateUrl: './message.component.html',
   styleUrl: './message.component.scss'
 })
@@ -41,6 +41,12 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @Input()
   message: ChatMessage | undefined;
+
+  @Input()
+  isSchedulingMessage: boolean = false;
+
+  @Input()
+  indexId: number | undefined;
 
   @ViewChild(NgbPopover) popover!: NgbPopover;
   @ViewChild('media') mediaContainer!: ElementRef;
@@ -64,6 +70,9 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly matchFindCustomEmbedReg = /^\[(video|audio|image|quote)-embedded#].*/;
 
   ngOnInit() {
+    if (this.isSchedulingMessage && this.message) {
+      this.message.id = this.indexId;
+    }
     this.chatService.getEmojisList()
       .then(emojis => this.reacts = emojis)
       .catch(() => this.toastrService.danger('', 'שגיאה בהגדרת אימוגים'));
@@ -138,21 +147,27 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editMessage(message: ChatMessage) {
-    this._adminService.setEditMessage({ message });
+    this._adminService.setEditMessage({ message, isScheduling: this.isSchedulingMessage });
   }
 
   deleteMessage(message: ChatMessage) {
     const confirm = window.confirm('האם אתה בטוח שברצונך למחוק את ההודעה?');
-    if (confirm)
+    if (confirm) {
+      if (this.isSchedulingMessage) {
+        this._adminService.deleteScheduledMessage(message.id);
+        return;
+      }
       this._adminService.deleteMessage(message.id).subscribe();
+    }
   }
 
   openReportDialog(messageId?: number) {
-    if (!messageId) return;
+    if (this.isSchedulingMessage) return;
     this.dialogService.open(ReportComponent, { closeOnBackdropClick: true, context: { messageId } });
   }
 
   quoteMessage(message: ChatMessage) {
+    if (this.isSchedulingMessage) return;
     let newMsgText: string | undefined = message.text?.trimStart();
     let fintEmbedded = newMsgText?.match(this.matchFindCustomEmbedReg);
     if (fintEmbedded) {
@@ -181,7 +196,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
       let newMessage: ChatMessage = {
         text: `[quote-embedded#](${message.id}@${newMsgText})\n`
       }
-      this._adminService.setEditMessage({ new: true, message: newMessage });
+      this._adminService.setEditMessage({ new: true, message: newMessage, isScheduling: this.isSchedulingMessage });
     } else {
       m.message.text = `[quote-embedded#](${message.id}@${newMsgText})\n${m.message.text}`;
       this._adminService.setEditMessage(m);
@@ -218,6 +233,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   setReact(id: number | undefined, react: string) {
+    if (this.isSchedulingMessage) return;
     if (!this._authService.userInfo) {
       this.toastrService.danger('', "יש להתחבר לחשבון בכדי להוסיף אימוג'ים");
       return;
@@ -227,7 +243,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   showEmojiMenu() {
-    if (!this._authService.userInfo || this.isScrolling || this.message?.is_ads) return;
+    if (!this._authService.userInfo || this.isScrolling || this.message?.is_ads || this.isSchedulingMessage) return;
     this.clearHoverTimer();
     this.hoverTimer = setTimeout(() => {
       if (!this.isScrolling) {
@@ -268,7 +284,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   copyLink(messageId?: number) {
-    if (!messageId) return;
+    if (!messageId || this.isSchedulingMessage) return;
     const url = `${window.location.origin}/#${messageId}`;
     navigator.clipboard.writeText(url).then(() => {
       this.toastrService.success('', 'הקישור הועתק ללוח');
