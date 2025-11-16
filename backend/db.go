@@ -77,6 +77,13 @@ func getMessageNextId(ctx context.Context) int {
 func setMessage(ctx context.Context, m *Message, isUpdate bool) error {
 	messageKey := fmt.Sprintf("messages:%d", m.ID)
 
+	for _, regex := range settingConfig.RegexReplace {
+		if !strings.HasPrefix(m.Text, "[quote-embedded#]") {
+			t := regex.Pattern.ReplaceAllString(m.Text, regex.Replace)
+			m.Text = t
+		}
+	}
+
 	// Set message in hash
 	if err := rdb.HSet(ctx, messageKey, m).Err(); err != nil {
 		return err

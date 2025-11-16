@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -60,13 +59,6 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to decode message: %v\n", err)
 		http.Error(w, "error", http.StatusBadRequest)
 		return
-	}
-
-	for _, regex := range settingConfig.RegexReplace {
-		if !strings.HasPrefix(body.Text, "[quote-embedded#]") {
-			t := regex.Pattern.ReplaceAllString(body.Text, regex.Replace)
-			body.Text = t
-		}
 	}
 
 	message.ID = getMessageNextId(ctx)
