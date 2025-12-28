@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for thechannel-nel-vq on 2025-12-23T14:33:10Z
+# fly.toml app configuration file generated for thechannel-0q42oa on 2025-12-28T07:02:44Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'thechannel-nel-vq'
+app = 'thechannel-0q42oa'
 primary_region = 'fra'
 
 [build]
