@@ -10,3 +10,5 @@ caddy_config/
 data/kvrocks.sock
 .env
 .ds_store
+0002-frontend-api-adjustment.txt
+0001-backend-security-changes.txt
