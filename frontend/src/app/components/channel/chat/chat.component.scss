@@ -4,6 +4,15 @@ nb-list-item {
   margin-bottom: 25px;
 }
 
+.toggle-scheduled-messages {
+  cursor: pointer;
+  color: #6a6fff;
+}
+
+nb-list.hide-scheduled-messages nb-list-item.scheduled-message-item {
+  display: none !important;
+}
+
 .loading-indicator {
   overflow: hidden;
 }

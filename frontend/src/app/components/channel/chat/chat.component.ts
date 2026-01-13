@@ -54,6 +54,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   private eventSource!: EventSource;
   messages: ChatMessage[] = [];
   scheduledMessages!: ChatMessage[];
+  hideScheduledMessages: boolean = false;
   userInfo?: User;
   isLoading: boolean = false;
   offset: number = 0;

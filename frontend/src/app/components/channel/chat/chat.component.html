@@ -1,9 +1,9 @@
 <div nbInfiniteList (scroll)="onListScroll()" [threshold]="300" [throttleTime]="1000" (topThreshold)="loadMessages()"
   (bottomThreshold)="loadMessages({ scrollDown: true })" [listenWindowScroll]="true">
-  <nb-list class="flex-column-reverse">
+  <nb-list class="flex-column-reverse" [class.hide-scheduled-messages]="hideScheduledMessages">
 
     @for (msg of scheduledMessages; track $index) {
-    <nb-list-item class="d-flex flex-column align-items-start">
+    <nb-list-item class="d-flex flex-column align-items-start scheduled-message-item">
       <app-message class="overflow-auto" [message]="msg" [id]="$index" [isSchedulingMessage]="true"
         [indexId]="$index"></app-message>
     </nb-list-item>
@@ -14,6 +14,10 @@
       <div class="last-read-indicator">
         <div class="line"></div>
         <div class="last-read-indicator-text">הודעות מתוזמנות</div>
+        <div class="toggle-scheduled-messages">
+          <nb-icon [icon]="hideScheduledMessages ? 'arrow-ios-forward-outline' : 'arrow-ios-downward-outline'"
+            (click)="hideScheduledMessages = !hideScheduledMessages"></nb-icon>
+        </div>
         <div class="line"></div>
       </div>
       }
