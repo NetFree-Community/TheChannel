@@ -41,6 +41,9 @@ type SettingConfig struct {
 	MaxFileSize             int64
 	CustomTitle             string
 	ContactUs               string
+	FrameAncestorsDomains   string
+	AllowedOrigins          []string
+	validateOrigin          bool
 }
 
 type Setting struct {
@@ -184,8 +187,18 @@ func (s *Settings) ToConfig() *SettingConfig {
 		case "fcm_json_universe_domain":
 			config.FcmJson.UniverseDomain = setting.GetString()
 
-		case "contact_us":
-			config.ContactUs = setting.GetString()
+		case "frame_ancestors_domains":
+			config.FrameAncestorsDomains = setting.GetString()
+		case "allowed_origins":
+            originsStr := setting.GetString()
+            if originsStr != "" {
+                origins := strings.Split(originsStr, ",")
+                for _, origin := range origins {
+                    config.AllowedOrigins = append(config.AllowedOrigins, strings.TrimSpace(origin))
+				}
+			}
+		case "validate_Origin":
+			config.validateOrigin = setting.GetBool()
 		}
 	}
 
@@ -197,7 +210,7 @@ func (s *Setting) GetBool() bool {
 	return b
 }
 
-func (s *Setting) GetString() string {
+func (s *Setting) GetString()  string {
 	str, _ := dyno.GetString(s.Value)
 	return str
 }
