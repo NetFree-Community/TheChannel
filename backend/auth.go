@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/boj/redistore"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/icza/dyno"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/idtoken"
 )
 
 var secretKey string = os.Getenv("SECRET_KEY")
@@ -61,7 +61,7 @@ func getGoogleAuthValues(w http.ResponseWriter, r *http.Request) {
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 	defer r.Body.Close()
 	var auth Auth
@@ -99,25 +99,24 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var claims jwt.MapClaims
 	tokenStr, _ := dyno.GetString(token.Extra("id_token"))
-	_, _, err = jwt.NewParser().ParseUnverified(tokenStr, &claims)
+	tokenValidator, err := idtoken.NewValidator(ctx)
+	payload, err := tokenValidator.Validate(ctx, tokenStr, googleOAuthClientId)
 	if err != nil {
-		go saveLoginFailedLog("ParseUnverified", err)
-		http.Error(w, "error", http.StatusInternalServerError)
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
-	email, _ := dyno.GetString(claims["email"])
+	email, _ := dyno.GetString(payload.Claims["email"])
 	go registeringEmail(email)
 
-	u, err := getUser(ctx, claims)
+	u, err := getUser(ctx, payload.Claims)
 	if err != nil {
 		go saveLoginFailedLog("getUser", err)
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
-	picture, _ := dyno.GetString(claims["picture"])
+	picture, _ := dyno.GetString(payload.Claims["picture"])
 	userSession := Session{
 		ID:         u.ID,
 		Username:   u.Username,
@@ -195,7 +194,7 @@ func getUserInfo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(userInfo)
 }
 
-func getUser(ctx context.Context, claims jwt.MapClaims) (*User, error) {
+func getUser(ctx context.Context, claims map[string]any) (*User, error) {
 	var user User
 
 	email, _ := dyno.GetString(claims["email"])
@@ -206,7 +205,7 @@ func getUser(ctx context.Context, claims jwt.MapClaims) (*User, error) {
 	if name == "" {
 		return nil, errors.New("name not found in claims")
 	}
-	id, _ := claims.GetSubject() // Google user ID
+	id, _ := dyno.GetString(claims["sub"]) // Google user ID
 
 	if v, ok := privilegesUsers.Load(email); ok {
 		user = v.(User)
