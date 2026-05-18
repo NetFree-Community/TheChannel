@@ -5,7 +5,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-**פרויקט פשוט וקל להקמת ערוץ עדכונים**  
+**פרויקט פשוט וקל להקמת ערוץ עדכונים**   
 צד שרת מהיר וחזק כתוב ב Go,  
 מסד נתונים תואם Redis,  
 צד לקוח עם Angular,  
