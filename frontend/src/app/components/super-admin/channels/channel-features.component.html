@@ -1,0 +1,37 @@
+<nb-card>
+  <nb-card-header class="d-flex align-items-center gap-2">
+    <nb-icon icon="settings-2-outline"></nb-icon>
+    <span>תכונות ערוץ: <strong>{{ slug }}</strong></span>
+  </nb-card-header>
+
+  <nb-card-body>
+    <div class="d-flex flex-column gap-3">
+      @for (config of featureConfigs; track config.key) {
+        <div class="d-flex align-items-center gap-2">
+          @if (config.adminOnly) {
+            <nb-toggle
+              [checked]="features[config.key]"
+              (checkedChange)="features[config.key] = $event"
+              [disabled]="false">
+              <span>{{ config.label }}</span>
+            </nb-toggle>
+            <span class="badge bg-warning text-dark">מנהל-על</span>
+          } @else {
+            <nb-toggle
+              [checked]="features[config.key]"
+              (checkedChange)="features[config.key] = $event">
+              <span>{{ config.label }}</span>
+            </nb-toggle>
+          }
+        </div>
+      }
+    </div>
+  </nb-card-body>
+
+  <nb-card-footer>
+    <button nbButton status="primary" (click)="save()" [disabled]="saving">
+      <nb-icon icon="save-outline"></nb-icon>
+      {{ saving ? 'שומר...' : 'שמור תכונות' }}
+    </button>
+  </nb-card-footer>
+</nb-card>

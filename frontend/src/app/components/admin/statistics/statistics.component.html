@@ -12,7 +12,6 @@
         <canvas baseChart [type]="'line'" [data]="lineChartData" [options]="lineChartOptions"></canvas>
         <div class="d-flex gap-2">
             <button nbButton size="tiny" (click)="chart?.chart?.resetZoom()">איפוס גרף</button>
-            <button nbButton size="tiny" status="danger" (click)="resetPeakStatistics()">איפוס נקודת שיא</button>
         </div>
     </nb-card-body>
 </nb-card>

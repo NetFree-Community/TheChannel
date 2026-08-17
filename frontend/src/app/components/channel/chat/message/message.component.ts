@@ -17,6 +17,7 @@ import { MessageTimePipe } from '../../../../pipes/message-time.pipe';
 import { ChatMessage, ChatService } from '../../../../services/chat.service';
 import { AdminService } from '../../../../services/admin.service';
 import { AuthService } from '../../../../services/auth.service';
+import { SlugService } from '../../../../services/slug.service';
 import { ReportComponent } from './report/report.component';
 @Component({
   selector: 'app-message',
@@ -60,6 +61,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
     protected chatService: ChatService,
     private toastrService: NbToastrService,
     public _authService: AuthService,
+    private slugService: SlugService,
   ) { }
 
   reacts: string[] = [];
@@ -68,6 +70,26 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   private hoverTimer: any;
   private readonly minimalHoverMs = 200;
   private readonly matchFindCustomEmbedReg = /^\[(video|audio|image|quote)-embedded#].*/;
+
+  private get channelRole(): string | undefined {
+    return this._authService.userInfo?.channelRoles?.[this.slugService.slug];
+  }
+
+  get canWrite(): boolean {
+    const user = this._authService.userInfo;
+    if (!user) return false;
+    if (user.globalRole === 'super_admin') return true;
+    const role = this.channelRole;
+    return role === 'owner' || role === 'moderator' || role === 'writer';
+  }
+
+  get canModerate(): boolean {
+    const user = this._authService.userInfo;
+    if (!user) return false;
+    if (user.globalRole === 'super_admin') return true;
+    const role = this.channelRole;
+    return role === 'owner' || role === 'moderator';
+  }
 
   ngOnInit() {
     if (this.isSchedulingMessage && this.message) {
@@ -157,7 +179,12 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
         this._adminService.deleteScheduledMessage(message.id);
         return;
       }
-      this._adminService.deleteMessage(message.id).subscribe();
+      this._adminService.deleteMessage(message.id).subscribe({
+        next: (res) => {
+          if (!res?.success) this.toastrService.danger('', 'שגיאה במחיקת ההודעה');
+        },
+        error: () => this.toastrService.danger('', 'שגיאה במחיקת ההודעה'),
+      });
     }
   }
 
@@ -244,6 +271,8 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   showEmojiMenu() {
     if (!this._authService.userInfo || this.isScrolling || this.message?.is_ads || this.isSchedulingMessage) return;
+    // The channel operator can switch reactions off; the backend answers 403.
+    if (!this.chatService.reactionsEnabled) return;
     this.clearHoverTimer();
     this.hoverTimer = setTimeout(() => {
       if (!this.isScrolling) {
@@ -285,7 +314,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   copyLink(messageId?: number) {
     if (!messageId || this.isSchedulingMessage) return;
-    const url = `${window.location.origin}/#${messageId}`;
+    const url = `${window.location.origin}/channel/${this.slugService.slug}#${messageId}`;
     navigator.clipboard.writeText(url).then(() => {
       this.toastrService.success('', 'הקישור הועתק ללוח');
     });

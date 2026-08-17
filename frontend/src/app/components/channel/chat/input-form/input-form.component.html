@@ -35,15 +35,22 @@
         <button nbButton ghost shape="round" title="הוסף בלוק קוד" (click)="applyFormat('code')" class="toolbar-button">
             <ng-icon name="heroCodeBracket" class="toolbar-icon"></ng-icon>
         </button>
+        @if (chatService.fileUploadsEnabled) {
         <button nbButton ghost shape="round" title="צרף קובץ" (click)="fileInput.click()" class="toolbar-button">
             <ng-icon name="heroPaperClip" class="toolbar-icon"></ng-icon>
         </button>
+        <input type="file" #fileInput multiple (change)="onFileSelected($event)" hidden>
+        }
         <button nbButton ghost shape="round" title="עזרה לmarkdown" (click)="openMarkdownDocs()" class="toolbar-button">
             <ng-icon name="heroQuestionMarkCircle" class="toolbar-icon"></ng-icon>
         </button>
-        <input type="file" #fileInput multiple (change)="onFileSelected($event)" hidden>
         <nb-toggle class="me-md-auto" labelPosition="start" [(checked)]="showMarkdownPreview" [disabled]="!input">
             <span class="d-none d-md-inline-block">תצוגה מקדימה</span>
+        </nb-toggle>
+        <nb-toggle class="ms-2" labelPosition="start" [checked]="enterSendsMessage"
+            (checkedChange)="setEnterSendsMessage($event)"
+            title="לחיצה על Enter תשלח את ההודעה. Ctrl+Enter יוריד שורה.">
+            <span class="d-none d-md-inline-block">Enter שולח</span>
         </nb-toggle>
     </div>
     <div class="d-flex flex-row">
@@ -60,6 +67,7 @@
                     (resized)="inputHeightChanged.emit($event)" [minRows]="1" [maxRows]="6"
                     [maxlength]="maxMessageLength" [disabled]="showMarkdownPreview || isSending"
                     class="bg-transparent border-0 flex-grow-1 fs-5" [(ngModel)]="input" (input)="checkScrollbar()"
+                    (keydown)="onKeydown($event)" (paste)="onPaste($event)"
                     style="resize: none"></textarea>
                 <div class="d-flex flex-row align-self-end">
                     @if (message?.id != undefined) {
@@ -78,10 +86,12 @@
                         <ng-icon class="fs-4" [name]="'heroCheck'"></ng-icon>
                     </button>
                     } @else {
+                    @if (chatService.scheduledMessagesEnabled) {
                     <button nbButton ghost title="תזמן הודעה" shape="round" [size]="'medium'"
                         (click)="openTimePicker()">
                         <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
                     </button>
+                    }
                     <button nbButton ghost title="שלח" shape="round" [size]="'tiny'" (click)="sendMessage()">
                         <ng-icon class="fs-4" [name]="'heroPaperAirplane'" style="scale: -1 1"></ng-icon>
                     </button>

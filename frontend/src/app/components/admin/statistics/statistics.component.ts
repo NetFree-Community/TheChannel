@@ -69,21 +69,12 @@ export class StatisticsComponent implements OnInit {
     this.updateData();
   }
 
-  resetPeakStatistics(): void {
-    this.adminService.resetPeakStatistics()
-      .then(() => {
-        this.toastrService.success("", 'נקודת השיא אופסה בהצלחה!');
-        this.updateData();
-      })
-      .catch(() => this.toastrService.danger("", 'שגיאה באיפוס נקודת השיא!'));
-  }
-
   updateData() {
     this.adminService.getStatistics().then(statistics => {
       this.statistics = statistics;
       this.lineChartData.datasets[0].data = statistics.connectionsStatistics.date;
       this.lineChartData.labels = statistics.connectionsStatistics.labels;
       this.chart?.update();
-    });
+    }).catch(() => this.toastrService.danger('', 'שגיאה בטעינת הסטטיסטיקות'));
   }
 }

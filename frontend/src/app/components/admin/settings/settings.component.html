@@ -1,31 +1,193 @@
-<nb-card>
-  <nb-card-header>
-    הגדרות ערוץ
-  </nb-card-header>
+<div class="settings-page">
 
-  <nb-card-body>
-    @for (setting of settings; track setting; let i = $index) {
-      <div class="d-flex gap-2 mb-2">
-        <input nbInput fieldSize="small" type="text" [(ngModel)]="setting.key" placeholder="הגדרה">
-        <input nbInput fullWidth fieldSize="small" type="text" [(ngModel)]="setting.value" placeholder="ערך">
-        <button nbButton status="danger" size="small" (click)="removeSetting(i)">
-          <nb-icon icon="close"></nb-icon>
-          מחק
-        </button>
-      </div>
-    }
-    <div>
-      <button nbButton size="small" status="primary" (click)="settings.push({ key: '', value: '' })">
-        <nb-icon icon="plus"></nb-icon>
-        הוסף הגדרה
+  @for (cat of schema; track cat.id) {
+    <nb-card class="settings-card">
+      <nb-card-header class="settings-card-header">
+        @if (cat.icon) {
+          <nb-icon [icon]="cat.icon"></nb-icon>
+        }
+        <span>{{ cat.title }}</span>
+      </nb-card-header>
+
+      <nb-card-body>
+        @if (cat.description) {
+          <p class="category-description">{{ cat.description }}</p>
+        }
+
+        @if (cat.id === 'fcm_json') {
+          <div class="fcm-json-paste">
+            <label class="field-label">הדבקת קובץ JSON של חשבון שירות (Service Account)</label>
+            <p class="field-description">
+              ניתן להעתיק את כל תוכן קובץ ה-JSON שהורד מ-Firebase ולהדביק כאן - השדות שלמטה ימולאו אוטומטית.
+            </p>
+            <textarea
+              nbInput
+              fullWidth
+              rows="4"
+              [(ngModel)]="fcmJsonPaste"
+              placeholder='{ "type": "service_account", ... }'>
+            </textarea>
+            @if (fcmJsonError) {
+              <div class="error-text">{{ fcmJsonError }}</div>
+            }
+            <button nbButton size="small" status="primary" class="mt-2" (click)="applyFcmJsonPaste()">
+              <nb-icon icon="flash-outline"></nb-icon>
+              מילוי אוטומטי מה-JSON
+            </button>
+          </div>
+          <hr />
+        }
+
+        @for (field of cat.fields; track field.key) {
+          @if (isFieldVisible(field)) {
+            <div class="setting-field" [class.is-toggle]="field.type === 'boolean'">
+
+              @if (field.type === 'boolean') {
+                <div class="toggle-row">
+                  <nb-toggle [(checked)]="values[field.key]">
+                    <span class="field-label">{{ field.label }}</span>
+                  </nb-toggle>
+                </div>
+                @if (field.description) {
+                  <p class="field-description toggle-description">{{ field.description }}</p>
+                }
+              } @else {
+                <label class="field-label" [attr.for]="'f-' + field.key">{{ field.label }}</label>
+                @if (field.description) {
+                  <p class="field-description">{{ field.description }}</p>
+                }
+
+                @switch (field.type) {
+                  @case ('textarea') {
+                    <textarea
+                      nbInput
+                      fullWidth
+                      rows="3"
+                      [id]="'f-' + field.key"
+                      [(ngModel)]="values[field.key]"
+                      [placeholder]="field.placeholder || ''">
+                    </textarea>
+                  }
+                  @case ('number') {
+                    <input
+                      nbInput
+                      fullWidth
+                      type="number"
+                      [id]="'f-' + field.key"
+                      [(ngModel)]="values[field.key]"
+                      [placeholder]="field.placeholder || ''">
+                  }
+                  @case ('password') {
+                    <input
+                      nbInput
+                      fullWidth
+                      type="password"
+                      autocomplete="new-password"
+                      [id]="'f-' + field.key"
+                      [(ngModel)]="values[field.key]"
+                      [placeholder]="field.placeholder || ''">
+                  }
+                  @default {
+                    <input
+                      nbInput
+                      fullWidth
+                      type="text"
+                      [id]="'f-' + field.key"
+                      [(ngModel)]="values[field.key]"
+                      [placeholder]="field.placeholder || ''">
+                  }
+                }
+              }
+            </div>
+          }
+        }
+      </nb-card-body>
+    </nb-card>
+  }
+
+  <nb-card class="settings-card">
+    <nb-card-header class="settings-card-header">
+      <nb-icon icon="swap-outline"></nb-icon>
+      <span>החלפות טקסט אוטומטיות</span>
+    </nb-card-header>
+    <nb-card-body>
+      <p class="category-description">
+        ניתן להגדיר ביטויים רגולריים (Regex) שיוחלפו אוטומטית בעת פרסום הודעות חדשות.
+        בשדה "תבנית" יש להזין את הביטוי הרגולרי, ובשדה "החלפה" את הטקסט החלופי.
+        לדוגמא: תבנית <code>(.*?\!)(.*)</code> והחלפה <code>**$1**$2</code> תדגיש כותרות הודעה.
+      </p>
+
+      @if (regexRules.length === 0) {
+        <p class="empty-state">לא הוגדרו כללי החלפה.</p>
+      }
+
+      @for (rule of regexRules; track $index; let i = $index) {
+        <div class="regex-row">
+          <div class="regex-fields">
+            <div class="regex-field">
+              <label class="field-label small">תבנית (Regex)</label>
+              <input nbInput fullWidth fieldSize="small" type="text"
+                [(ngModel)]="rule.pattern"
+                placeholder="(.*?\!)(.*)">
+            </div>
+            <div class="regex-field">
+              <label class="field-label small">החלפה</label>
+              <input nbInput fullWidth fieldSize="small" type="text"
+                [(ngModel)]="rule.replace"
+                placeholder="**$1**$2">
+            </div>
+          </div>
+          <button nbButton status="danger" size="small" ghost (click)="removeRegexRule(i)" nbTooltip="הסר כלל">
+            <nb-icon icon="trash-2-outline"></nb-icon>
+          </button>
+        </div>
+      }
+
+      <button nbButton size="small" status="primary" (click)="addRegexRule()">
+        <nb-icon icon="plus-outline"></nb-icon>
+        הוסף כלל החלפה
       </button>
+    </nb-card-body>
+  </nb-card>
 
-    </div>
-  </nb-card-body>
+  <nb-accordion class="advanced-accordion">
+    <nb-accordion-item>
+      <nb-accordion-item-header>
+        <nb-icon icon="options-2-outline"></nb-icon>
+        <span class="advanced-title">הגדרות מתקדמות / מותאמות אישית</span>
+      </nb-accordion-item-header>
+      <nb-accordion-item-body>
+        <p class="category-description">
+          אזור זה מאפשר להוסיף הגדרות שאינן מופיעות בטופס למעלה (לדוגמא: הגדרות חדשות
+          שטרם נוספו לממשק). יש להזין שם הגדרה וערך באופן ידני.
+        </p>
 
-  <nb-card-footer>
-    <button nbButton status="primary" (click)="saveSettings()" [disabled]="setInProgress">
-      שמור
+        @if (extraSettings.length === 0) {
+          <p class="empty-state">אין הגדרות מותאמות אישית.</p>
+        }
+
+        @for (s of extraSettings; track $index; let i = $index) {
+          <div class="extra-row">
+            <input nbInput fieldSize="small" type="text" [(ngModel)]="s.key" placeholder="שם ההגדרה">
+            <input nbInput fullWidth fieldSize="small" type="text" [(ngModel)]="s.value" placeholder="ערך">
+            <button nbButton status="danger" size="small" ghost (click)="removeExtraSetting(i)" nbTooltip="הסר">
+              <nb-icon icon="trash-2-outline"></nb-icon>
+            </button>
+          </div>
+        }
+
+        <button nbButton size="small" status="primary" (click)="addExtraSetting()">
+          <nb-icon icon="plus-outline"></nb-icon>
+          הוסף הגדרה מותאמת
+        </button>
+      </nb-accordion-item-body>
+    </nb-accordion-item>
+  </nb-accordion>
+
+  <div class="save-bar">
+    <button nbButton status="primary" size="medium" (click)="saveSettings()" [disabled]="setInProgress">
+      <nb-icon icon="save-outline"></nb-icon>
+      {{ setInProgress ? 'שומר...' : 'שמור שינויים' }}
     </button>
-  </nb-card-footer>
-</nb-card>
+  </div>
+</div>

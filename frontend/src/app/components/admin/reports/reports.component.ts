@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { NbButtonModule, NbCardModule, NbToastrService } from "@nebular/theme";
 import { AdminService } from '../../../services/admin.service';
 import { Reports, Report } from '../../../models/report.model';
+import { SlugService } from '../../../services/slug.service';
 
 import { MessageTimePipe } from "../../../pipes/message-time.pipe";
 
@@ -22,7 +23,8 @@ export class ReportsComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
-    private toastrService: NbToastrService
+    private toastrService: NbToastrService,
+    private slugService: SlugService,
   ) { }
 
   ngOnInit(): void {
@@ -42,6 +44,6 @@ export class ReportsComponent implements OnInit {
   }
 
   viewReport(messageId: number) {
-    window.open(`${window.location.origin}/#${messageId}`, '_blank');
+    window.open(`${window.location.origin}/channel/${this.slugService.slug}#${messageId}`, '_blank');
   }
 }

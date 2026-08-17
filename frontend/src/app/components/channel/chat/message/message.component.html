@@ -7,7 +7,7 @@
   </div>
   <div class="d-flex flex-column gap-1 overflow-auto">
     <div class="d-flex flex-row gap-2 pe-1">
-      <strong class="text-black-50">{{_authService.userInfo?.privileges?.['admin'] ? message.author :
+      <strong class="text-black-50">{{ canModerate ? message.author :
         chatService.channelInfo?.name
         }}</strong>
       <small class="text-black-50">{{ message.timestamp | messageTime }}</small>
@@ -22,25 +22,25 @@
           (click)="editMessage(message)" status="danger"></nb-icon>
       </div>
       }
-      @if (_authService.userInfo?.privileges?.['writer']) {
+      @if (canWrite) {
       <button class="icon-button" nbButton ghost shape="round" size="small" (click)="editMessage(message)"
         title="ערוך הודעה">
         <nb-icon icon="edit"></nb-icon>
       </button>
       }
-      @if (_authService.userInfo?.privileges?.['writer'] && !message.deleted) {
+      @if (canWrite && !message.deleted) {
       <button class="icon-button" nbButton ghost shape="round" size="small" (click)="deleteMessage(message)"
         title="מחק הודעה">
         <nb-icon icon="trash-2"></nb-icon>
       </button>
       }
-      @if (_authService.userInfo?.privileges?.['writer']) {
+      @if (canWrite) {
       <button class="icon-button" nbButton ghost shape="round" size="small" (click)="quoteMessage(message)"
         title="צטט הודעה">
         <nb-icon icon="corner-down-left-outline"></nb-icon>
       </button>
       }
-      @if (_authService.userInfo) {
+      @if (_authService.userInfo && chatService.reportsEnabled) {
       <button nbButton ghost shape="round" size="small" (click)="openReportDialog(message.id)" title="דווח על ההודעה"
         class="icon-button">
         <nb-icon icon="alert-triangle-outline"></nb-icon>
@@ -51,7 +51,8 @@
         <nb-icon icon="link-2"></nb-icon>
       </button>
     </div>
-    <div [ngbPopover]="emojiMenu" [placement]="['top', 'bottom']" [disablePopover]="!reacts.length"
+    <div [ngbPopover]="emojiMenu" [placement]="['top', 'bottom']"
+      [disablePopover]="!reacts.length || !chatService.reactionsEnabled"
       [triggers]="'manual'" [popoverContext]="{message}" [autoClose]="'outside'" [popoverClass]="'emoji-picker-popover'"
       (mouseenter)="showEmojiMenu()" (mouseleave)="scheduleEmojiMenuClose()" #p="ngbPopover">
       <div class="d-flex flex-column bg-light rounded-4 border fs-5 f lh-base message-card"
@@ -68,7 +69,7 @@
           </div>
           }
         </div>
-        @if (message.reactions) {
+        @if (message.reactions && chatService.reactionsEnabled) {
         <div class="emojis-section">
           @for (reaction of message.reactions | keyvalue; track reaction) {
           <div class="emoji-reaction" (click)="setReact(message.id, reaction.key)"

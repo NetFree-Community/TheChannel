@@ -1,0 +1,25 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.magnet-ad-message {
+  &.collapsed {
+    display: none !important;
+  }
+}
+
+.magnet-ad-card {
+  max-width: 80vw;
+}
+
+.magnet-ad-host {
+  display: block;
+  width: 100%;
+  min-height: 1px;
+
+  ::ng-deep .magnet-ad-content {
+    display: block;
+    width: 100%;
+  }
+}

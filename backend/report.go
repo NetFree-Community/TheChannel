@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -39,6 +40,8 @@ func reportMessage(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	defer r.Body.Close()
 
+	slug := channelSlugFromCtx(r)
+
 	var report Report
 	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -51,12 +54,29 @@ func reportMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	// Everything the reporter may not choose is set here: an unbounded reason is
+	// a free write into Redis, a report against a nonexistent message is noise,
+	// and a client-sent closed:true would land a "closed" hash in the open queue.
+	if len(report.Reason) > 500 {
+		http.Error(w, "reason too long", http.StatusBadRequest)
+		return
+	}
+	n, err := rdb.Exists(ctx, fmt.Sprintf("channel:%s:messages:%d", slug, report.MessageId)).Result()
+	if err != nil {
+		http.Error(w, "Error saving report", http.StatusInternalServerError)
+		return
+	}
+	if n == 0 {
+		http.Error(w, "message not found", http.StatusBadRequest)
+		return
+	}
+	report.Closed = false
 	report.CreatedAt = time.Now()
 	report.ReporterID = s.ID
 	report.ReportedEmail = s.Email
 	report.ReporterName = s.Username
 
-	if err := dbReportMessage(ctx, &report); err != nil {
+	if err := dbReportMessage(ctx, slug, &report); err != nil {
 		log.Println("Error saving report:", err)
 		http.Error(w, "Error saving report", http.StatusInternalServerError)
 		return
@@ -72,13 +92,15 @@ func getReports(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	slug := channelSlugFromCtx(r)
+
 	status := ReportStatus(r.URL.Query().Get("status"))
 	if !status.IsValid() {
 		http.Error(w, "Invalid status", http.StatusBadRequest)
 		return
 	}
 
-	reports, err := dbGetReports(ctx, status)
+	reports, err := dbGetReports(ctx, slug, status)
 	if err != nil {
 		log.Printf("Error retrieving reports: %v\n", err)
 		http.Error(w, "Error retrieving reports", http.StatusInternalServerError)
@@ -93,6 +115,9 @@ func setReports(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	defer r.Body.Close()
+
+	slug := channelSlugFromCtx(r)
+
 	var report Report
 	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -101,7 +126,7 @@ func setReports(w http.ResponseWriter, r *http.Request) {
 
 	report.UpdatedAt = time.Now()
 
-	if err := dbSetReports(ctx, &report); err != nil {
+	if err := dbSetReports(ctx, slug, &report); err != nil {
 		http.Error(w, "Error saving reports", http.StatusInternalServerError)
 		return
 	}

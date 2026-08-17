@@ -1,0 +1,234 @@
+<div class="magnet-page">
+
+  <nb-card>
+    <nb-card-header class="card-header">
+      <nb-icon icon="pricetags-outline"></nb-icon>
+      <span>שילוב פרסומות ממגנט</span>
+    </nb-card-header>
+
+    <nb-card-body>
+      <p class="intro">
+        מגנט היא פלטפורמת פרסומות חיצונית. ניתן להדביק כאן את קוד ההטמעה (HTML/JS) שקיבלתם
+        ממגנט, והוא יוצג בין ההודעות בערוץ. ההטמעה היא בצד הגולש בלבד - הפרסומת תיטען רק
+        כשהגולש גולל ומגיע אליה, וכל פעם נקראת מחדש כך שהתוכן עשוי להשתנות בכל גלילה.
+        אם אין תשובת שרת מהפרסום - לא יוצג כלום.
+      </p>
+
+      <div class="setting-block">
+        <nb-toggle [(checked)]="enabled">
+          <span class="bold">הפעלת שילוב פרסומות מגנט</span>
+        </nb-toggle>
+        <p class="hint">כיבוי יסיר לחלוטין את הצגת הפרסומות בערוץ.</p>
+      </div>
+
+      <div class="setting-block">
+        <label class="bold" for="snippet">קוד הטמעה ממגנט (HTML/JavaScript)</label>
+        <p class="hint">
+          הדביקו את קוד ההטמעה שקיבלתם ממגנט. הקוד יוטמע כפי שהוא בכל מיקום פרסומת בערוץ
+          (תגיות &lt;script&gt; ירוצו בכל הצגה).
+        </p>
+        <textarea
+          nbInput
+          fullWidth
+          id="snippet"
+          rows="8"
+          dir="ltr"
+          [(ngModel)]="snippet"
+          placeholder='<div id="magnet-ad"></div>&#10;<script src="https://magnet.example/embed.js"></script>'>
+        </textarea>
+      </div>
+    </nb-card-body>
+  </nb-card>
+
+  <nb-card>
+    <nb-card-header class="card-header">
+      <nb-icon icon="lock-outline"></nb-icon>
+      <span>מפתח API למגנט</span>
+    </nb-card-header>
+    <nb-card-body>
+      <div class="setting-block">
+        <label class="bold" for="api-key">מפתח API (publisher key)</label>
+        <p class="hint">
+          מפתח שניתן לכם ע"י מגנט. נדרש לצפייה בנתוני הקלקות ותגמולים. שמירת ההגדרות
+          תשמור גם את המפתח. המפתח לא נחשף לצד הלקוח - הקריאה למגנט מתבצעת מהשרת.
+        </p>
+        <input
+          nbInput
+          fullWidth
+          type="password"
+          autocomplete="new-password"
+          id="api-key"
+          dir="ltr"
+          [(ngModel)]="apiKey"
+          placeholder="d8059fc0-9bde-4270-89e4-6f485c617c41">
+      </div>
+    </nb-card-body>
+  </nb-card>
+
+  <nb-card>
+    <nb-card-header class="card-header">
+      <nb-icon icon="clock-outline"></nb-icon>
+      <span>תדירות הצגה</span>
+    </nb-card-header>
+
+    <nb-card-body>
+      <p class="intro">בחרו את שיטת התזמון להצגת פרסומות בין ההודעות.</p>
+
+      <div class="mode-options">
+        <nb-radio
+          name="magnet-mode"
+          value="by_messages"
+          [checked]="mode === 'by_messages'"
+          (valueChange)="mode = $any($event)">
+          הצגה לפי כמות הודעות
+        </nb-radio>
+        <nb-radio
+          name="magnet-mode"
+          value="by_time"
+          [checked]="mode === 'by_time'"
+          (valueChange)="mode = $any($event)">
+          הצגה לפי זמן
+        </nb-radio>
+      </div>
+
+      @if (mode === 'by_messages') {
+        <div class="mode-section">
+          <div class="setting-block">
+            <label class="bold" for="per-messages">הצגת פרסומת כל X הודעות</label>
+            <p class="hint">בכל X הודעות תוצג פרסומת אחת. לדוגמא: ערך 5 = פרסומת אחרי כל 5 הודעות.</p>
+            <input nbInput type="number" min="1" id="per-messages" [(ngModel)]="perMessages">
+          </div>
+
+          <div class="setting-block">
+            <label class="bold" for="min-time">החרגה: זמן מינימום בין פרסומות (שניות)</label>
+            <p class="hint">
+              גם אם עברו X הודעות, אם הפרסומת הקודמת הוצגה לפני פחות מהזמן הזה - לא תוצג שוב.
+              הזינו 0 (או השאירו ריק) כדי לבטל את ההחרגה.
+            </p>
+            <input nbInput type="number" min="0" id="min-time" [(ngModel)]="minTimeSeconds">
+          </div>
+        </div>
+      }
+
+      @if (mode === 'by_time') {
+        <div class="mode-section">
+          <div class="setting-block">
+            <label class="bold" for="per-seconds">הצגת פרסומת כל X שניות</label>
+            <p class="hint">פרסומת תוצג בערוץ אחת לכל פרק זמן. לדוגמא: ערך 60 = פרסומת בכל דקה.</p>
+            <input nbInput type="number" min="1" id="per-seconds" [(ngModel)]="perSeconds">
+          </div>
+
+          <div class="setting-block">
+            <label class="bold" for="min-msgs">החרגה: מספר מינימום הודעות חדשות מהפרסומת הקודמת</label>
+            <p class="hint">
+              גם אם עבר הזמן, אם לא נוספו לפחות X הודעות חדשות מאז הפרסומת הקודמת - לא תוצג שוב.
+              הזינו 0 (או השאירו ריק) כדי לבטל את ההחרגה.
+            </p>
+            <input nbInput type="number" min="0" id="min-msgs" [(ngModel)]="minMessagesSince">
+          </div>
+        </div>
+      }
+    </nb-card-body>
+  </nb-card>
+
+  <!-- נתוני מגנט מגיעים מנקודת קצה של מנהל-על בלבד (לפי המפתח הגלובלי), ולכן
+       מוצגים רק למנהל-על. -->
+  @if (isSuperAdmin) {
+  <nb-card>
+    <nb-card-header class="card-header">
+      <nb-icon icon="bar-chart-2-outline"></nb-icon>
+      <span>נתוני הקלקות ותגמולים</span>
+    </nb-card-header>
+
+    <nb-card-body>
+      <p class="intro">
+        נתונים אלו מתקבלים ישירות ממגנט בזמן אמת לפי המפתח שמוגדר למעלה.
+        רק הקלקות מאושרות לתשלום נספרות. הסכומים נטו, ללא מע"מ, בש"ח.
+        "היום" מתחיל מ-00:00 שעון ישראל. "שבוע"/"חודש" = 7/30 ימים אחורה.
+        מגנט שומר תוצאות במטמון לכ-30 שניות.
+      </p>
+
+      <div class="stats-actions">
+        @if (!stats && !statsError) {
+          <button nbButton status="primary" (click)="loadStats()" [disabled]="statsLoading">
+            <nb-icon icon="bar-chart-2-outline"></nb-icon>
+            {{ statsLoading ? 'טוען...' : 'הצג נתוני הקלקות ותגמולים' }}
+          </button>
+        } @else {
+          <button nbButton status="basic" (click)="loadStats()" [disabled]="statsLoading">
+            <nb-icon icon="refresh-outline"></nb-icon>
+            {{ statsLoading ? 'מרענן...' : 'רענן' }}
+          </button>
+          @if (statsLoadedAt) {
+            <span class="stats-meta">עודכן: {{ statsLoadedAt | date:'HH:mm:ss' }}</span>
+          }
+        }
+      </div>
+
+      @if (statsError) {
+        <div class="stats-error">
+          <nb-icon icon="alert-circle-outline"></nb-icon>
+          <span>{{ statsError }}</span>
+        </div>
+      }
+
+      @if (stats && !statsError) {
+        @if (stats.site?.domain) {
+          <div class="stats-site">
+            <span class="bold">אתר:</span>
+            <a [href]="stats.site?.domain" target="_blank" rel="noopener">{{ stats.site?.domain }}</a>
+          </div>
+        }
+
+        <div class="stats-grid">
+          <div class="stats-section">
+            <div class="stats-title">
+              <nb-icon icon="navigation-2-outline"></nb-icon>
+              הקלקות
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">היום</span>
+              <span class="stats-value">{{ formatNumber(stats.clicks?.today) }}</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">שבוע אחרון</span>
+              <span class="stats-value">{{ formatNumber(stats.clicks?.week) }}</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">חודש אחרון</span>
+              <span class="stats-value">{{ formatNumber(stats.clicks?.month) }}</span>
+            </div>
+          </div>
+
+          <div class="stats-section">
+            <div class="stats-title">
+              <nb-icon icon="credit-card-outline"></nb-icon>
+              תגמולים <span class="stats-currency">({{ stats.currency || 'ILS' }} - ללא מע"מ)</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">היום</span>
+              <span class="stats-value">{{ formatMoney(stats.earnings?.today, stats.currency) }}</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">שבוע אחרון</span>
+              <span class="stats-value">{{ formatMoney(stats.earnings?.week, stats.currency) }}</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">חודש אחרון</span>
+              <span class="stats-value">{{ formatMoney(stats.earnings?.month, stats.currency) }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </nb-card-body>
+  </nb-card>
+  }
+
+  <div class="save-bar">
+    <button nbButton status="primary" (click)="save()" [disabled]="inProgress">
+      <nb-icon icon="save-outline"></nb-icon>
+      {{ inProgress ? 'שומר...' : 'שמור הגדרות מגנט' }}
+    </button>
+  </div>
+
+</div>

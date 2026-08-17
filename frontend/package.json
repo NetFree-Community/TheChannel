@@ -30,7 +30,6 @@
     "@popperjs/core": "^2.11.8",
     "angular-markdown-editor": "^3.1.1",
     "bootstrap": "^5.3.3",
-    "bootstrap-icons": "^1.11.3",
     "chart.js": "^4.3.0",
     "chartjs-plugin-zoom": "^2.2.0",
     "eva-icons": "^1.1.3",

@@ -1,0 +1,55 @@
+<nb-card>
+  <nb-card-header class="d-flex align-items-center gap-2">
+    <nb-icon icon="people-outline"></nb-icon>
+    <span>משתמשים גלובליים</span>
+  </nb-card-header>
+
+  <nb-card-body>
+    @if (loading) {
+      <p class="text-center">טוען...</p>
+    } @else if (users.length === 0) {
+      <p class="text-center text-muted">אין משתמשים רשומים</p>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th>אימייל</th>
+              <th>שם משתמש</th>
+              <th>שם מוצג</th>
+              <th>תפקיד גלובלי</th>
+              <th>הרשאות ערוצים</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users; track user.id) {
+              <tr>
+                <td>{{ user.email }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.publicName }}</td>
+                <td>
+                  <span class="badge"
+                    [class.bg-danger]="user.globalRole === 'super_admin'"
+                    [class.bg-primary]="user.globalRole === 'admin'"
+                    [class.bg-secondary]="user.globalRole !== 'super_admin' && user.globalRole !== 'admin'">
+                    {{ getRoleLabel(user.globalRole) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    @for (entry of getChannelRolesDisplay(user.channelRoles); track entry) {
+                      <span class="badge bg-info text-dark">{{ entry }}</span>
+                    }
+                    @if (!user.channelRoles || getChannelRolesDisplay(user.channelRoles).length === 0) {
+                      <span class="text-muted small">אין</span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </nb-card-body>
+</nb-card>

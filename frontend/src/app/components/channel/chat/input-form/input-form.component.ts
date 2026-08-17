@@ -19,10 +19,15 @@ import {
 } from "@nebular/theme";
 import { MarkdownComponent } from "ngx-markdown";
 import { NgIconsModule } from "@ng-icons/core";
-import { Attachment, ChatFile, ChatMessage } from '../../../../services/chat.service';
+import { Attachment, ChatFile, ChatMessage, ChatService } from '../../../../services/chat.service';
 import { AdminService, EditMsg } from '../../../../services/admin.service';
 import { AutosizeModule } from "ngx-autosize";
 import { TimePickerComponent } from './time-picker/time-picker.component';
+
+// Per-user client-side preference: the server never consumed this setting, and
+// the channel settings endpoint it used to arrive through is owner-only, so a
+// writer or moderator could never receive it.
+const ENTER_SENDS_MESSAGE_KEY = 'enterSendsMessage';
 
 @Component({
   selector: 'app-input-form',
@@ -59,6 +64,7 @@ export class InputFormComponent implements OnInit, OnDestroy {
   isSending: boolean = false;
   showMarkdownPreview: boolean = false;
   hasScrollbar: boolean = false;
+  enterSendsMessage: boolean = false;
   private subscription!: Subscription;
 
   @ViewChild('inputTextArea') inputTextArea!: ElementRef<HTMLTextAreaElement>;
@@ -68,22 +74,35 @@ export class InputFormComponent implements OnInit, OnDestroy {
   constructor(
     private adminService: AdminService,
     private toastrService: NbToastrService,
-    private dialogService: NbDialogService
+    private dialogService: NbDialogService,
+    protected chatService: ChatService,
   ) { }
 
   ngOnInit() {
+    this.enterSendsMessage = localStorage.getItem(ENTER_SENDS_MESSAGE_KEY) === '1';
+
     if (this.message) {
       this.input = this.message.text || '';
     }
 
     this.subscription = this.adminService.messageEditObservable.subscribe((edit?: EditMsg) => {
-      if (edit?.isScheduling) {
+      if (!edit) {
+        // Cleared (e.g. on a channel switch) — drop every leftover of the
+        // previous compose/edit so nothing targets the wrong channel.
+        this.message = undefined;
+        this.input = '';
+        this.isAds = false;
+        this.attachments = [];
+        this.schedulingMessage = undefined;
+        return;
+      }
+      if (edit.isScheduling) {
         this.schedulingMessage = edit.message?.timestamp;
       }
-      if (edit?.new) {
+      if (edit.new) {
         this.input = this.input ? `${this.input}\n${edit.message.text}` : edit.message.text || '';
       } else {
-        this.message = edit?.message;
+        this.message = edit.message;
         this.input = this.message?.text || '';
         this.isAds = this.message?.is_ads || false;
       }
@@ -199,7 +218,10 @@ export class InputFormComponent implements OnInit, OnDestroy {
     this.message.text = this.input;
     this.message.deleted = false;
     this.message.is_ads = this.isAds;
-    await firstValueFrom(this.adminService.editMessage(this.message));
+    // A rejected save must leave the composer untouched — reporting success here
+    // would clear the textarea and lose whatever the user just wrote.
+    const res = await firstValueFrom(this.adminService.editMessage(this.message));
+    if (!res?.success) return false;
     this.cancelUpdateMessage();
     return true;
   }
@@ -276,6 +298,50 @@ export class InputFormComponent implements OnInit, OnDestroy {
     if (this.inputTextArea?.nativeElement) {
       const textarea = this.inputTextArea.nativeElement;
       this.hasScrollbar = textarea.scrollHeight > textarea.clientHeight;
+    }
+  }
+
+  setEnterSendsMessage(checked: boolean) {
+    this.enterSendsMessage = checked;
+    localStorage.setItem(ENTER_SENDS_MESSAGE_KEY, checked ? '1' : '0');
+  }
+
+  onKeydown(event: KeyboardEvent) {
+    if (!this.enterSendsMessage) return;
+    if (event.key !== 'Enter') return;
+
+    if (event.ctrlKey || event.metaKey) {
+      // Ctrl+Enter → insert newline at cursor
+      event.preventDefault();
+      const ta = this.inputTextArea.nativeElement;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      this.input = this.input.substring(0, start) + '\n' + this.input.substring(end);
+      setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 1; });
+    } else if (!event.shiftKey) {
+      // Enter alone → send
+      event.preventDefault();
+      this.sendMessage();
+    }
+  }
+
+  onPaste(event: ClipboardEvent) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (!file) continue;
+        event.preventDefault();
+        const attachment: Attachment = { file };
+        const idx = this.attachments.push(attachment) - 1;
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          if (e.target) this.attachments[idx].url = e.target.result as string;
+        };
+        this.uploadFile(this.attachments[idx]);
+      }
     }
   }
 

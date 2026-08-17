@@ -1,0 +1,96 @@
+<nb-card>
+  <nb-card-header class="d-flex justify-content-between align-items-center">
+    <span>ניהול ערוצים</span>
+    @if (!showCreateForm) {
+      <button nbButton status="primary" size="small" (click)="showCreateForm = true">
+        <nb-icon icon="plus-outline"></nb-icon>
+        ערוץ חדש
+      </button>
+    }
+  </nb-card-header>
+
+  <nb-card-body>
+    @if (showCreateForm) {
+      <nb-card class="mb-3">
+        <nb-card-header>יצירת ערוץ חדש</nb-card-header>
+        <nb-card-body>
+          <div class="d-flex flex-column gap-2">
+            <div>
+              <label class="field-label">Slug (מזהה ייחודי)</label>
+              <input nbInput fullWidth type="text" name="newSlug" [(ngModel)]="newSlug" placeholder="my-channel">
+            </div>
+            <div>
+              <label class="field-label">שם הערוץ</label>
+              <input nbInput fullWidth type="text" name="newName" [(ngModel)]="newName" placeholder="שם הערוץ">
+            </div>
+            <div>
+              <label class="field-label">אימייל הבעלים</label>
+              <input nbInput fullWidth type="email" name="newOwnerEmail" [(ngModel)]="newOwnerEmail" placeholder="owner@example.com">
+            </div>
+            <div class="d-flex gap-2">
+              <button nbButton status="primary" size="small" (click)="createChannel()" [disabled]="creating">
+                <nb-icon icon="checkmark-outline"></nb-icon>
+                {{ creating ? 'יוצר...' : 'צור ערוץ' }}
+              </button>
+              <button nbButton status="danger" size="small" (click)="cancelCreate()">
+                <nb-icon icon="close-outline"></nb-icon>
+                ביטול
+              </button>
+            </div>
+          </div>
+        </nb-card-body>
+      </nb-card>
+    }
+
+    @if (channels.length === 0) {
+      <p class="text-center text-muted">אין ערוצים במערכת</p>
+    }
+
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Slug</th>
+            <th>שם</th>
+            <th>בעלים</th>
+            <th>נוצר בתאריך</th>
+            <th>פעולות</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (channel of channels; track channel.slug) {
+            <tr>
+              <td><code>{{ channel.slug }}</code></td>
+              <td>{{ channel.name }}</td>
+              <td>{{ channel.ownerEmail }}</td>
+              <td>{{ channel.createdAt | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <div class="d-flex gap-1">
+                  <button nbButton status="info" size="tiny" (click)="editFeatures.emit(channel.slug)"
+                    title="ערוך תכונות">
+                    <nb-icon icon="settings-2-outline"></nb-icon>
+                    תכונות
+                  </button>
+                  <button nbButton status="primary" size="tiny" (click)="manageUsers.emit(channel.slug)"
+                    title="ניהול משתמשים">
+                    <nb-icon icon="people-outline"></nb-icon>
+                    משתמשים
+                  </button>
+                  <button nbButton status="warning" size="tiny" (click)="manageStorage.emit(channel.slug)"
+                    title="ניהול אחסון">
+                    <nb-icon icon="hard-drive-outline"></nb-icon>
+                    אחסון
+                  </button>
+                  <button nbButton status="danger" size="tiny" (click)="deleteChannel(channel.slug)"
+                    title="מחק ערוץ">
+                    <nb-icon icon="trash-2-outline"></nb-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </nb-card-body>
+</nb-card>

@@ -1,21 +1,85 @@
-<nb-layout id="container">
-  <nb-layout-header fixed>
-    <app-channel-header [(userInfo)]="userInfo" style="flex: auto;"></app-channel-header>
-  </nb-layout-header>
+@if (noChannel) {
+  <nb-layout>
+    <nb-layout-header fixed>
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <button nbButton ghost status="basic" (click)="logout()">
+          <nb-icon icon="log-out-outline"></nb-icon>
+          התנתק
+        </button>
+        <span style="font-weight:600; font-size:1.1rem;">TheChannel</span>
+      </div>
+    </nb-layout-header>
 
-  <nb-layout-column class="chat-column">
-    <app-chat class=""></app-chat>
-  </nb-layout-column>
-
-  @if (ad) {
-    <nb-layout-column class="ad-column d-none d-lg-flex">
-      <app-advertising [ad]="ad"></app-advertising>
+    <nb-layout-column>
+      <div class="no-channel-container">
+        <nb-card class="request-card">
+          <nb-card-header>
+            <h5 class="mb-0">בקשת פתיחת ערוץ</h5>
+          </nb-card-header>
+          <nb-card-body>
+            @if (reqSubmitted) {
+              <div style="text-align:center; padding: 2rem 0;">
+                <nb-icon icon="checkmark-circle-2-outline" style="font-size:3rem; color:#00d68f;"></nb-icon>
+                <p style="margin-top:1rem; font-size:1.1rem;">הבקשה נשלחה בהצלחה!</p>
+                <p style="color:#888;">נחזור אליך בהקדם לאחר בדיקת הבקשה.</p>
+              </div>
+            } @else {
+              <p style="color:#888; margin-bottom:1.5rem;">
+                אין ערוץ מוגדר עבור החשבון שלך. מלא את הטופס ונפתח לך ערוץ.
+              </p>
+              <div class="d-flex flex-column gap-3">
+                <div>
+                  <label class="form-label">שם מלא</label>
+                  <input nbInput fullWidth type="text" name="reqName" [(ngModel)]="reqName" placeholder="שם מלא">
+                </div>
+                <div>
+                  <label class="form-label">כתובת אימייל</label>
+                  <input nbInput fullWidth type="email" name="reqEmail" [(ngModel)]="reqEmail" placeholder="your@email.com">
+                </div>
+                <div>
+                  <label class="form-label">Slug רצוי לערוץ</label>
+                  <input nbInput fullWidth type="text" name="reqSlug" [(ngModel)]="reqSlug" placeholder="my-channel — אותיות קטנות ומקפים בלבד">
+                </div>
+                <div>
+                  <label class="form-label">תיאור הערוץ</label>
+                  <textarea nbInput fullWidth rows="4" name="reqDescription" [(ngModel)]="reqDescription"
+                    placeholder="ספר לנו על הערוץ שלך..."></textarea>
+                </div>
+                <button nbButton status="primary" fullWidth (click)="submitChannelRequest()" [disabled]="reqSubmitting">
+                  @if (reqSubmitting) {
+                    <nb-spinner size="small" status="control"></nb-spinner>
+                  }
+                  שלח בקשה
+                </button>
+              </div>
+            }
+          </nb-card-body>
+        </nb-card>
+      </div>
     </nb-layout-column>
-  }
+  </nb-layout>
+}
 
-  @if (userInfo?.privileges?.['writer']) {
-    <nb-layout-footer #inputForm id="inputForm" class="fixed-footer">
-      <app-input-form class="w-100" (inputHeightChanged)="onInputHeightChanged()"></app-input-form>
-    </nb-layout-footer>
-  }
-</nb-layout>
+@if (slugReady) {
+  <nb-layout id="container">
+    <nb-layout-header fixed>
+      <app-channel-header [(userInfo)]="userInfo" style="flex: auto;"></app-channel-header>
+    </nb-layout-header>
+
+    <nb-layout-column class="chat-column">
+      <app-chat class=""></app-chat>
+    </nb-layout-column>
+
+    @if (ad) {
+      <nb-layout-column class="ad-column d-none d-lg-flex">
+        <app-advertising [ad]="ad"></app-advertising>
+      </nb-layout-column>
+    }
+
+    @if (userInfo?.globalRole === 'super_admin' || hasAnyRole(userInfo)) {
+      <nb-layout-footer #inputForm id="inputForm" class="fixed-footer">
+        <app-input-form class="w-100" (inputHeightChanged)="onInputHeightChanged()"></app-input-form>
+      </nb-layout-footer>
+    }
+  </nb-layout>
+}

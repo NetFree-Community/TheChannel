@@ -1,6 +1,6 @@
 <nb-card class="admin-panel-card" [size]="'giant'">
     <nb-card-body class="d-flex flex-row">
-        <nb-menu [items]="navigationMenu" tag="admin-panel"></nb-menu>
+        <nb-menu [items]="navigationMenu" [tag]="menuTag"></nb-menu>
 
         <!--    Divider Line    -->
         <div class="vr text-black-50 mx-3"></div>
@@ -30,6 +30,12 @@
             }
             @case (statistics) {
             <app-statistics></app-statistics>
+            }
+            @case (magnetAds) {
+            <app-magnet-ads></app-magnet-ads>
+            }
+            @case (storage) {
+            <app-channel-storage [slug]="channelSlug"></app-channel-storage>
             }
             }
         </div>

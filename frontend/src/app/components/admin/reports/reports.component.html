@@ -3,7 +3,7 @@
     טיפול בדיווחים שהתקבלו ממשתמשים
   </nb-card-header>
   <nb-card-body>
-    @if (!reports) {
+    @if (!reports || reports.length === 0) {
       <div>{{status === 'open' ? 'אין דיווחים פתוחים' : 'אין דיווחים מטופלים'}}</div>
     }
     @for (report of reports; track report) {

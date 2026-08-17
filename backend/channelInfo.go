@@ -4,50 +4,61 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
-
-	"github.com/icza/dyno"
 )
 
+// PublicFeatures is the subset of ChannelFeatures the UI needs to know about:
+// exactly the toggles requireFeature gates a user-visible action on. Without
+// them the client offers a button the backend then answers with 403.
+type PublicFeatures struct {
+	Reactions         bool `json:"reactions"`
+	FileUploads       bool `json:"fileUploads"`
+	Reports           bool `json:"reports"`
+	ScheduledMessages bool `json:"scheduledMessages"`
+}
+
 type Channel struct {
-	Id                      int       `json:"id"`
-	Name                    string    `json:"name"`
-	Description             string    `json:"description"`
-	CreatedAt               time.Time `json:"created_at"`
-	LogoUrl                 string    `json:"logoUrl"`
-	Views                   int64     `json:"views"`
-	RequireAuthForViewFiles bool      `json:"require_auth_for_view_files"`
-	ContactUs               string    `json:"contact_us"`
+	Id                      string         `json:"id"`
+	Name                    string         `json:"name"`
+	Description             string         `json:"description"`
+	CreatedAt               time.Time      `json:"created_at"`
+	LogoUrl                 string         `json:"logoUrl"`
+	Views                   int64          `json:"views"`
+	RequireAuthForViewFiles bool           `json:"require_auth_for_view_files"`
+	ContactUs               string         `json:"contact_us"`
+	Features                PublicFeatures `json:"features"`
 }
 
 func getChannelInfo(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	amount, err := dbGetUsersAmount(ctx)
-	if err != nil {
-		http.Error(w, "error", http.StatusInternalServerError)
-		return
-	}
+	slug := channelSlugFromCtx(r)
+	ch := channelFromCtx(r)
 
-	amount, _ = dyno.GetInteger(amount)
-
-	c, err := getChannelDetails(ctx)
+	amount, err := dbGetUsersAmount(ctx, slug)
 	if err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
 
 	var channel Channel
-	channel.Id, _ = strconv.Atoi(c["id"])
-	channel.Name = c["name"]
-	channel.Description = c["description"]
-	channel.CreatedAt, _ = time.Parse(time.RFC3339, c["created_at"])
-	channel.Views = amount //strconv.Atoi(c["views"])
-	channel.LogoUrl = c["logoUrl"]
-	channel.RequireAuthForViewFiles = settingConfig.RequireAuthForViewFiles
-	channel.ContactUs = settingConfig.ContactUs
+	if ch != nil {
+		channel.Id = ch.Slug
+		channel.Name = ch.Name
+		channel.Description = ch.Description
+		channel.CreatedAt = ch.CreatedAt
+		channel.LogoUrl = ch.LogoUrl
+		channel.RequireAuthForViewFiles = ch.Features.RequireAuthFiles
+		channel.ContactUs = ch.ContactUs
+		channel.Features = PublicFeatures{
+			Reactions:         ch.Features.Reactions,
+			FileUploads:       ch.Features.FileUploads,
+			Reports:           ch.Features.Reports,
+			ScheduledMessages: ch.Features.ScheduledMessages,
+		}
+	}
+	channel.Views = amount
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(channel)
@@ -57,10 +68,16 @@ func editChannelInfo(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	slug := channelSlugFromCtx(r)
+
+	// ContactUs is a pointer so an absent field (the shape the current client
+	// posts) can be told apart from a deliberately cleared one. Only the latter
+	// may overwrite the stored value.
 	type Request struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		LogoUrl     string `json:"logoUrl"`
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		LogoUrl     string  `json:"logoUrl"`
+		ContactUs   *string `json:"contactUs"`
 	}
 
 	var req Request
@@ -70,17 +87,17 @@ func editChannelInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if _, err := rdb.HSet(ctx, "channel:1", "name", req.Name, "description", req.Description, "logoUrl", req.LogoUrl).Result(); err != nil {
+	hashKey := "channel:" + slug
+	args := []any{"name", req.Name, "description", req.Description, "logoUrl", req.LogoUrl}
+	if req.ContactUs != nil {
+		args = append(args, "contactUs", *req.ContactUs)
+	}
+	if _, err := rdb.HSet(ctx, hashKey, args...).Result(); err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
 
 	res := Response{Success: true}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
-}
-
-func registeringEmail(email string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	rdb.SAdd(ctx, "registered_emails", email)
 }

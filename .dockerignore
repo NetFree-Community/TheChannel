@@ -1,0 +1,34 @@
+# Build artifacts and dependencies — these are regenerated inside the image.
+# Without this file the whole 600MB+ node_modules tree is sent to the Docker
+# daemon as build context and copied into the builder layer, which exhausts
+# disk space on the build host.
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Go build output and debug binaries
+backend/the-channel
+backend/channel
+backend/__debug*
+
+# Local runtime state — must never leak into an image
+caddy_data/
+caddy_config/
+redis_data/
+channel_data/
+data/
+.env
+
+# VCS and editor noise
+.git/
+.gitignore
+.vscode/
+.idea/
+**/.DS_Store
+**/.ds_store
+
+# Docs and local-only compose config
+*.md
+docker-compose.yml
+kvrocks.conf
+Caddyfile

@@ -1,5 +1,13 @@
+@if (isOffline) {
+  <div class="offline-banner">
+    <nb-icon icon="wifi-off-outline"></nb-icon>
+    אין חיבור לאינטרנט — ההודעות יתעדכנו אוטומטית עם חזרת החיבור
+  </div>
+}
+
 <div nbInfiniteList (scroll)="onListScroll()" [threshold]="300" [throttleTime]="1000" (topThreshold)="loadMessages()"
-  (bottomThreshold)="loadMessages({ scrollDown: true })" [listenWindowScroll]="true">
+  (bottomThreshold)="loadMessages({ scrollDown: true })" [listenWindowScroll]="true"
+  [class.chat-hidden]="!isVisible">
   <nb-list class="flex-column-reverse" [class.hide-scheduled-messages]="hideScheduledMessages">
 
     @for (msg of scheduledMessages; track $index) {
@@ -34,6 +42,11 @@
       </div>
       }
       <app-message class="overflow-auto" [message]="message" [id]="message.id"></app-message>
+      @if (adSlotsAfter.has(message.id!)) {
+      <div class="magnet-ad-item">
+        <app-magnet-ad-slot [slotKey]="'ad-after-' + message.id"></app-magnet-ad-slot>
+      </div>
+      }
     </nb-list-item>
     }
 

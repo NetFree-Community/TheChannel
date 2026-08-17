@@ -1,0 +1,56 @@
+<div class="d-flex flex-column gap-3">
+  <nb-card>
+    <nb-card-header class="d-flex align-items-center gap-2">
+      <nb-icon icon="bar-chart-outline"></nb-icon>
+      <span>סטטיסטיקות מערכת</span>
+    </nb-card-header>
+    <nb-card-body>
+      <button nbButton status="danger" (click)="resetStatistics()" [disabled]="resetting">
+        <nb-icon icon="refresh-outline"></nb-icon>
+        {{ resetting ? 'מאפס...' : 'איפוס שיא חיבורים' }}
+      </button>
+      <p class="text-muted mt-2 mb-0">
+        <small>פעולה זו תאפס את שיא מספר החיבורים הו-זמניים שנרשם בשרת</small>
+      </p>
+    </nb-card-body>
+  </nb-card>
+
+  <nb-card>
+    <nb-card-header class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <nb-icon icon="pricetags-outline"></nb-icon>
+        <span>סטטיסטיקות מגנט</span>
+      </div>
+      <button nbButton size="small" status="info" ghost (click)="loadMagnetStats()" [disabled]="loadingStats">
+        <nb-icon icon="refresh-outline"></nb-icon>
+        רענן
+      </button>
+    </nb-card-header>
+    <nb-card-body>
+      @if (loadingStats) {
+        <p class="text-center">טוען...</p>
+      } @else if (!magnetStats) {
+        <p class="text-center text-muted">אין נתונים זמינים</p>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>מפתח</th>
+                <th>ערך</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of getStatEntries(); track entry.key) {
+                <tr>
+                  <td><code>{{ entry.key }}</code></td>
+                  <td>{{ entry.value }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </nb-card-body>
+  </nb-card>
+</div>

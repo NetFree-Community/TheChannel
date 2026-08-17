@@ -1,0 +1,55 @@
+<nb-card>
+  <nb-card-header class="d-flex align-items-center gap-2">
+    <nb-icon icon="film-outline"></nb-icon>
+    <span>הגדרות פרסומות iframe גלובליות</span>
+  </nb-card-header>
+
+  <nb-card-body>
+    <div class="d-flex flex-column gap-3">
+      <div>
+        <label class="field-label">כתובת URL של הפרסומת (src)</label>
+        <input nbInput fullWidth type="text" [(ngModel)]="config.src" placeholder="https://example.com/ad.html">
+      </div>
+
+      <div>
+        <label class="field-label">רוחב הפרסומת (פיקסלים)</label>
+        <input nbInput fullWidth type="number" [(ngModel)]="config.width" placeholder="300">
+      </div>
+
+      <div>
+        <nb-toggle [(checked)]="config.lockAll">
+          <span>נעל פרסומות על כל הערוצים</span>
+        </nb-toggle>
+        <small class="text-muted d-block mt-1">כאשר מופעל, הגדרות מנהלי הערוצים מתעלמות</small>
+      </div>
+
+      <div>
+        <label class="field-label">ערוצים נעולים (ללא הגדרת פרסומות ידנית)</label>
+        <div class="d-flex gap-2 mb-2">
+          <input nbInput type="text" [(ngModel)]="newLockedChannel" placeholder="slug-of-channel"
+            (keyup.enter)="addLockedChannel()">
+          <button nbButton status="primary" size="small" (click)="addLockedChannel()">
+            <nb-icon icon="plus-outline"></nb-icon>
+            הוסף
+          </button>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          @for (slug of config.lockedChannels; track slug) {
+            <span class="badge bg-secondary d-flex align-items-center gap-1 p-2">
+              {{ slug }}
+              <button class="btn-close btn-close-white ms-1" style="font-size: 0.6rem;"
+                (click)="removeLockedChannel(slug)"></button>
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+  </nb-card-body>
+
+  <nb-card-footer>
+    <button nbButton status="primary" (click)="save()" [disabled]="saving">
+      <nb-icon icon="save-outline"></nb-icon>
+      {{ saving ? 'שומר...' : 'שמור הגדרות' }}
+    </button>
+  </nb-card-footer>
+</nb-card>

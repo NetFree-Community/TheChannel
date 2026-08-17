@@ -1,6 +1,18 @@
 @use '../../../themes' as *;
 @use "sass:meta";
 
+.no-channel-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+}
+
+.request-card {
+  width: 100%;
+  max-width: 520px;
+}
+
 nb-layout-column.chat-column {
 }
 
