@@ -1,104 +1,251 @@
-<nb-card>
-  <nb-card-header class="d-flex justify-content-between align-items-center">
-    <span>ניהול ערוצים</span>
-    @if (!showCreateForm) {
-      <button nbButton status="primary" size="small" (click)="showCreateForm = true">
-        <nb-icon icon="plus-outline"></nb-icon>
+<!-- The row actions, once: the table (desktop) and the cards (phone) both use it. -->
+<ng-template #actions let-channel>
+  <div class="sa-actions">
+    <a nbButton ghost status="basic" size="small" [href]="channelUrl(channel.slug)" target="_blank" rel="noopener"
+       nbTooltip="פתיחת הערוץ בלשונית חדשה" [attr.aria-label]="'פתיחת הערוץ ' + channel.name">
+      <nb-icon icon="external-link-outline"></nb-icon>
+      <span class="act-text">פתיחה</span>
+    </a>
+    <button nbButton ghost status="primary" size="small" type="button" (click)="editFeatures.emit(channel)"
+            nbTooltip="תכונות, גישה והשבתה" [attr.aria-label]="'הגדרות הערוץ ' + channel.name">
+      <nb-icon icon="settings-2-outline"></nb-icon>
+      <span class="act-text">הגדרות</span>
+    </button>
+    <button nbButton ghost status="primary" size="small" type="button" (click)="manageUsers.emit(channel)"
+            nbTooltip="בעלים, מנהלים וכותבים" [attr.aria-label]="'משתמשי הערוץ ' + channel.name">
+      <nb-icon icon="people-outline"></nb-icon>
+      <span class="act-text">משתמשים</span>
+    </button>
+    <button nbButton ghost status="primary" size="small" type="button" (click)="manageStorage.emit(channel)"
+            nbTooltip="נפח אחסון של הערוץ" [attr.aria-label]="'אחסון הערוץ ' + channel.name">
+      <nb-icon icon="hard-drive-outline"></nb-icon>
+      <span class="act-text">אחסון</span>
+    </button>
+    <button nbButton ghost [status]="channel.features.disabled ? 'success' : 'warning'" size="small" type="button"
+            (click)="toggleDisabled(channel)" [disabled]="toggling.has(channel.slug)"
+            [nbTooltip]="channel.features.disabled ? 'הפעלה מחדש של הערוץ' : 'השבתת הערוץ לכולם'"
+            [attr.aria-label]="(channel.features.disabled ? 'הפעלה מחדש של הערוץ ' : 'השבתת הערוץ ') + channel.name">
+      <nb-icon [icon]="channel.features.disabled ? 'checkmark-circle-2-outline' : 'slash-outline'"></nb-icon>
+      <span class="act-text">{{ channel.features.disabled ? 'הפעלה' : 'השבתה' }}</span>
+    </button>
+    <button nbButton ghost status="danger" size="small" type="button" (click)="deleteChannel(channel)"
+            [disabled]="deleting.has(channel.slug)" nbTooltip="מחיקה לצמיתות"
+            [attr.aria-label]="'מחיקת הערוץ ' + channel.name">
+      <nb-icon icon="trash-2-outline"></nb-icon>
+      <span class="act-text">מחיקה</span>
+    </button>
+  </div>
+</ng-template>
+
+@if (showCreateForm) {
+  <nb-card class="create-card">
+    <nb-card-header>
+      <h2 class="sa-card-title">
+        <nb-icon icon="plus-circle-outline"></nb-icon>
         ערוץ חדש
-      </button>
-    }
+      </h2>
+    </nb-card-header>
+    <nb-card-body>
+      <p class="sa-lead">הערוץ נוצר מיד, והבעלים שתבחרו נכנס אליו עם חשבון Google באותה כתובת מייל ומקבל שליטה מלאה.</p>
+      <form (ngSubmit)="createChannel()" novalidate>
+        <div class="sa-field">
+          <label class="sa-field__label" for="newName">שם הערוץ</label>
+          <input nbInput fullWidth id="newName" type="text" name="newName" [(ngModel)]="newName"
+                 placeholder="לדוגמה: חדשות הקהילה" maxlength="80" autocomplete="off">
+          <p class="sa-field__hint">השם שהקוראים רואים. אפשר לשנות אותו אחר כך מהגדרות הערוץ.</p>
+        </div>
+        <div class="sa-field">
+          <label class="sa-field__label" for="newSlug">כתובת הערוץ</label>
+          <input nbInput fullWidth id="newSlug" type="text" name="newSlug" [(ngModel)]="newSlug"
+                 placeholder="my-channel" dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false">
+          <p class="sa-field__hint">
+            אותיות אנגליות קטנות, ספרות ומקפים, 3 עד 50 תווים. לא ניתן לשינוי אחרי היצירה.
+            @if (normalizedSlug) {
+              <br>הקוראים יגיעו אל <code class="sa-ltr">/channel/{{ normalizedSlug }}</code>
+            }
+          </p>
+        </div>
+        <div class="sa-field">
+          <label class="sa-field__label" for="newOwnerEmail">אימייל הבעלים</label>
+          <input nbInput fullWidth id="newOwnerEmail" type="email" name="newOwnerEmail" [(ngModel)]="newOwnerEmail"
+                 placeholder="owner@example.com" dir="ltr" autocomplete="off">
+          <p class="sa-field__hint">הכתובת שאיתה הבעלים נכנס ל-Google. אפשר להוסיף מנהלים וכותבים נוספים אחר כך.</p>
+        </div>
+        <div class="sa-save-bar">
+          <button nbButton status="primary" type="submit" [disabled]="creating">
+            <nb-icon icon="checkmark-outline"></nb-icon>
+            {{ creating ? 'יוצר…' : 'יצירת הערוץ' }}
+          </button>
+          <button nbButton ghost status="basic" type="button" (click)="cancelCreate()" [disabled]="creating">
+            <nb-icon icon="close-outline"></nb-icon>
+            ביטול
+          </button>
+        </div>
+      </form>
+    </nb-card-body>
+  </nb-card>
+}
+
+<nb-card>
+  <nb-card-header>
+    <div class="sa-card-head">
+      <h2 class="sa-card-title">
+        <nb-icon icon="list-outline"></nb-icon>
+        רשימת הערוצים
+        @if (!loading && !loadFailed) {
+          <span class="sa-chip">{{ channels.length }}</span>
+          @if (disabledCount) {
+            <span class="sa-chip sa-chip--danger">{{ disabledCount }} מושבתים</span>
+          }
+        }
+      </h2>
+      @if (!showCreateForm) {
+        <button nbButton status="primary" size="small" type="button" (click)="openCreate()">
+          <nb-icon icon="plus-outline"></nb-icon>
+          ערוץ חדש
+        </button>
+      }
+    </div>
   </nb-card-header>
 
   <nb-card-body>
-    @if (showCreateForm) {
-      <nb-card class="mb-3">
-        <nb-card-header>יצירת ערוץ חדש</nb-card-header>
-        <nb-card-body>
-          <div class="d-flex flex-column gap-2">
-            <div>
-              <label class="field-label">Slug (מזהה ייחודי)</label>
-              <input nbInput fullWidth type="text" name="newSlug" [(ngModel)]="newSlug" placeholder="my-channel">
-            </div>
-            <div>
-              <label class="field-label">שם הערוץ</label>
-              <input nbInput fullWidth type="text" name="newName" [(ngModel)]="newName" placeholder="שם הערוץ">
-            </div>
-            <div>
-              <label class="field-label">אימייל הבעלים</label>
-              <input nbInput fullWidth type="email" name="newOwnerEmail" [(ngModel)]="newOwnerEmail" placeholder="owner@example.com">
-            </div>
-            <div class="d-flex gap-2">
-              <button nbButton status="primary" size="small" (click)="createChannel()" [disabled]="creating">
-                <nb-icon icon="checkmark-outline"></nb-icon>
-                {{ creating ? 'יוצר...' : 'צור ערוץ' }}
-              </button>
-              <button nbButton status="danger" size="small" (click)="cancelCreate()">
-                <nb-icon icon="close-outline"></nb-icon>
-                ביטול
-              </button>
-            </div>
-          </div>
-        </nb-card-body>
-      </nb-card>
-    }
-
-    @if (channels.length === 0) {
-      <p class="text-center text-muted">אין ערוצים במערכת</p>
-    }
-
-    <div class="table-responsive">
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <th>Slug</th>
-            <th>שם</th>
-            <th>בעלים</th>
-            <th>נוצר בתאריך</th>
-            <th>פעולות</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (channel of channels; track channel.slug) {
-            <tr [class.channel-row--disabled]="channel.features.disabled">
-              <td>
-                <code>{{ channel.slug }}</code>
-                @if (channel.features.disabled) {
-                  <span class="disabled-badge">
-                    <nb-icon icon="slash-outline"></nb-icon>
-                    מושבת
-                  </span>
-                }
-              </td>
-              <td>{{ channel.name }}</td>
-              <td>{{ channel.ownerEmail }}</td>
-              <td>{{ channel.createdAt | date:'dd/MM/yyyy' }}</td>
-              <td>
-                <div class="d-flex gap-1">
-                  <button nbButton status="info" size="tiny" (click)="editFeatures.emit(channel.slug)"
-                    title="ערוך תכונות">
-                    <nb-icon icon="settings-2-outline"></nb-icon>
-                    תכונות
-                  </button>
-                  <button nbButton status="primary" size="tiny" (click)="manageUsers.emit(channel.slug)"
-                    title="ניהול משתמשים">
-                    <nb-icon icon="people-outline"></nb-icon>
-                    משתמשים
-                  </button>
-                  <button nbButton status="warning" size="tiny" (click)="manageStorage.emit(channel.slug)"
-                    title="ניהול אחסון">
-                    <nb-icon icon="hard-drive-outline"></nb-icon>
-                    אחסון
-                  </button>
-                  <button nbButton status="danger" size="tiny" (click)="deleteChannel(channel.slug)"
-                    [disabled]="deleting.has(channel.slug)" title="מחק ערוץ">
-                    <nb-icon icon="trash-2-outline"></nb-icon>
-                  </button>
-                </div>
-              </td>
-            </tr>
+    @if (loading) {
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את רשימת הערוצים…</p>
+      </div>
+    } @else if (loadFailed) {
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">רשימת הערוצים לא נטענה</p>
+        <p class="sa-state__text">ייתכן שהחיבור לשרת נותק. נסו לטעון שוב.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="loadChannels()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
+      </div>
+    } @else if (channels.length === 0) {
+      <div class="sa-state">
+        <span class="sa-state__icon"><nb-icon icon="grid-outline"></nb-icon></span>
+        <p class="sa-state__title">עדיין אין ערוצים במערכת</p>
+        <p class="sa-state__text">הערוץ הראשון נפתח כאן, או מהאתר על ידי כל משתמש שנכנס.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="openCreate()">
+          <nb-icon icon="plus-outline"></nb-icon>
+          ערוץ חדש
+        </button>
+      </div>
+    } @else {
+      <div class="sa-toolbar">
+        <div class="sa-toolbar__search">
+          <label class="visually-hidden" for="channelSearch">חיפוש ערוץ</label>
+          <nb-form-field>
+            <nb-icon nbPrefix icon="search-outline"></nb-icon>
+            <input nbInput fullWidth id="channelSearch" type="search" [(ngModel)]="query"
+                   placeholder="חיפוש לפי שם, כתובת או אימייל הבעלים" autocomplete="off">
+          </nb-form-field>
+        </div>
+        <div class="sa-filters" role="group" aria-label="סינון לפי מצב">
+          @for (f of statusFilters; track f.value) {
+            <button nbButton size="small" type="button"
+                    [status]="statusFilter === f.value ? 'primary' : 'basic'"
+                    [appearance]="statusFilter === f.value ? 'filled' : 'outline'"
+                    [attr.aria-pressed]="statusFilter === f.value"
+                    (click)="statusFilter = f.value">{{ f.label }}</button>
           }
-        </tbody>
-      </table>
-    </div>
+        </div>
+      </div>
+
+      @if (filtered.length === 0) {
+        <div class="sa-state">
+          @if (query.trim()) {
+            <span class="sa-state__icon"><nb-icon icon="search-outline"></nb-icon></span>
+            <p class="sa-state__title">לא נמצאו ערוצים שמתאימים לחיפוש</p>
+            <p class="sa-state__text">נסו מילה אחרת, או הציגו את כל הערוצים.</p>
+            <button nbButton ghost status="primary" size="small" type="button" (click)="clearFilter()">ניקוי החיפוש</button>
+          } @else {
+            <!-- No search word: it is the status filter that has nothing to show. -->
+            <span class="sa-state__icon"><nb-icon [icon]="statusFilter === 'disabled' ? 'slash-outline' : 'checkmark-circle-2-outline'"></nb-icon></span>
+            <p class="sa-state__title">{{ statusFilter === 'disabled' ? 'אין ערוצים מושבתים' : 'אין ערוצים פעילים' }}</p>
+            <p class="sa-state__text">{{ statusFilter === 'disabled' ? 'כל הערוצים במערכת פעילים כרגע.' : 'כל הערוצים במערכת מושבתים כרגע.' }}</p>
+            <button nbButton ghost status="primary" size="small" type="button" (click)="clearFilter()">הצגת כל הערוצים</button>
+          }
+        </div>
+      } @else {
+        <!-- Desktop: a table. -->
+        <div class="sa-table-wrap channels-table">
+          <table class="table sa-table">
+            <thead>
+              <tr>
+                <th scope="col">ערוץ</th>
+                <th scope="col">בעלים</th>
+                <th scope="col">נוצר</th>
+                <th scope="col">מצב</th>
+                <th scope="col">פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (channel of filtered; track channel.slug) {
+                <tr [class.row--disabled]="channel.features.disabled">
+                  <td>
+                    <div class="identity">
+                      @if (channel.logoUrl) {
+                        <img class="identity__logo" [src]="channel.logoUrl" alt="" width="40" height="40" loading="lazy">
+                      } @else {
+                        <span class="identity__logo identity__logo--initial" aria-hidden="true">{{ initial(channel) }}</span>
+                      }
+                      <div class="identity__text">
+                        <span class="identity__name">{{ channel.name }}</span>
+                        <code class="identity__slug sa-ltr">{{ channel.slug }}</code>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="sa-ltr owner">{{ channel.ownerEmail }}</span></td>
+                  <td class="nowrap">{{ channel.createdAt | date:'dd/MM/yyyy' }}</td>
+                  <td>
+                    @if (channel.features.disabled) {
+                      <span class="sa-chip sa-chip--danger"><nb-icon icon="slash-outline"></nb-icon> מושבת</span>
+                    } @else {
+                      <span class="sa-chip sa-chip--success"><nb-icon icon="checkmark-outline"></nb-icon> פעיל</span>
+                    }
+                  </td>
+                  <td>
+                    <ng-container *ngTemplateOutlet="actions; context: { $implicit: channel }"></ng-container>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Phone: one card per channel. -->
+        <ul class="channels-cards">
+          @for (channel of filtered; track channel.slug) {
+            <li class="channel-card" [class.row--disabled]="channel.features.disabled">
+              <div class="identity">
+                @if (channel.logoUrl) {
+                  <img class="identity__logo" [src]="channel.logoUrl" alt="" width="40" height="40" loading="lazy">
+                } @else {
+                  <span class="identity__logo identity__logo--initial" aria-hidden="true">{{ initial(channel) }}</span>
+                }
+                <div class="identity__text">
+                  <span class="identity__name">{{ channel.name }}</span>
+                  <code class="identity__slug sa-ltr">{{ channel.slug }}</code>
+                </div>
+                @if (channel.features.disabled) {
+                  <span class="sa-chip sa-chip--danger">מושבת</span>
+                } @else {
+                  <span class="sa-chip sa-chip--success">פעיל</span>
+                }
+              </div>
+              <dl class="channel-card__meta">
+                <div><dt>בעלים</dt><dd class="sa-ltr">{{ channel.ownerEmail }}</dd></div>
+                <div><dt>נוצר</dt><dd>{{ channel.createdAt | date:'dd/MM/yyyy' }}</dd></div>
+              </dl>
+              <ng-container *ngTemplateOutlet="actions; context: { $implicit: channel }"></ng-container>
+            </li>
+          }
+        </ul>
+      }
+    }
   </nb-card-body>
 </nb-card>

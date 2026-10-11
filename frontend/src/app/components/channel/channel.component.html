@@ -2,13 +2,16 @@
   <nb-layout>
     <nb-layout-header fixed>
       <div class="plain-header">
+        <a class="plain-header__brand" routerLink="/" aria-label="הערוץ — לדף הבית">
+          <span class="plain-header__mark" aria-hidden="true"><nb-icon aria-hidden="true" icon="radio-outline"></nb-icon></span>
+          הערוץ
+        </a>
         @if (userInfo) {
-          <button nbButton ghost status="basic" (click)="logout()">
-            <nb-icon icon="log-out-outline"></nb-icon>
-            התנתק
+          <button nbButton ghost status="basic" size="small" type="button" (click)="logout()">
+            <nb-icon aria-hidden="true" icon="log-out-outline"></nb-icon>
+            התנתקות
           </button>
         }
-        <span class="plain-header__brand">TheChannel</span>
       </div>
     </nb-layout-header>
 
@@ -16,30 +19,34 @@
       <div class="state-container">
         <nb-card class="state-card">
           <nb-card-body class="state-card__body">
-            <nb-icon icon="slash-outline" class="state-card__icon"></nb-icon>
+            <span class="state-card__icon state-card__icon--danger" aria-hidden="true">
+              <nb-icon aria-hidden="true" icon="slash-outline"></nb-icon>
+            </span>
             <h1 class="state-card__title">הערוץ מושבת</h1>
             <p class="state-card__text">
               הערוץ <code class="state-card__slug" dir="ltr">{{ channelDisabled }}</code>
               הושבת על ידי הנהלת המערכת ואינו זמין כרגע.
             </p>
-            <p class="state-card__hint">אם לדעתך מדובר בטעות, פנו להנהלת המערכת.</p>
+            @if (userInfo) {
+              <p class="state-card__hint">אם לדעתכם מדובר בטעות — אפשר לפנות להנהלת המערכת מכאן.</p>
+            } @else {
+              <p class="state-card__hint">אם לדעתכם מדובר בטעות — פנו להנהלת המערכת דרך "יצירת קשר" בדף הבית.</p>
+            }
             <div class="state-card__actions">
               <!-- /channel is guarded: for a visitor it only leads to /login. -->
               @if (userInfo) {
-                <button nbButton status="primary" (click)="backToMyChannels()">
-                  <nb-icon icon="arrow-back-outline"></nb-icon>
-                  חזרה לערוצים שלי
+                <button nbButton status="primary" type="button" (click)="backToMyChannels()">
+                  <nb-icon aria-hidden="true" icon="grid-outline"></nb-icon>
+                  לערוצים שלי
+                </button>
+                <button nbButton appearance="outline" status="primary" type="button" (click)="openSupport()">
+                  <nb-icon aria-hidden="true" icon="message-circle-outline"></nb-icon>
+                  פנייה לתמיכה
                 </button>
               } @else {
-                <button nbButton status="primary" (click)="goHome()">
-                  <nb-icon icon="home-outline"></nb-icon>
+                <button nbButton status="primary" type="button" (click)="goHome()">
+                  <nb-icon aria-hidden="true" icon="home-outline"></nb-icon>
                   לדף הבית
-                </button>
-              }
-              @if (userInfo) {
-                <button nbButton ghost status="basic" (click)="logout()">
-                  <nb-icon icon="log-out-outline"></nb-icon>
-                  התנתק
                 </button>
               }
             </div>
@@ -54,13 +61,16 @@
   <nb-layout>
     <nb-layout-header fixed>
       <div class="plain-header">
+        <a class="plain-header__brand" routerLink="/" aria-label="הערוץ — לדף הבית">
+          <span class="plain-header__mark" aria-hidden="true"><nb-icon aria-hidden="true" icon="radio-outline"></nb-icon></span>
+          הערוץ
+        </a>
         @if (userInfo) {
-          <button nbButton ghost status="basic" (click)="logout()">
-            <nb-icon icon="log-out-outline"></nb-icon>
-            התנתק
+          <button nbButton ghost status="basic" size="small" type="button" (click)="logout()">
+            <nb-icon aria-hidden="true" icon="log-out-outline"></nb-icon>
+            התנתקות
           </button>
         }
-        <span class="plain-header__brand">TheChannel</span>
       </div>
     </nb-layout-header>
 
@@ -68,23 +78,25 @@
       <div class="state-container">
         <nb-card class="state-card">
           <nb-card-body class="state-card__body">
-            <nb-icon icon="question-mark-circle-outline" class="state-card__icon"></nb-icon>
+            <span class="state-card__icon" aria-hidden="true">
+              <nb-icon aria-hidden="true" icon="question-mark-circle-outline"></nb-icon>
+            </span>
             <h1 class="state-card__title">הערוץ לא נמצא</h1>
             <p class="state-card__text">
               אין ערוץ בכתובת <code class="state-card__slug" dir="ltr">{{ channelNotFound }}</code>.
-              ייתכן שהכתובת שגויה או שהערוץ נמחק.
+              ייתכן שיש טעות בקישור, או שהערוץ נסגר.
             </p>
-            <p class="state-card__hint">בדקו את הקישור שקיבלתם, או חזרו לערוצים שלכם.</p>
+            <p class="state-card__hint">בדקו את הקישור שקיבלתם — או פתחו ערוץ משלכם, זה לוקח רגע.</p>
             <div class="state-card__actions">
               <!-- /channel is guarded: for a visitor it only leads to /login. -->
               @if (userInfo) {
-                <button nbButton status="primary" (click)="backToMyChannels()">
-                  <nb-icon icon="arrow-back-outline"></nb-icon>
-                  חזרה לערוצים שלי
+                <button nbButton status="primary" type="button" (click)="backToMyChannels()">
+                  <nb-icon aria-hidden="true" icon="grid-outline"></nb-icon>
+                  לערוצים שלי
                 </button>
               } @else {
-                <button nbButton status="primary" (click)="goHome()">
-                  <nb-icon icon="home-outline"></nb-icon>
+                <button nbButton status="primary" type="button" (click)="goHome()">
+                  <nb-icon aria-hidden="true" icon="home-outline"></nb-icon>
                   לדף הבית
                 </button>
               }
@@ -100,70 +112,176 @@
   <nb-layout>
     <nb-layout-header fixed>
       <div class="plain-header">
-        @if (userInfo) {
-          <button nbButton ghost status="basic" (click)="logout()">
-            <nb-icon icon="log-out-outline"></nb-icon>
-            התנתק
+        <a class="plain-header__brand" routerLink="/" aria-label="הערוץ — לדף הבית">
+          <span class="plain-header__mark" aria-hidden="true"><nb-icon aria-hidden="true" icon="radio-outline"></nb-icon></span>
+          הערוץ
+        </a>
+        <div class="plain-header__user">
+          @if (userInfo?.picture) {
+            <img class="plain-header__avatar" [src]="userInfo?.picture" alt="" width="32" height="32" loading="lazy">
+          }
+          <span class="plain-header__name">{{ userInfo?.publicName || userInfo?.username }}</span>
+          <button nbButton ghost status="basic" size="small" type="button" (click)="logout()">
+            <nb-icon aria-hidden="true" icon="log-out-outline"></nb-icon>
+            התנתקות
           </button>
-        }
-        <span class="plain-header__brand">TheChannel</span>
+        </div>
       </div>
     </nb-layout-header>
 
     <nb-layout-column>
-      <div class="my-channels">
-        <section class="my-channels__hero">
-          <h1 class="my-channels__title">
-            שלום{{ userInfo?.publicName ? ' ' + userInfo?.publicName : '' }}, הערוץ שלך
-          </h1>
-          <p class="my-channels__lead">
-            זה הקישור הישיר לערוץ — שלחו אותו למי שתרצו שיצטרף. לחצו על "כניסה לערוץ" כדי לשדר ולנהל.
-          </p>
+      <div class="hub">
+        <section class="hub__hero">
+          <h1 class="hub__title">הערוצים שלי</h1>
+          <p class="hub__lead">כאן עוברים בין הערוצים, משתפים קישורים ומנהלים.</p>
         </section>
 
-        @for (slug of ownedChannels; track slug) {
-          <nb-card class="my-channels__card">
-            <nb-card-body>
-              <div class="my-channels__slug" dir="ltr">{{ slug }}</div>
+        <!-- loading -->
+        @if (channelsLoading && !myChannels.length) {
+          <div class="hub__list" aria-busy="true" aria-label="טוענים את הערוצים שלכם">
+            @for (i of [1, 2]; track i) {
+              <nb-card class="hub-card hub-card--skeleton" aria-hidden="true">
+                <nb-card-body class="hub-card__body">
+                  <div class="hub-card__top">
+                    <span class="hub-card__avatar skeleton"></span>
+                    <div class="hub-card__text">
+                      <span class="skeleton skeleton--line skeleton--w40"></span>
+                      <span class="skeleton skeleton--line skeleton--w70"></span>
+                      <span class="skeleton skeleton--line skeleton--w30"></span>
+                    </div>
+                  </div>
+                  <div class="hub-card__actions">
+                    <span class="skeleton skeleton--btn"></span>
+                    <span class="skeleton skeleton--btn"></span>
+                  </div>
+                </nb-card-body>
+              </nb-card>
+            }
+          </div>
+        }
 
-              <label class="my-channels__url-label">הקישור הישיר</label>
-              <div class="my-channels__url-row">
-                <span class="my-channels__url" dir="ltr">{{ channelUrl(slug) }}</span>
-                <button nbButton status="basic" size="small" class="my-channels__copy"
-                        (click)="copyChannelUrl(slug)">
-                  <nb-icon [icon]="copiedSlug === slug ? 'checkmark-outline' : 'copy-outline'"></nb-icon>
-                  {{ copiedSlug === slug ? 'הועתק' : 'העתקה' }}
-                </button>
-              </div>
-
-              <button nbButton status="primary" size="large" class="my-channels__enter"
-                      (click)="enterOwnedChannel(slug)">
-                <nb-icon icon="arrow-forward-outline"></nb-icon>
-                כניסה לערוץ
+        <!-- error -->
+        @if (channelsError && !channelsLoading) {
+          <nb-card class="hub-empty">
+            <nb-card-body class="hub-empty__body">
+              <span class="hub-empty__icon hub-empty__icon--danger" aria-hidden="true">
+                <nb-icon aria-hidden="true" icon="wifi-off-outline"></nb-icon>
+              </span>
+              <p class="hub-empty__text">{{ channelsError }}</p>
+              <button nbButton status="primary" type="button" (click)="loadMyChannels(true)">
+                <nb-icon aria-hidden="true" icon="refresh-outline"></nb-icon>
+                לנסות שוב
               </button>
             </nb-card-body>
           </nb-card>
         }
 
-        <div class="my-channels__help">
-          <h2 class="my-channels__help-title">איך מנהלים את הערוץ</h2>
-          <div class="my-channels__help-grid">
+        <!-- the channels -->
+        @if (myChannels.length) {
+          <div class="hub__list">
+            @for (channel of myChannels; track channel.slug) {
+              <nb-card class="hub-card" [class.hub-card--disabled]="channel.disabled">
+                @if (channel.disabled) {
+                  <div class="hub-card__strip" role="status">
+                    <nb-icon aria-hidden="true" icon="alert-triangle-outline"></nb-icon>
+                    הערוץ הושבת על ידי הנהלת המערכת
+                  </div>
+                }
+                <nb-card-body class="hub-card__body">
+                  <div class="hub-card__top">
+                    @if (channel.logoUrl) {
+                      <img class="hub-card__avatar" [src]="channel.logoUrl" alt="" width="56" height="56"
+                           loading="lazy" decoding="async">
+                    } @else {
+                      <span class="hub-card__avatar hub-card__avatar--initial tone-{{ avatarTone(channel.slug) }}"
+                            aria-hidden="true">{{ initial(channel) }}</span>
+                    }
+                    <div class="hub-card__text">
+                      <h2 class="hub-card__name">{{ channel.name || channel.slug }}</h2>
+                      @if (channel.description) {
+                        <p class="hub-card__desc">{{ channel.description }}</p>
+                      }
+                      <div class="hub-card__meta">
+                        <span class="hub-card__role" [class.hub-card__role--owner]="channel.role === 'owner'">
+                          {{ roleLabels[channel.role] || channel.role }}
+                        </span>
+                        <span class="hub-card__count">
+                          <nb-icon aria-hidden="true" icon="people-outline"></nb-icon>
+                          {{ channel.participants }} משתתפים
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="hub-card__actions">
+                    <button nbButton status="primary" type="button" class="hub-card__enter"
+                            (click)="enterOwnedChannel(channel.slug)">
+                      <nb-icon aria-hidden="true" icon="arrow-back-outline"></nb-icon>
+                      כניסה לערוץ
+                    </button>
+                    @if (canManage(channel.role)) {
+                      <button nbButton appearance="outline" status="primary" type="button"
+                              (click)="manageChannel(channel.slug)">
+                        <nb-icon aria-hidden="true" icon="settings-2-outline"></nb-icon>
+                        ניהול
+                      </button>
+                    }
+                  </div>
+
+                  <div class="hub-card__share">
+                    <span class="hub-card__share-label">שיתוף:</span>
+                    <button nbButton ghost size="small" status="basic" type="button"
+                            (click)="copyChannelUrl(channel.slug)" aria-live="polite">
+                      <nb-icon aria-hidden="true" [icon]="copiedSlug === channel.slug ? 'checkmark-outline' : 'copy-outline'"></nb-icon>
+                      {{ copiedSlug === channel.slug ? 'הועתק ✓' : 'העתקת הקישור' }}
+                    </button>
+                    <a nbButton ghost size="small" status="success" [href]="whatsappHref(channel)"
+                       target="_blank" rel="noopener">
+                      <nb-icon aria-hidden="true" icon="message-circle-outline"></nb-icon>
+                      וואטסאפ
+                    </a>
+                    @if (canShareSheet) {
+                      <button nbButton ghost size="small" status="basic" type="button" (click)="shareChannel(channel)">
+                        <nb-icon aria-hidden="true" icon="share-outline"></nb-icon>
+                        שיתוף…
+                      </button>
+                    }
+                  </div>
+                </nb-card-body>
+              </nb-card>
+            }
+          </div>
+
+          <div class="hub__new">
+            <button nbButton appearance="outline" status="primary" size="large" type="button"
+                    class="hub__new-btn" [disabled]="!canCreateMore" (click)="openCreateChannel()">
+              <nb-icon aria-hidden="true" icon="plus-outline"></nb-icon>
+              פתיחת ערוץ נוסף
+            </button>
+            <p class="hub__new-hint">
+              @if (canCreateMore) {
+                בבעלותכם {{ ownedCount }} מתוך {{ maxChannels }} ערוצים אפשריים לחשבון.
+              } @else {
+                הגעתם למקסימום של {{ maxChannels }} ערוצים לחשבון.
+              }
+            </p>
+          </div>
+        }
+
+        <section class="hub__help" aria-labelledby="hub-help-title">
+          <h2 class="hub__help-title" id="hub-help-title">איך מנהלים את הערוץ</h2>
+          <div class="hub__help-grid">
             @for (step of channelHelp; track step.title) {
-              <div class="my-channels__help-item">
-                <nb-icon [icon]="step.icon" class="my-channels__help-icon"></nb-icon>
+              <div class="hub__help-item">
+                <nb-icon aria-hidden="true" [icon]="step.icon" class="hub__help-icon"></nb-icon>
                 <div>
-                  <h3 class="my-channels__help-item-title">{{ step.title }}</h3>
-                  <p class="my-channels__help-item-text">{{ step.text }}</p>
+                  <h3 class="hub__help-item-title">{{ step.title }}</h3>
+                  <p class="hub__help-item-text">{{ step.text }}</p>
                 </div>
               </div>
             }
           </div>
-        </div>
-
-        <button nbButton ghost status="primary" class="my-channels__new" (click)="openCreateChannel()">
-          <nb-icon icon="plus-outline"></nb-icon>
-          פתיחת ערוץ נוסף
-        </button>
+        </section>
       </div>
     </nb-layout-column>
   </nb-layout>
@@ -173,13 +291,24 @@
   <nb-layout>
     <nb-layout-header fixed>
       <div class="plain-header">
-        @if (userInfo) {
-          <button nbButton ghost status="basic" (click)="logout()">
-            <nb-icon icon="log-out-outline"></nb-icon>
-            התנתק
-          </button>
-        }
-        <span class="plain-header__brand">TheChannel</span>
+        <a class="plain-header__brand" routerLink="/" aria-label="הערוץ — לדף הבית">
+          <span class="plain-header__mark" aria-hidden="true"><nb-icon aria-hidden="true" icon="radio-outline"></nb-icon></span>
+          הערוץ
+        </a>
+        <div class="plain-header__user">
+          @if (myChannels.length) {
+            <button nbButton ghost status="primary" size="small" type="button" (click)="showMyChannelsList()">
+              <nb-icon aria-hidden="true" icon="grid-outline"></nb-icon>
+              הערוצים שלי
+            </button>
+          }
+          @if (userInfo) {
+            <button nbButton ghost status="basic" size="small" type="button" (click)="logout()">
+              <nb-icon aria-hidden="true" icon="log-out-outline"></nb-icon>
+              התנתקות
+            </button>
+          }
+        </div>
       </div>
     </nb-layout-header>
 
@@ -187,33 +316,42 @@
       <div class="onboarding">
         <section class="onboarding__hero">
           <span class="onboarding__badge">
-            <nb-icon icon="flash-outline"></nb-icon>
-            פתיחה מיידית
+            <nb-icon aria-hidden="true" icon="flash-outline"></nb-icon>
+            נפתח תוך רגע, בחינם
           </span>
-          <h1 class="onboarding__title">שלום{{ userInfo?.publicName ? ' ' + userInfo?.publicName : '' }}, בואו נפתח לכם ערוץ</h1>
-          <p class="onboarding__lead">
-            עוד אין ערוץ מקושר לחשבון שלכם. בחרו שם וכתובת — הערוץ נפתח מיד,
-            ואתם מקבלים את הקישור לשיתוף ונכנסים לשדר. אין המתנה לאישור.
-          </p>
+          @if (myChannels.length) {
+            <h1 class="onboarding__title">פתיחת ערוץ נוסף</h1>
+            <p class="onboarding__lead">
+              עוד ערוץ, עם שם וכתובת משלו. גם הוא יופיע ברשימת הערוצים שלכם, ואפשר לעבור ביניהם בכל רגע.
+              אפשר לפתוח עד {{ maxChannels }} ערוצים לחשבון (בבעלותכם {{ ownedCount }}).
+            </p>
+          } @else {
+            <h1 class="onboarding__title">שלום{{ userInfo?.publicName ? ' ' + userInfo?.publicName : '' }}, בואו נפתח לכם ערוץ</h1>
+            <p class="onboarding__lead">
+              ערוץ הוא מקום אחד שבו אתם מפרסמים הודעות, תמונות, סרטונים וקישורים — וכל מי שיש לו את הקישור רואה אותם.
+              עוד אין ערוץ על שמכם; תנו לו שם, והוא נפתח מיד.
+            </p>
+          }
         </section>
 
-        <div class="onboarding__steps">
+        <ol class="onboarding__steps">
           @for (step of onboardingSteps; track step.title; let i = $index) {
-            <div class="onboarding__step">
-              <span class="onboarding__step-num">{{ i + 1 }}</span>
-              <nb-icon [icon]="step.icon" class="onboarding__step-icon"></nb-icon>
+            <li class="onboarding__step">
+              <span class="onboarding__step-num" aria-hidden="true">{{ i + 1 }}</span>
+              <nb-icon aria-hidden="true" [icon]="step.icon" class="onboarding__step-icon"></nb-icon>
               <div>
                 <h2 class="onboarding__step-title">{{ step.title }}</h2>
                 <p class="onboarding__step-text">{{ step.text }}</p>
               </div>
-            </div>
+            </li>
           }
-        </div>
+        </ol>
 
         <app-create-channel-form
           title="פרטי הערוץ"
-          subtitle="אפשר לשנות הכול אחר כך מתוך הגדרות הערוץ"
-          (created)="onChannelCreated($event)">
+          subtitle="רק השם חובה. תיאור ולוגו אפשר להשלים אחר כך מתוך ניהול הערוץ; הכתובת נקבעת עכשיו."
+          (created)="onChannelCreated($event)"
+          (backToList)="showMyChannelsList()">
         </app-create-channel-form>
       </div>
     </nb-layout-column>

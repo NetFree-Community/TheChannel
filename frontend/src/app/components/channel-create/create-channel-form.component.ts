@@ -1,5 +1,8 @@
-import { Component, EventEmitter, OnDestroy, OnInit, Input, Output } from '@angular/core';
+import {
+  AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   NbAlertModule,
   NbButtonModule,
@@ -9,27 +12,43 @@ import {
   NbIconModule,
   NbInputModule,
 } from '@nebular/theme';
-import { GuideComponent } from '../admin/guide/guide.component';
 import { Subject, Subscription, of } from 'rxjs';
 import { catchError, debounceTime, map, switchMap } from 'rxjs/operators';
 import {
+  CHANNEL_DESCRIPTION_MAX,
+  CHANNEL_NAME_MAX,
   ChannelService,
+  MAX_CHANNELS_PER_ACCOUNT,
+  SLUG_MAX_LENGTH,
+  SLUG_MIN_LENGTH,
   SLUG_PATTERN,
   SlugAvailability,
+  retryAfterMinutes,
+  sanitizeSlugInput,
   slugifyChannelName,
 } from '../../services/channel.service';
+import { ShareService } from '../../services/share.service';
+import { MyChannelsService } from '../../services/my-channels.service';
 
-type SlugState = 'empty' | 'checking' | 'available' | 'unavailable';
+/** `unknown`: the live check could not run (throttled, offline); the server decides on submit. */
+type SlugState = 'empty' | 'checking' | 'available' | 'unavailable' | 'unknown';
+
+/** What the error alert offers besides its sentence. */
+type FormErrorKind = '' | 'limit' | 'auth';
 
 /**
- * The channel-opening card: a signed-in user with no channel POSTs
- * /api/channels/create and the owner is taken from the session — the only way
- * a channel is opened.
+ * The channel-opening card: a signed-in user POSTs /api/channels/create and
+ * the owner is taken from the session — the only way a channel is opened.
+ *
+ * The form is one screen: the name (the address is derived from it and shown
+ * live underneath, with the availability verdict), an optional description
+ * and one button. The address field itself stays hidden until the user asks
+ * to change it, because almost nobody needs to.
  *
  * Once the channel exists the card switches to its `created` state: the full
- * channel URL with a copy button, a short first-run guide, and the button that
- * finally enters the channel. Entering is deliberately a user action rather
- * than an automatic redirect, so there is a moment to copy the link.
+ * channel URL with copy / WhatsApp / share buttons, three next steps, and the
+ * button that finally enters the channel. Entering is deliberately a user
+ * action rather than an automatic redirect, so there is a moment to share.
  */
 @Component({
   selector: 'app-create-channel-form',
@@ -46,7 +65,7 @@ type SlugState = 'empty' | 'checking' | 'available' | 'unavailable';
   templateUrl: './create-channel-form.component.html',
   styleUrl: './create-channel-form.component.scss',
 })
-export class CreateChannelFormComponent implements OnInit, OnDestroy {
+export class CreateChannelFormComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() title = 'פתיחת ערוץ';
   @Input() subtitle = '';
 
@@ -56,19 +75,38 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
    */
   @Output() created = new EventEmitter<string>();
 
+  /** The "my channels" link in the channel-limit error; the host shows its list. */
+  @Output() backToList = new EventEmitter<void>();
+
+  @ViewChild('nameInput') nameInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('slugInput') slugInput?: ElementRef<HTMLInputElement>;
+
   name = '';
   slug = '';
   description = '';
 
+  readonly nameMax = CHANNEL_NAME_MAX;
+  readonly descriptionMax = CHANNEL_DESCRIPTION_MAX;
+  readonly slugMin = SLUG_MIN_LENGTH;
+  readonly slugMax = SLUG_MAX_LENGTH;
+  readonly maxChannels = MAX_CHANNELS_PER_ACCOUNT;
+
   slugState: SlugState = 'empty';
   slugMessage = '';
+  /** The address field is revealed only on request ("לשנות את הכתובת"). */
+  slugEditing = false;
+  /** A free `slug-N` found after the chosen address turned out taken. */
+  suggestedSlug = '';
+  suggesting = false;
+
   submitting = false;
   formError = '';
+  formErrorKind: FormErrorKind = '';
 
   /** Set once the channel exists; switches the card to the success screen. */
   createdSlug = '';
+  createdName = '';
   copied = false;
-  copyFailed = false;
   entering = false;
 
   /** Host shown in the URL preview, e.g. `example.com/channel/my-slug`. */
@@ -76,24 +114,19 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
 
   readonly nextSteps = [
     {
-      icon: 'share-outline',
-      title: 'שיתוף הקישור',
-      text: 'זה מה ששולחים לאנשים כדי שיצטרפו לערוץ.',
+      icon: 'paper-plane-outline',
+      title: 'כתבו הודעה ראשונה',
+      text: 'תיבת הכתיבה נמצאת בתחתית מסך הערוץ. מה שתכתבו יגיע מיד לכל מי שפתח את הקישור.',
     },
     {
-      icon: 'paper-plane-outline',
-      title: 'פרסום הודעה',
-      text: 'תיבת הכתיבה נמצאת בתחתית מסך הערוץ.',
+      icon: 'share-outline',
+      title: 'שתפו את הקישור',
+      text: 'שלחו אותו בוואטסאפ, במייל או בכל מקום — כל מי שיש לו את הקישור רואה את הערוץ. כפתור השיתוף נמצא גם בראש הערוץ.',
     },
     {
       icon: 'people-outline',
-      title: 'הוספת כותבים ומנהלים',
-      text: 'דרך פאנל הניהול, במסך ההרשאות.',
-    },
-    {
-      icon: 'brush-outline',
-      title: 'עיצוב הערוץ',
-      text: 'שם, תיאור ולוגו — גם הם בפאנל הניהול.',
+      title: 'הוסיפו כותבים ומנהלים',
+      text: 'לוחצים על השם שלכם בראש הערוץ ובוחרים "ניהול הערוץ" — שם מוסיפים עוד אנשים שיכתבו וינהלו, ומשנים שם, תיאור ולוגו.',
     },
   ];
 
@@ -103,14 +136,27 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
   private readonly slugChecks$ = new Subject<string>();
   private slugSub?: Subscription;
   private copyResetTimer?: ReturnType<typeof setTimeout>;
+  /** Re-runs a live check the server throttled, once its Retry-After is up. */
+  private recheckTimer?: ReturnType<typeof setTimeout>;
+  // Bumped on every slug change so a suggestion search started for an earlier
+  // address cannot surface its answer under a newer one.
+  private suggestSeq = 0;
 
   constructor(
     private channelService: ChannelService,
     private dialogService: NbDialogService,
+    private share: ShareService,
+    private myChannels: MyChannelsService,
+    private router: Router,
   ) {}
 
-  /** The same guide the admin panel shows, opened here as a dialog. */
-  openGuide(): void {
+  /**
+   * The same guide the manage page shows, opened here as a dialog. Imported
+   * on click: this form ships with the (eager) channel page, and a static
+   * import put the whole guide into every reader's initial bundle.
+   */
+  async openGuide(): Promise<void> {
+    const { GuideComponent } = await import('../admin/guide/guide.component');
     this.dialogService.open(GuideComponent, {
       closeOnBackdropClick: true,
       context: { dialogMode: true },
@@ -119,7 +165,19 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
 
   /** The link handed to readers — never hardcode the domain. */
   get channelUrl(): string {
-    return `${window.location.origin}/channel/${this.createdSlug}`;
+    return this.share.channelUrl(this.createdSlug);
+  }
+
+  get inviteText(): string {
+    return this.share.inviteText(this.createdName, this.channelUrl);
+  }
+
+  get whatsappHref(): string {
+    return this.share.whatsappUrl(this.inviteText);
+  }
+
+  get canShare(): boolean {
+    return this.share.canShare;
   }
 
   ngOnInit(): void {
@@ -131,31 +189,69 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
     this.slugSub = this.slugChecks$.pipe(
       debounceTime(400),
       switchMap(slug => this.channelService.checkSlugAvailability(slug).pipe(
+        map(result => ({ slug, result, status: 200 })),
         // A failed check must not wedge the field in "checking" forever; treat
         // it as "no opinion" and let the server have the last word on submit.
-        catchError(() => of<SlugAvailability | null>(null)),
-        map(result => ({ slug, result })),
+        catchError(err => of({ slug, result: null as SlugAvailability | null, status: Number(err?.status) || 0 })),
       )),
-    ).subscribe(({ slug, result }) => {
+    ).subscribe(({ slug, result, status }) => {
       // The field may have been cleared or made invalid while the request was
       // in flight; that state was set by queueSlugCheck() and must stand.
       if (slug !== this.slug) return;
       if (!result) {
-        this.slugState = 'empty';
-        this.slugMessage = '';
+        this.markUnchecked(slug, status);
+        this.settleVerdict();
         return;
       }
       this.slugState = result.available ? 'available' : 'unavailable';
-      this.slugMessage = result.available
-        ? 'הכתובת פנויה'
-        : this.reasonText(result.reason);
+      this.slugMessage = result.available ? '' : this.reasonText(result.reason);
+      // Offer a way out right away rather than after a failed submit.
+      if (!result.available && result.reason === 'taken') this.suggestFreeSlug(slug, 3);
+      this.settleVerdict();
     });
+  }
+
+  ngAfterViewInit(): void {
+    // Only on a wide screen: on a phone a programmatic focus pops the keyboard
+    // over the explanation the user has not read yet.
+    if (window.matchMedia?.('(min-width: 768px)').matches) {
+      setTimeout(() => this.nameInput?.nativeElement.focus({ preventScroll: true }), 0);
+    }
   }
 
   ngOnDestroy(): void {
     this.slugSub?.unsubscribe();
     this.slugChecks$.complete();
     if (this.copyResetTimer) clearTimeout(this.copyResetTimer);
+    if (this.recheckTimer) clearTimeout(this.recheckTimer);
+  }
+
+  /**
+   * The live check did not answer. A fast typist trips the probe's rate limit
+   * (10, then one per second), and silently dropping back to the idle hint
+   * made the check-mark vanish with no explanation. Say so, and for a
+   * throttle re-run the check by itself once the server's wait is over.
+   */
+  private markUnchecked(slug: string, status: number): void {
+    this.slugState = 'unknown';
+    if (status === 429) {
+      this.slugMessage = 'הבדיקה הושהתה לרגע — נבדוק שוב בעוד כמה שניות.';
+      if (this.recheckTimer) clearTimeout(this.recheckTimer);
+      this.recheckTimer = setTimeout(() => {
+        if (this.slug === slug && this.slugState === 'unknown') this.queueSlugCheck();
+      }, 2500);
+      return;
+    }
+    this.slugMessage = 'לא הצלחנו לבדוק עכשיו אם הכתובת פנויה — היא תיבדק שוב בפתיחת הערוץ.';
+  }
+
+  /** Counters only appear near the limit, so the common case stays quiet. */
+  get showNameCounter(): boolean {
+    return this.name.length >= this.nameMax - 20;
+  }
+
+  get showDescriptionCounter(): boolean {
+    return this.description.length >= this.descriptionMax - 200;
   }
 
   onNameChange(): void {
@@ -170,9 +266,35 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
   }
 
   onSlugChange(): void {
-    this.slugTouched = true;
     // Normalise as they type so the field can never hold an illegal character.
-    this.slug = this.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const clean = sanitizeSlugInput(this.slug);
+    // An emptied field hands the address back to the name — which is what the
+    // "נקבעת לפי השם" chip then says. Judged on the clean value: a field that
+    // only ever held illegal characters (Hebrew, punctuation) is empty too,
+    // or the chip would promise the name decides while nothing did.
+    this.slugTouched = clean.length > 0;
+    // [(ngModel)] writes the model back into the <input> only when the bound
+    // value changed. When all that was typed is an illegal character the model
+    // lands on its previous value, so the input kept showing "abc!" while the
+    // model was "abc" — the view is written directly.
+    const el = this.slugInput?.nativeElement;
+    if (el && el.value !== clean) el.value = clean;
+    this.slug = clean;
+    this.queueSlugCheck();
+  }
+
+  /** Reveals the address field and moves the cursor into it. */
+  editSlug(): void {
+    this.slugEditing = true;
+    setTimeout(() => this.slugInput?.nativeElement.focus(), 0);
+  }
+
+  /** One tap on the free variant we found: adopt it and re-verify. */
+  useSuggestedSlug(): void {
+    if (!this.suggestedSlug) return;
+    this.slug = this.suggestedSlug;
+    this.slugTouched = true;
+    this.suggestedSlug = '';
     this.queueSlugCheck();
   }
 
@@ -180,16 +302,62 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
     return SLUG_PATTERN.test(this.slug);
   }
 
-  get canSubmit(): boolean {
-    if (this.submitting || !this.name.trim() || !this.slugValid) return false;
-    return this.slugState !== 'unavailable';
+  /** True when the address is syntactically wrong (as opposed to taken). */
+  get slugInvalid(): boolean {
+    return !!this.slug && !this.slugValid;
+  }
+
+  /** The address message is a notice (not a fault) while the check is pending or unavailable. */
+  get slugMessageMuted(): boolean {
+    return this.slugState === 'unknown';
+  }
+
+  /**
+   * The button is only locked while a request is in flight or the address is
+   * known to be unusable. An empty form stays clickable: the click explains
+   * what is missing, which a greyed-out button never does.
+   */
+  get submitDisabled(): boolean {
+    return this.submitting || this.slugState === 'unavailable';
   }
 
   async submit(): Promise<void> {
-    if (!this.canSubmit) {
-      this.formError = this.name.trim()
-        ? 'יש למלא את כל השדות ולבחור כתובת תקינה'
-        : 'יש להזין שם לערוץ';
+    if (this.submitting) return;
+    this.formErrorKind = '';
+    const name = this.name.trim();
+    if (!name) {
+      this.formError = 'כדי לפתוח ערוץ צריך לתת לו שם.';
+      this.nameInput?.nativeElement.focus();
+      return;
+    }
+    // The address field was emptied and the name not touched since: derive
+    // the address now, as the chip promised.
+    if (!this.slug && !this.slugTouched) {
+      this.slug = slugifyChannelName(name);
+      this.queueSlugCheck();
+    }
+    // Enter right after typing lands here while the live check is still out;
+    // wait for its verdict so a taken address is reported as taken, not as
+    // "someone beat you to it" after a 409.
+    if (this.slugState === 'checking') {
+      this.submitting = true;
+      try {
+        // Typing meanwhile re-queues the check; wait for the last one.
+        while (this.slugState === 'checking') await this.pendingVerdict();
+      } finally {
+        this.submitting = false;
+      }
+    }
+    if (!this.slugValid) {
+      this.formError = this.slug
+        ? `כתובת הערוץ לא תקינה — ${this.slugMin} עד ${this.slugMax} תווים: אותיות אנגליות קטנות, ספרות ומקפים.`
+        : 'לא הצלחנו להרכיב כתובת מהשם הזה — בחרו כתובת באנגלית.';
+      this.editSlug();
+      return;
+    }
+    if (this.slugState === 'unavailable') {
+      this.formError = 'הכתובת הזו תפוסה — בחרו כתובת אחרת.';
+      this.editSlug();
       return;
     }
 
@@ -197,9 +365,13 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
     this.submitting = true;
     try {
       const channel = await this.channelService.createChannel(
-        this.slug, this.name.trim(), this.description.trim(),
+        this.slug, name, this.description.trim(),
       );
       this.createdSlug = channel.slug;
+      this.createdName = channel.name || name;
+      // The "my channels" list is cached per user; it has to pick the new
+      // channel up the next time it is shown.
+      this.myChannels.invalidate();
     } catch (err: any) {
       this.handleError(err);
     } finally {
@@ -208,22 +380,22 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
   }
 
   async copyUrl(): Promise<void> {
-    this.copyFailed = false;
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
-      await navigator.clipboard.writeText(this.channelUrl);
-      this.copied = true;
-    } catch {
-      // Insecure context or a browser that refuses the API — the URL is right
-      // there and selectable, so just say so instead of failing silently.
-      this.copyFailed = true;
-      this.copied = false;
-    }
+    // The service shows the "copy blocked" notice itself; the URL stays
+    // visible and selectable underneath for exactly that case.
+    this.copied = await this.share.copy(this.channelUrl);
     if (this.copyResetTimer) clearTimeout(this.copyResetTimer);
-    this.copyResetTimer = setTimeout(() => {
-      this.copied = false;
-      this.copyFailed = false;
-    }, 2500);
+    this.copyResetTimer = setTimeout(() => (this.copied = false), 2500);
+  }
+
+  async shareSheet(): Promise<void> {
+    const outcome = await this.share.share({
+      title: this.createdName,
+      text: this.inviteText,
+      url: this.channelUrl,
+    });
+    // A browser that advertised the share sheet and then refused still gets
+    // the link onto the clipboard.
+    if (outcome === 'unsupported') await this.copyUrl();
   }
 
   enterChannel(): void {
@@ -232,9 +404,20 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
     this.created.emit(this.createdSlug);
   }
 
+  /** The session expired mid-form: go through login and come back here. */
+  relogin(): void {
+    try {
+      localStorage.setItem('returnUrl', '/channel');
+    } catch {
+      // Storage unavailable — the login page falls back to /channel anyway.
+    }
+    this.router.navigate(['/login']);
+  }
+
   private handleError(err: any): void {
     // Every one of these endpoints answers failures as plain text (http.Error),
-    // which Angular hands back as a string in err.error.
+    // which Angular hands back as a string in err.error. The text is matched
+    // to pick the right explanation and never shown as is.
     const text = typeof err?.error === 'string' && err.error
       ? err.error
       : (err?.error?.message || '');
@@ -247,42 +430,89 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
         // retry within its window). The lock is not the slug's fault, so it
         // must not tell the user to pick another one.
         if (text.includes('already being created')) {
-          this.formError = 'יצירת ערוץ אחר עדיין בתהליך, נסו שוב בעוד רגע';
+          this.formError = 'ערוץ אחר שלכם עדיין נפתח ברגע זה (אולי בחלון אחר). חכו רגע ונסו שוב.';
           return;
         }
-        // Inline on the slug field — that is the field they have to change.
+        // Inline on the address — that is what they have to change — plus a
+        // free variant they can take in one tap.
         this.slugState = 'unavailable';
-        this.slugMessage = 'ה-slug תפוס, בחר אחר';
+        this.slugMessage = 'מישהו הקדים אתכם — הכתובת הזו תפוסה.';
         this.formError = '';
+        this.slugEditing = true;
+        this.suggestFreeSlug(this.slug, 5);
         return;
       case 403:
-        this.formError = 'הגעת למכסה המרבית של 5 ערוצים לחשבון. כדי לפתוח ערוץ נוסף יש למחוק אחד מהערוצים הקיימים.';
+        this.formErrorKind = 'limit';
+        this.formError = `אפשר לפתוח עד ${this.maxChannels} ערוצים לחשבון, וכבר יש לכם ${this.maxChannels}. כדי לפתוח ערוץ נוסף פנו להנהלת המערכת ("פנייה לתמיכה" בתפריט החשבון).`;
         return;
-      case 429:
-        this.formError = 'נשלחו יותר מדי בקשות בזמן קצר. המתן מספר דקות ונסה שוב.';
+      case 429: {
+        const minutes = retryAfterMinutes(err) ?? 20;
+        this.formError = `פתחתם כמה ערוצים ברצף — אפשר לנסות שוב בעוד כ-${minutes} דקות.`;
         return;
+      }
       case 400:
-        // Plain-text reasons from the server, in the user's language.
         if (text.includes('too long')) {
-          this.formError = 'השם או התיאור ארוכים מדי (עד 80 תווים לשם ועד 2000 לתיאור).';
+          this.formError = `השם או התיאור ארוכים מדי (עד ${this.nameMax} תווים לשם ועד ${this.descriptionMax} לתיאור).`;
           return;
         }
         if (text.includes('name is required')) {
-          this.formError = 'יש להזין שם לערוץ.';
+          this.formError = 'כדי לפתוח ערוץ צריך לתת לו שם.';
           return;
         }
-        this.formError = text || 'הפרטים שהוזנו אינם תקינים.';
+        if (text.includes('reserved')) {
+          this.slugState = 'unavailable';
+          this.slugMessage = this.reasonText('reserved');
+          this.slugEditing = true;
+          this.formError = '';
+          return;
+        }
+        if (text.includes('slug')) {
+          this.slugState = 'unavailable';
+          this.slugMessage = this.reasonText('invalid');
+          this.slugEditing = true;
+          this.formError = '';
+          return;
+        }
+        this.formError = 'הפרטים שהוזנו לא התקבלו. בדקו את השם והכתובת ונסו שוב.';
         return;
       case 401:
-        this.formError = 'פג תוקף ההתחברות. יש להתחבר מחדש כדי לפתוח ערוץ.';
+        this.formErrorKind = 'auth';
+        this.formError = 'פג תוקף ההתחברות. התחברו מחדש כדי לפתוח את הערוץ.';
+        return;
+      case 0:
+        this.formError = 'אין חיבור לשרת. בדקו את החיבור לאינטרנט ונסו שוב.';
         return;
       default:
-        this.formError = text || 'שגיאה בפתיחת הערוץ. נסה שוב.';
+        this.formError = 'משהו השתבש בפתיחת הערוץ. נסו שוב בעוד רגע.';
     }
+  }
+
+  // Resolved whenever the live check leaves 'checking' (see submit()).
+  private verdictWaiters: (() => void)[] = [];
+
+  private pendingVerdict(): Promise<void> {
+    if (this.slugState !== 'checking') return Promise.resolve();
+    return new Promise<void>(resolve => this.verdictWaiters.push(resolve));
+  }
+
+  private settleVerdict(): void {
+    const waiters = this.verdictWaiters;
+    this.verdictWaiters = [];
+    waiters.forEach(w => w());
   }
 
   private queueSlugCheck(): void {
     this.formError = '';
+    this.suggestedSlug = '';
+    // Whatever was being checked is superseded; a submit waiting on it looks
+    // at the new state (and waits again if that is 'checking').
+    this.settleVerdict();
+    // Bumping the sequence orphans a running suggestFreeSlug(): its finally
+    // block no longer owns the flag, so it is cleared here or the
+    // "looking for a free address" line would stay on for good.
+    this.suggestSeq++;
+    this.suggesting = false;
+    if (this.recheckTimer) clearTimeout(this.recheckTimer);
     if (!this.slug) {
       this.slugState = 'empty';
       this.slugMessage = '';
@@ -290,7 +520,9 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
     }
     if (!this.slugValid) {
       this.slugState = 'unavailable';
-      this.slugMessage = 'כתובת לא תקינה — 3 עד 50 תווים, אותיות אנגליות קטנות, ספרות ומקפים';
+      this.slugMessage = this.slug.length < this.slugMin
+        ? `הכתובת קצרה מדי — לפחות ${this.slugMin} תווים.`
+        : this.reasonText('invalid');
       return;
     }
     this.slugState = 'checking';
@@ -298,12 +530,26 @@ export class CreateChannelFormComponent implements OnInit, OnDestroy {
     this.slugChecks$.next(this.slug);
   }
 
+  /** Looks for `base-2`, `base-3`… and offers the first free one. */
+  private async suggestFreeSlug(base: string, maxTries: number): Promise<void> {
+    const seq = ++this.suggestSeq;
+    this.suggesting = true;
+    try {
+      const free = await this.channelService.findFreeSlugVariant(base, maxTries);
+      // The user may have typed on meanwhile; only answer the question asked.
+      if (seq !== this.suggestSeq || base !== this.slug) return;
+      this.suggestedSlug = free ?? '';
+    } finally {
+      if (seq === this.suggestSeq) this.suggesting = false;
+    }
+  }
+
   private reasonText(reason: SlugAvailability['reason']): string {
     switch (reason) {
-      case 'taken': return 'ה-slug תפוס, בחר אחר';
-      case 'reserved': return 'הכתובת שמורה למערכת, בחר אחרת';
-      case 'invalid': return 'כתובת לא תקינה — אותיות אנגליות קטנות, ספרות ומקפים בלבד';
-      default: return 'הכתובת אינה זמינה';
+      case 'taken': return 'הכתובת הזו כבר תפוסה — בחרו אחרת.';
+      case 'reserved': return 'הכתובת הזו שמורה למערכת — בחרו אחרת.';
+      case 'invalid': return 'רק אותיות אנגליות קטנות, ספרות ומקפים (לא בתחילת הכתובת ולא בסופה).';
+      default: return 'הכתובת הזו לא זמינה — בחרו אחרת.';
     }
   }
 }

@@ -21,6 +21,17 @@ export interface CreatedChannel {
  * round-trip on /slug-available.
  */
 export const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
+export const SLUG_MIN_LENGTH = 3;
+export const SLUG_MAX_LENGTH = 50;
+
+/**
+ * Mirrors of backend/channel_create.go (maxChannelNameLen, maxChannelDescLen,
+ * maxChannelsPerOwner). The form counts characters exactly like the server
+ * does, so a Hebrew name is never cut short of the advertised limit.
+ */
+export const CHANNEL_NAME_MAX = 80;
+export const CHANNEL_DESCRIPTION_MAX = 2000;
+export const MAX_CHANNELS_PER_ACCOUNT = 5;
 
 /**
  * Letter pairs written with a geresh to spell sounds Hebrew has no letter for.
@@ -87,8 +98,41 @@ export function slugifyChannelName(name: string): string {
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
     .replace(/-{2,}/g, '-')
-    .slice(0, 50)
+    .slice(0, SLUG_MAX_LENGTH)
     .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Normalises what the user types into the slug field as they type, so the
+ * field can never hold an illegal character (uppercase, spaces, Hebrew).
+ */
+export function sanitizeSlugInput(value: string): string {
+  return (value || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+/**
+ * The n-th fallback address for a taken slug: `news` → `news-2`, `news-3`…
+ * The base is trimmed first so the suffix never pushes the result past the
+ * length limit, and a trailing hyphen left by the trim is dropped so the
+ * variant is always a valid slug.
+ */
+export function slugVariant(base: string, n: number): string {
+  const suffix = `-${n}`;
+  const room = SLUG_MAX_LENGTH - suffix.length;
+  const trimmed = base.replace(/-\d+$/, '').slice(0, room).replace(/-+$/g, '');
+  return `${trimmed}${suffix}`;
+}
+
+/**
+ * Seconds-to-minutes of a 429's Retry-After header, rounded up, or null when
+ * the server sent none. The creation limiter refills one slot every 20
+ * minutes, so the number shown is the real wait rather than a guess.
+ */
+export function retryAfterMinutes(err: any): number | null {
+  const raw = err?.headers?.get?.('Retry-After');
+  const seconds = Number(raw);
+  if (!raw || !Number.isFinite(seconds) || seconds <= 0) return null;
+  return Math.max(1, Math.ceil(seconds / 60));
 }
 
 @Injectable({
@@ -113,5 +157,26 @@ export class ChannelService {
   /** Left as an Observable so callers can debounce/switchMap the keystrokes. */
   checkSlugAvailability(slug: string): Observable<SlugAvailability> {
     return this.http.get<SlugAvailability>('/api/channels/slug-available', { params: { slug } });
+  }
+
+  /**
+   * The first free `base-N` variant of a taken slug, or null when none of the
+   * first `maxTries` is free (or the checks failed). Sequential on purpose:
+   * the availability probe is rate limited per user, and the first hit ends
+   * the search — usually after a single request.
+   */
+  async findFreeSlugVariant(base: string, maxTries = 5): Promise<string | null> {
+    for (let n = 2; n < 2 + maxTries; n++) {
+      const candidate = slugVariant(base, n);
+      if (!SLUG_PATTERN.test(candidate)) return null;
+      try {
+        const result = await firstValueFrom(this.checkSlugAvailability(candidate));
+        if (result?.available) return candidate;
+      } catch {
+        // A failed probe (rate limit, network) is not worth a second one.
+        return null;
+      }
+    }
+    return null;
   }
 }

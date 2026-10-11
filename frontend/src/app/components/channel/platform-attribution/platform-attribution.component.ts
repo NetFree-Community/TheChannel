@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { NbIconModule } from '@nebular/theme';
 
 /**
  * Thin attribution strip shown at the top of a channel page.
@@ -12,7 +13,7 @@ import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-platform-attribution',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, NbIconModule],
   templateUrl: './platform-attribution.component.html',
   styleUrl: './platform-attribution.component.scss',
 })

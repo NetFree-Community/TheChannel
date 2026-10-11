@@ -3,7 +3,13 @@
   width: 100%;
 }
 
-.magnet-ad-message {
+.ad {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  margin-top: 1rem;
+
   // Hidden, not removed: a display:none frame has no layout, so its size
   // script would report zero forever and a late ad could never reopen the
   // slot. Zero height with the width kept lets the frame keep measuring.
@@ -16,8 +22,33 @@
   }
 }
 
-.magnet-ad-card {
-  max-width: 80vw;
+.ad__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.25rem;
+}
+
+.ad__badge {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-warning-100);
+  color: var(--color-warning-800);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ad__hint {
+  font-size: 0.72rem;
+  color: var(--text-hint-color);
+}
+
+.ad__card {
+  border-radius: var(--card-border-radius);
+  border: 1px dashed var(--border-basic-color-4);
+  background: var(--background-basic-color-2);
+  padding: 0.5rem;
 }
 
 .magnet-ad-host {
@@ -29,5 +60,8 @@
     display: block;
     width: 100%;
     border: 0;
+    // The frame starts at its initial height and is resized by the ad's own
+    // report, so the slot never grows in a jump.
+    transition: height 0.2s ease;
   }
 }

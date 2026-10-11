@@ -1,0 +1,45 @@
+// Shared classes (.sa-*) come from the panel stylesheet.
+:host {
+  display: block;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stats nb-card {
+  margin: 0;
+}
+
+.stats-table td {
+  font-size: 0.9rem;
+}
+
+.stat-key {
+  font-size: 0.8rem;
+  color: var(--text-hint-color);
+  background: transparent;
+  padding: 0;
+  overflow-wrap: anywhere;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--text-basic-color);
+  overflow-wrap: anywhere;
+}
+
+// The reset cannot be undone; the danger tokens keep the card visibly apart.
+.danger-card {
+  border-color: var(--color-danger-300);
+}
+
+.danger-title {
+  color: var(--color-danger-700);
+}
+
+.danger-title nb-icon {
+  color: var(--color-danger-600);
+}

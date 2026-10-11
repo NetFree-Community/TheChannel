@@ -91,6 +91,19 @@ export class SuperAdminService {
     return firstValueFrom(this.http.put<void>(`/api/super-admin/channels/${slug}/features`, features));
   }
 
+  /**
+   * Flips only the kill switch. The features endpoint replaces the whole
+   * record, so the current flags are fetched first and sent back untouched —
+   * a stale copy from the channels list would silently revert a setting the
+   * operator changed on the features screen a moment earlier.
+   */
+  async setChannelDisabled(slug: string, disabled: boolean): Promise<ChannelFeatures> {
+    const channel = await this.getChannel(slug);
+    const features: ChannelFeatures = { ...channel.features, disabled };
+    await this.updateChannelFeatures(slug, features);
+    return features;
+  }
+
   getChannelUsers(slug: string): Promise<ChannelUser[]> {
     return firstValueFrom(this.http.get<ChannelUser[]>(`/api/super-admin/channels/${slug}/users`));
   }

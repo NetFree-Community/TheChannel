@@ -8,6 +8,7 @@ import {
   NbInputModule,
   NbSelectModule,
   NbToastrService,
+  NbTooltipModule,
 } from '@nebular/theme';
 import { SuperAdminService, ChannelUser } from '../../../services/super-admin.service';
 
@@ -31,8 +32,10 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     NbInputModule,
     NbIconModule,
     NbSelectModule,
+    NbTooltipModule,
   ],
   templateUrl: './channel-users.component.html',
+  styleUrl: './channel-users.component.scss',
 })
 export class ChannelUsersComponent implements OnInit {
   @Input() slug!: string;
@@ -41,15 +44,21 @@ export class ChannelUsersComponent implements OnInit {
   // Removed users are sent with an empty role so the server actually revokes them —
   // an email that is simply missing from the payload is never touched.
   removedUsers: ChannelUser[] = [];
+  /** The role each removed user had, so "undo" puts them back as they were. */
+  private removedRoles = new Map<string, string>();
+  loading = true;
+  loadFailed = false;
   saving = false;
   addingUser = false;
   newEmail = '';
   newRole: 'owner' | 'moderator' | 'writer' | '' = 'moderator';
+  /** JSON of the last server copy, to tell the operator about unsaved edits. */
+  private snapshot = '';
 
-  roleOptions: { value: string; label: string }[] = [
-    { value: 'owner', label: 'בעלים' },
-    { value: 'moderator', label: 'מנהל' },
-    { value: 'writer', label: 'כותב' },
+  roleOptions: { value: string; label: string; hint: string }[] = [
+    { value: 'owner', label: 'בעלים', hint: 'שליטה מלאה: הגדרות, משתמשים, כתיבה ומחיקה.' },
+    { value: 'moderator', label: 'מנהל', hint: 'ניהול הערוץ וכתיבה, בלי למנות בעלים.' },
+    { value: 'writer', label: 'כותב', hint: 'פרסום הודעות בלבד.' },
   ];
 
   constructor(
@@ -62,12 +71,36 @@ export class ChannelUsersComponent implements OnInit {
   }
 
   loadUsers() {
+    this.loading = true;
+    this.loadFailed = false;
     this.superAdminService.getChannelUsers(this.slug)
       .then(users => {
-        this.users = [...users];
+        this.users = [...(users || [])];
         this.removedUsers = [];
+        this.removedRoles.clear();
+        this.snapshot = JSON.stringify(this.users);
       })
-      .catch(() => this.toastr.danger('', 'שגיאה בטעינת משתמשי הערוץ'));
+      .catch((err) => {
+        this.loadFailed = true;
+        this.toastr.danger('', err?.status === 404
+          ? 'הערוץ לא נמצא — ייתכן שנמחק'
+          : 'רשימת המשתמשים לא נטענה');
+      })
+      .finally(() => this.loading = false);
+  }
+
+  get dirty(): boolean {
+    return this.removedUsers.length > 0 || JSON.stringify(this.users) !== this.snapshot;
+  }
+
+  roleHint(role: string): string {
+    return this.roleOptions.find(o => o.value === role)?.hint || '';
+  }
+
+  /** First letter of the address, for the avatar. */
+  initial(email: string): string {
+    const e = (email || '').trim();
+    return e ? e[0].toUpperCase() : '?';
   }
 
   addUser() {
@@ -96,9 +129,29 @@ export class ChannelUsersComponent implements OnInit {
     this.addingUser = false;
   }
 
+  cancelAdd() {
+    this.addingUser = false;
+    this.newEmail = '';
+    this.newRole = 'moderator';
+  }
+
   removeUser(index: number) {
     const [removed] = this.users.splice(index, 1);
-    if (removed?.email) this.removedUsers.push({ email: removed.email, role: '' });
+    if (!removed?.email) return;
+    this.removedRoles.set(removed.email.trim().toLowerCase(), removed.role);
+    this.removedUsers.push({ email: removed.email, role: '' });
+  }
+
+  /** Puts a just-removed user back, with the role they had, before anything was saved. */
+  undoRemove(index: number) {
+    const [restored] = this.removedUsers.splice(index, 1);
+    if (!restored?.email) return;
+    const key = restored.email.trim().toLowerCase();
+    const role = this.removedRoles.get(key) || 'writer';
+    this.removedRoles.delete(key);
+    if (!this.users.some(u => sameEmail(u.email, restored.email))) {
+      this.users.push({ email: restored.email, role: role as any });
+    }
   }
 
   save() {
@@ -112,15 +165,21 @@ export class ChannelUsersComponent implements OnInit {
     this.superAdminService.setChannelUsers(this.slug, [...removals, ...this.users])
       .then(() => {
         this.removedUsers = [];
-        this.toastr.success('', 'המשתמשים נשמרו בהצלחה');
+        this.removedRoles.clear();
+        this.snapshot = JSON.stringify(this.users);
+        this.toastr.success('', 'משתמשי הערוץ נשמרו');
       })
       .catch((err) => {
         // The server refuses a malformed address with 400 'invalid email' —
         // name the field rather than a generic failure.
         const text = typeof err?.error === 'string' ? err.error.toLowerCase() : '';
-        this.toastr.danger('', err?.status === 400 && text.includes('invalid email')
-          ? 'כתובת מייל לא תקינה'
-          : 'שגיאה בשמירת המשתמשים');
+        if (err?.status === 400 && text.includes('invalid email')) {
+          this.toastr.danger('', 'אחת מכתובות המייל אינה תקינה');
+        } else if (err?.status === 404) {
+          this.toastr.danger('', 'הערוץ לא נמצא — ייתכן שנמחק');
+        } else {
+          this.toastr.danger('', 'השמירה לא הצליחה, נסו שוב');
+        }
       })
       .finally(() => this.saving = false);
   }

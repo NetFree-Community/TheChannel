@@ -1,0 +1,201 @@
+<nb-card>
+  <nb-card-header>
+    <div class="sa-card-head">
+      <h2 class="sa-card-title">
+        <nb-icon icon="inbox-outline"></nb-icon>
+        בקשות לפתיחת ערוץ
+        @if (!loading && count('pending')) {
+          <span class="sa-chip sa-chip--warning">{{ count('pending') }} ממתינות</span>
+        }
+      </h2>
+      <button nbButton ghost status="basic" size="small" type="button" (click)="load()" [disabled]="loading">
+        <nb-icon icon="refresh-outline"></nb-icon>
+        רענון
+      </button>
+    </div>
+  </nb-card-header>
+
+  <nb-card-body>
+    @if (loading) {
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את הבקשות…</p>
+      </div>
+    } @else if (loadFailed) {
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">הבקשות לא נטענו</p>
+        <p class="sa-state__text">נסו לטעון שוב.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="load()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
+      </div>
+    } @else {
+      @if (lastApproveResult) {
+        <nb-alert status="success" class="result" role="status">
+          <div class="result__head">
+            <p class="result__title">
+              <nb-icon icon="checkmark-circle-2-outline"></nb-icon>
+              הבקשה של {{ lastApproveResult.name || lastApproveResult.ownerEmail }} אושרה — הערוץ נוצר,
+              ו-<span class="sa-ltr">{{ lastApproveResult.ownerEmail }}</span> מונה לבעלים.
+            </p>
+            <button nbButton ghost status="basic" size="small" type="button" class="result__close"
+                    (click)="dismissResult()" nbTooltip="סגירת ההודעה" aria-label="סגירת ההודעה">
+              <nb-icon icon="close-outline"></nb-icon>
+            </button>
+          </div>
+          <p class="result__text">שלחו לבעלים את הקישור — הוא ייכנס עם חשבון Google באותה כתובת ויתחיל לכתוב:</p>
+          <div class="result__link">
+            <code class="sa-ltr">{{ channelUrl(lastApproveResult.channelSlug) }}</code>
+            <button nbButton size="small" status="primary" appearance="outline" type="button"
+                    (click)="copyLink(lastApproveResult.channelSlug)">
+              <nb-icon icon="copy-outline"></nb-icon>
+              העתקת הקישור
+            </button>
+          </div>
+        </nb-alert>
+      }
+
+      <div class="sa-toolbar">
+        <div class="sa-filters" role="group" aria-label="סינון לפי מצב הבקשה">
+          @for (f of filters; track f.value) {
+            <button nbButton size="small" type="button"
+                    [status]="filter === f.value ? 'primary' : 'basic'"
+                    [appearance]="filter === f.value ? 'filled' : 'outline'"
+                    [attr.aria-pressed]="filter === f.value"
+                    (click)="filter = f.value">{{ f.label }} ({{ count(f.value) }})</button>
+          }
+        </div>
+      </div>
+
+      @if (visible().length === 0) {
+        <div class="sa-state">
+          <span class="sa-state__icon"><nb-icon icon="inbox-outline"></nb-icon></span>
+          <p class="sa-state__title">אין בקשות להצגה</p>
+          <p class="sa-state__text">{{ emptyText }}</p>
+          @if (filter !== 'all' && requests.length) {
+            <button nbButton ghost status="primary" size="small" type="button" (click)="filter = 'all'">הצגת כל הבקשות</button>
+          }
+        </div>
+      } @else {
+        <ul class="requests">
+          @for (req of visible(); track req.id) {
+            <li class="request" [class.request--active]="actionId === req.id">
+              <div class="request__head">
+                <div class="request__who">
+                  <span class="request__name">{{ req.name }}</span>
+                  <span class="request__email sa-ltr">{{ req.email }}</span>
+                </div>
+                <div class="request__side">
+                  <span class="sa-chip"
+                        [class.sa-chip--warning]="req.status === 'pending'"
+                        [class.sa-chip--success]="req.status === 'approved'"
+                        [class.sa-chip--danger]="req.status === 'rejected'">{{ statusText(req.status) }}</span>
+                  <span class="request__date">{{ req.createdAt | date:'dd/MM/yy HH:mm' }}</span>
+                </div>
+              </div>
+
+              <dl class="request__meta">
+                <div>
+                  <dt>כתובת מבוקשת</dt>
+                  <dd><code class="sa-ltr">{{ req.desiredSlug }}</code></dd>
+                </div>
+                @if (req.status === 'approved' && req.approvedSlug) {
+                  <div>
+                    <dt>נפתח בכתובת</dt>
+                    <dd>
+                      <a class="sa-ltr" [href]="channelUrl(req.approvedSlug)" target="_blank" rel="noopener">{{ channelUrl(req.approvedSlug) }}</a>
+                    </dd>
+                  </div>
+                }
+                @if (req.description) {
+                  <div>
+                    <dt>תיאור</dt>
+                    <dd class="request__text">{{ req.description }}</dd>
+                  </div>
+                }
+                @if (req.notes) {
+                  <div>
+                    <dt>{{ req.status === 'rejected' ? 'סיבת הדחייה' : 'הערות' }}</dt>
+                    <dd class="request__text">{{ notesText(req) }}</dd>
+                  </div>
+                }
+              </dl>
+
+              @if (req.status === 'pending' && actionId !== req.id) {
+                <div class="sa-actions">
+                  <button nbButton status="success" size="small" type="button" (click)="startApprove(req)">
+                    <nb-icon icon="checkmark-outline"></nb-icon>
+                    אישור ופתיחת הערוץ
+                  </button>
+                  <button nbButton ghost status="danger" size="small" type="button" (click)="startReject(req)">
+                    <nb-icon icon="close-outline"></nb-icon>
+                    דחייה
+                  </button>
+                </div>
+              }
+
+              <!-- Approve inline form -->
+              @if (actionId === req.id && approveMode) {
+                <form class="inline-form inline-form--approve" (ngSubmit)="confirmApprove()" novalidate>
+                  <h3 class="inline-form__title">אישור הבקשה של {{ req.name }}</h3>
+                  <p class="sa-lead">הערוץ ייפתח מיד בכתובת שלמטה, והמבקש ימונה לבעלים שלו.</p>
+                  <div class="sa-grid-2">
+                    <div class="sa-field">
+                      <label class="sa-field__label" for="approveSlug">כתובת הערוץ הסופית</label>
+                      <input nbInput fullWidth id="approveSlug" name="approveSlug" type="text" dir="ltr"
+                             [(ngModel)]="approveSlug" placeholder="my-channel" autocomplete="off"
+                             autocapitalize="none" spellcheck="false"
+                             (input)="approveSlug = approveSlug.toLowerCase()"
+                             [status]="approveSlugInvalid ? 'danger' : 'basic'">
+                      @if (approveSlugInvalid) {
+                        <p class="sa-field__error">3 עד 50 תווים: אותיות אנגליות קטנות, ספרות ומקפים.</p>
+                      } @else {
+                        <p class="sa-field__hint">אפשר לשנות מהכתובת שהתבקשה. לא ניתן לשינוי אחרי הפתיחה.</p>
+                      }
+                    </div>
+                    <div class="sa-field">
+                      <label class="sa-field__label" for="approveNotes">הערות (לא חובה)</label>
+                      <textarea nbInput fullWidth id="approveNotes" name="approveNotes" rows="2"
+                                [(ngModel)]="approveNotes" placeholder="הערה פנימית לתיעוד"></textarea>
+                      <p class="sa-field__hint">נשמר ברשימה הזאת בלבד.</p>
+                    </div>
+                  </div>
+                  <div class="sa-save-bar">
+                    <button nbButton status="success" type="submit" [disabled]="!approveSlug || approveSlugInvalid || approving">
+                      <nb-icon icon="checkmark-outline"></nb-icon>
+                      {{ approving ? 'פותח…' : 'אישור ופתיחת הערוץ' }}
+                    </button>
+                    <button nbButton ghost status="basic" type="button" (click)="cancel()" [disabled]="approving">ביטול</button>
+                  </div>
+                </form>
+              }
+
+              <!-- Reject inline form -->
+              @if (actionId === req.id && rejectMode) {
+                <form class="inline-form inline-form--reject" (ngSubmit)="confirmReject()" novalidate>
+                  <h3 class="inline-form__title">דחיית הבקשה של {{ req.name }}</h3>
+                  <p class="sa-lead">הבקשה תסומן כנדחתה. המבקש לא מקבל הודעה אוטומטית — אם רוצים להסביר לו, כותבים לו בנפרד.</p>
+                  <div class="sa-field">
+                    <label class="sa-field__label" for="rejectNotes">סיבת הדחייה (לא חובה)</label>
+                    <textarea nbInput fullWidth id="rejectNotes" name="rejectNotes" rows="2"
+                              [(ngModel)]="rejectNotes" placeholder="למשל: כתובת תפוסה, תוכן לא מתאים…"></textarea>
+                    <p class="sa-field__hint">נשמר ברשימה הזאת לתיעוד.</p>
+                  </div>
+                  <div class="sa-save-bar">
+                    <button nbButton status="danger" type="submit" [disabled]="rejecting">
+                      <nb-icon icon="close-outline"></nb-icon>
+                      {{ rejecting ? 'דוחה…' : 'דחיית הבקשה' }}
+                    </button>
+                    <button nbButton ghost status="basic" type="button" (click)="cancel()" [disabled]="rejecting">ביטול</button>
+                  </div>
+                </form>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+  </nb-card-body>
+</nb-card>

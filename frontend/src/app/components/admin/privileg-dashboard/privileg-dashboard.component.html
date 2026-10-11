@@ -1,77 +1,142 @@
-<nb-card>
-  <nb-card-header>
-    ניהול הרשאות משתמשים
-  </nb-card-header>
-  <nb-card-body>
+<div class="team-page">
 
+  <div class="roles" role="list" aria-label="התפקידים בערוץ">
+    @for (r of roleCards; track r.role) {
+      <div class="role role--{{ r.role }}" role="listitem">
+        <nb-icon [icon]="r.icon" class="role__icon"></nb-icon>
+        <div class="role__text">
+          <strong class="role__label">{{ r.label }}</strong>
+          <span class="role__desc">{{ r.text }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (!isOwner) {
     <nb-card>
-      <nb-card-header>הוספת משתמש מורשה חדש</nb-card-header>
-      <nb-card-body>
-        @if (!addingNewUser) {
-          <button nbButton status="primary" [disabled]="!isOwner" (click)="addingNewUser = true">
-            <nb-icon icon="plus"></nb-icon>
-            הוסף מורשה
-          </button>
-        }
-
-        @if (addingNewUser) {
-          <div class="d-flex flex-column gap-2">
-            <div>
-              <span>כתובת מייל:</span><br>
-              <input nbInput fieldSize="small" type="email" [(ngModel)]="newUserEmail" placeholder="user@example.com">
-            </div>
-            <div>
-              <span>תפקיד:</span><br>
-              <nb-select [(ngModel)]="newUserRole" size="small">
-                @for (opt of roleOptions; track opt.value) {
-                  <nb-option [value]="opt.value">{{ opt.label }}</nb-option>
-                }
-              </nb-select>
-            </div>
-            <div class="d-flex gap-2">
-              <button nbButton status="primary" size="small" (click)="saveNewUser()">
-                <nb-icon icon="plus"></nb-icon>
-                הוסף משתמש
-              </button>
-              <button nbButton status="danger" size="small" (click)="resetNewUser()">
-                <nb-icon icon="close"></nb-icon>
-                ביטול
-              </button>
-            </div>
-          </div>
-        }
+      <nb-card-body class="team-note">
+        <nb-icon icon="info-outline"></nb-icon>
+        <span>רק בעלי הערוץ יכולים להוסיף אנשים או לשנות תפקידים. אתם רואים את הרשימה בלבד.</span>
       </nb-card-body>
     </nb-card>
+  }
 
-    @for (item of usersList; track $index) {
-      <nb-card>
-        <nb-card-body>
-          <div class="d-flex flex-row align-items-center gap-3 flex-wrap">
-            <span class="flex-grow-1">{{ item.email }}</span>
-            @if (item.role === 'owner') {
-              <span class="text-muted">בעלים</span>
-            } @else {
-              <nb-select [(ngModel)]="item.role" size="small" [disabled]="!isOwner">
-                @for (opt of roleOptions; track opt.value) {
-                  <nb-option [value]="opt.value">{{ opt.label }}</nb-option>
-                }
-              </nb-select>
+  <nb-card>
+    <nb-card-header class="card-head">
+      <nb-icon icon="person-add-outline"></nb-icon>
+      <h2>הוספת אדם לצוות</h2>
+    </nb-card-header>
+    <nb-card-body>
+      <p class="lead">
+        מזינים את כתובת המייל שאיתה האדם מתחבר לגוגל ובוחרים תפקיד. ההרשאה נכנסת לתוקף רק אחרי שהוא מתחבר לאתר
+        עם אותו חשבון — אין צורך לשלוח לו הזמנה, רק את הקישור לערוץ.
+      </p>
+      <form class="add" (ngSubmit)="saveNewUser()" novalidate>
+        <div class="add__field add__field--email">
+          <label class="field__label" for="new-user-email">כתובת מייל בגוגל</label>
+          <input id="new-user-email" nbInput fullWidth type="email" dir="ltr" name="email" autocomplete="off"
+                 [(ngModel)]="newUserEmail" (ngModelChange)="addError = ''" placeholder="name@gmail.com"
+                 [disabled]="!isOwner" [status]="addError ? 'danger' : 'basic'" inputmode="email">
+          @if (addError) {
+            <span class="add__error" role="alert">{{ addError }}</span>
+          }
+        </div>
+        <div class="add__field">
+          <label class="field__label" for="new-user-role">תפקיד</label>
+          <nb-select id="new-user-role" fullWidth [(ngModel)]="newUserRole" name="role" [disabled]="!isOwner">
+            @for (opt of roleOptions; track opt.value) {
+              <nb-option [value]="opt.value">{{ opt.label }} — {{ opt.hint }}</nb-option>
             }
-            <button nbButton status="danger" size="small" [disabled]="!isOwner || item.role === 'owner'"
-              (click)="deleteUser($index)">
-              <nb-icon icon="trash-2"></nb-icon>
-            </button>
-          </div>
-        </nb-card-body>
-      </nb-card>
-    }
+          </nb-select>
+        </div>
+        <div class="add__actions">
+          <button nbButton status="primary" type="submit" [disabled]="!isOwner">
+            <nb-icon icon="plus-outline"></nb-icon>
+            הוספה לרשימה
+          </button>
+          @if (newUserEmail) {
+            <button nbButton ghost status="basic" type="button" (click)="resetNewUser()">ניקוי</button>
+          }
+        </div>
+      </form>
+    </nb-card-body>
+  </nb-card>
 
-    @if (!usersList.length) {
-      <p class="text-muted mt-2">אין משתמשים מורשים לערוץ זה.</p>
-    }
+  <nb-card>
+    <nb-card-header class="card-head">
+      <nb-icon icon="people-outline"></nb-icon>
+      <h2>הצוות</h2>
+      @if (!loading && !loadFailed) {
+        <span class="pill">{{ usersList.length }}</span>
+      }
+    </nb-card-header>
+    <nb-card-body>
+      @if (loading) {
+        <div class="team-loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים את הצוות…"></div>
+      } @else if (loadFailed) {
+        <div class="team-empty">
+          <nb-icon icon="wifi-off-outline"></nb-icon>
+          <strong>לא הצלחנו לטעון את הצוות</strong>
+          <button nbButton status="primary" size="small" type="button" (click)="load()">
+            <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+          </button>
+        </div>
+      } @else if (!usersList.length) {
+        <div class="team-empty">
+          <nb-icon icon="people-outline"></nb-icon>
+          <strong>עדיין אין צוות</strong>
+          <span>הוסיפו כותב או מנהל בטופס שלמעלה, ואז לחצו "שמירה".</span>
+        </div>
+      } @else {
+        <ul class="members">
+          @for (item of usersList; track item.email; let i = $index) {
+            <li class="member" [class.is-pending]="isPending(item.email)">
+              <span class="member__avatar" aria-hidden="true">{{ initial(item.email) }}</span>
+              <span class="member__text">
+                <span class="member__email" dir="ltr">{{ item.email }}</span>
+                <span class="member__tags">
+                  @if (isMe(item.email)) { <span class="pill pill--me">זה אתם</span> }
+                  @if (isPending(item.email)) { <span class="pill pill--pending">טרם נשמר</span> }
+                </span>
+              </span>
+              @if (item.role === 'owner') {
+                <span class="pill pill--owner" nbTooltip="בעלי הערוץ — לא ניתן לשנות או להסיר מכאן">
+                  <nb-icon icon="star-outline"></nb-icon> בעלים
+                </span>
+              } @else {
+                <nb-select class="member__role" size="small" [(ngModel)]="item.role" [disabled]="!isOwner"
+                           [attr.aria-label]="'תפקיד של ' + item.email">
+                  @for (opt of roleOptions; track opt.value) {
+                    <nb-option [value]="opt.value">{{ opt.label }}</nb-option>
+                  }
+                </nb-select>
+              }
+              <button nbButton ghost status="danger" type="button" class="member__remove"
+                      [disabled]="!isOwner || item.role === 'owner'" (click)="deleteUser(i)"
+                      [attr.aria-label]="'הסרת ' + item.email" nbTooltip="הסרה מהצוות">
+                <nb-icon icon="trash-2-outline"></nb-icon>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </nb-card-body>
+  </nb-card>
 
-  </nb-card-body>
-  <nb-card-footer>
-    <button nbButton status="primary" [disabled]="!isOwner" (click)="saveChanges()">שמור</button>
-  </nb-card-footer>
-</nb-card>
+  @if (!loading && !loadFailed) {
+    <div class="save-bar">
+      <button nbButton status="primary" type="button" [disabled]="!isOwner || saving" (click)="saveChanges()"
+              [nbSpinner]="saving" nbSpinnerStatus="control" nbSpinnerSize="small">
+        <nb-icon icon="save-outline"></nb-icon>
+        {{ saving ? 'שומרים…' : 'שמירה' }}
+      </button>
+      @if (dirty && !saving) {
+        <button nbButton ghost status="basic" size="small" type="button" (click)="load()">ביטול שינויים</button>
+      }
+      <span class="save-bar__spacer"></span>
+      <span class="save-bar__state" [class.is-dirty]="dirty" aria-live="polite">
+        {{ dirty ? 'יש שינויים שלא נשמרו' : 'הכול שמור' }}
+      </span>
+    </div>
+  }
+</div>

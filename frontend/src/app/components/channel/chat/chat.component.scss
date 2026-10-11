@@ -4,86 +4,389 @@
   visibility: hidden;
 }
 
-.offline-banner {
-  position: sticky;
-  top: 0;
-  z-index: 1100;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  padding: 8px 16px;
-  background: #ff9f43;
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-align: center;
+:host {
+  display: block;
 }
 
-.load-failed-banner {
+/* ---------- banners ---------- */
+
+.feed-banner {
+  // Fixed under the header: the feed opens scrolled to its newest message, so
+  // a banner in the flow at the top of the list would never be seen.
+  position: fixed;
+  // Below the attribution strip the shell pins under the header (two lines
+  // high on a phone).
+  top: calc(var(--chrome-height, 0px) + 3rem);
+  inset-inline: 1rem;
+  z-index: 12;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
   justify-content: center;
-  padding: 8px 16px;
-  background: var(--color-danger-default, #ff3d71);
-  color: #fff;
+  gap: 0.5rem;
+  max-width: 760px;
+  margin: 0 auto;
+  box-shadow: var(--shadow);
+  padding: 0.6rem 1rem;
+  border-radius: var(--border-radius);
+  border: 1px solid transparent;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   text-align: center;
+  line-height: 1.4;
+
+  nb-icon {
+    flex: 0 0 auto;
+    font-size: 1.2rem;
+  }
 
   button {
-    margin-inline-start: 4px;
+    margin-inline-start: 0.25rem;
+    min-height: 2.5rem;
   }
 }
 
-nb-list-item {
+@media (max-width: 575px) {
+  .feed-banner {
+    top: calc(var(--chrome-height, 0px) + 4.25rem);
+  }
+}
+
+.feed-banner--warning {
+  background: var(--color-warning-100);
+  border-color: var(--color-warning-300);
+  color: var(--color-warning-800);
+}
+
+.feed-banner--danger {
+  background: var(--color-danger-100);
+  border-color: var(--color-danger-300);
+  color: var(--color-danger-800);
+}
+
+/* ---------- skeleton while the first page loads ---------- */
+
+.feed-skeleton {
+  position: fixed;
+  top: var(--chrome-height, 0px);
+  bottom: var(--input-height, 0px);
+  // The desktop ad column sits on the left (RTL layout); leave it uncovered.
+  left: var(--ad-width, 0px);
+  right: 0;
+  z-index: 5;
+  overflow: hidden;
+  padding: 3rem 1rem 1rem;
+  background: var(--layout-background-color);
+  pointer-events: none;
+}
+
+.feed-skeleton__inner {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.feed-skeleton__card {
+  padding: 1rem 1.25rem;
+  border-radius: var(--card-border-radius);
+  background: var(--background-basic-color-1);
+  border: 1px solid var(--border-basic-color-3);
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.feed-skeleton__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.feed-skeleton__avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+}
+
+.feed-skeleton__line {
+  display: block;
+  height: 0.8rem;
+  width: 100%;
+  border-radius: 999px;
+}
+
+.feed-skeleton__line--short {
+  width: 30%;
+}
+
+.feed-skeleton__line--mid {
+  width: 65%;
+}
+
+// Shimmer via a moving gradient; styles.scss stops the animation under
+// prefers-reduced-motion, which leaves a flat grey block.
+.shimmer {
+  background: linear-gradient(90deg,
+      var(--color-basic-300) 25%,
+      var(--color-basic-400) 50%,
+      var(--color-basic-300) 75%);
+  background-size: 200% 100%;
+  animation: feed-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes feed-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- the list ---------- */
+
+// A readable column: full width on a phone, capped and centred on a desktop.
+.feed {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.feed__item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   border-bottom: 0 !important;
+  border-top: 0 !important;
   padding: 0 !important;
-  margin-bottom: 25px;
+  margin-bottom: 1rem;
 }
 
-.toggle-scheduled-messages {
-  cursor: pointer;
-  color: #6a6fff;
-}
-
-nb-list.hide-scheduled-messages nb-list-item.scheduled-message-item {
-  display: none !important;
+.feed__item--center {
+  align-items: center;
 }
 
 .loading-indicator {
   overflow: hidden;
 }
 
-nb-list-item:first-child {
-  border-top: 0 !important;
+nb-list.hide-scheduled-messages nb-list-item.scheduled-message-item {
+  display: none !important;
 }
 
-.scroll-to-bottom-btn {
-  position: fixed;
-  bottom: calc(var(--input-height, 0px) + 25px);
-  left: calc(30px + var(--ad-width, 0px));
-  z-index: 1001;
-}
+/* ---------- day separators & markers ---------- */
 
-.last-read-indicator {
+.day-separator {
   display: flex;
-  flex-direction: row;
-  width: 100%;
-  gap: 8px;
-  align-items: center;
-  padding-bottom: 1rem;
+  justify-content: center;
+  margin: 0.5rem 0 1rem;
 }
 
-.last-read-indicator-text {
-  color: #6a6fff !important;
-  text-align: center;
+.day-separator__pill {
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  background: var(--background-basic-color-3);
+  color: var(--text-hint-color);
+  font-size: 0.78rem;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-.line {
-  height: 1px;
+.last-read-indicator,
+.feed-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   width: 100%;
-  background-color: #6a6fff;
+  padding-bottom: 1rem;
+}
+
+.last-read-indicator__line,
+.feed-section__line {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--color-primary-300);
+}
+
+.last-read-indicator__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-primary-600);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.feed-section__line {
+  background: var(--color-warning-400);
+}
+
+.feed-section__body {
+  text-align: center;
+  min-width: 0;
+}
+
+.feed-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-warning-800);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.feed-section__hint {
+  font-size: 0.75rem;
+  color: var(--text-hint-color);
+  line-height: 1.4;
+}
+
+.feed-section__toggle {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+}
+
+/* ---------- empty & loading ---------- */
+
+.feed-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 420px;
+  margin: 2rem auto;
+  padding: 1.75rem 1.25rem;
+  text-align: center;
+  border-radius: var(--card-border-radius);
+  background: var(--background-basic-color-1);
+  border: 1px dashed var(--border-basic-color-4);
+}
+
+.feed-empty__icon {
+  font-size: 2.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-primary-500);
+}
+
+.feed-empty__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-basic-color);
+}
+
+.feed-empty__text {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--text-hint-color);
+}
+
+.feed-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+}
+
+.feed-empty__arrow {
+  margin-top: 0.25rem;
+  font-size: 1.6rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--color-primary-500);
+  animation: feed-bounce 1.6s ease-in-out infinite;
+}
+
+@keyframes feed-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+.feed-loading {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.feed-loading__spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 3px solid var(--color-primary-200);
+  border-top-color: var(--color-primary-600);
+  animation: feed-spin 0.8s linear infinite;
+}
+
+@keyframes feed-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- scroll to bottom ---------- */
+
+// Above the composer and clear of the (desktop-only) ad column. The columns
+// are laid out right-to-left, so the ad column sits on the left.
+.scroll-to-bottom-btn {
+  position: fixed;
+  bottom: calc(var(--input-height, 0px) + 1.5rem);
+  left: calc(1.5rem + var(--ad-width, 0px));
+  z-index: 1001;
+  animation: feed-rise var(--motion-base, 200ms) var(--ease-out, ease-out) both;
+}
+
+@keyframes feed-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.scroll-fab {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+
+  nb-icon {
+    font-size: 1.3rem;
+  }
+}
+
+.scroll-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+
+.scroll-pill__count {
+  min-width: 1.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--color-basic-100);
+  color: var(--color-primary-700);
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.4rem;
+  text-align: center;
 }

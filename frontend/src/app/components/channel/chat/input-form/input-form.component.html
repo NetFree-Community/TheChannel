@@ -1,104 +1,205 @@
-<div class="d-flex flex-column gap-1">
-    @if (message?.deleted) {
-    <nb-alert status="danger">ההודעה מחוקה ומוסתרת! אישור עריכת ההודעה יפרסם אותה מחדש.</nb-alert>
-    }
-    <div class="d-flex flex-row flex-wrap">
+<div class="composer">
+  @if (message?.deleted) {
+    <nb-alert status="danger" outline class="composer__alert">
+      ההודעה מחוקה ומוסתרת מהקוראים. אישור העריכה יפרסם אותה מחדש.
+    </nb-alert>
+  }
+
+  @if (message) {
+    <div class="composer__mode" role="status">
+      <nb-icon icon="edit-outline"></nb-icon>
+      <span class="composer__mode-text">
+        @if (schedulingMessage) {
+          עריכת הודעה מתוזמנת — תתפרסם {{ schedulingMessage | messageTime }}
+        } @else {
+          עריכת הודעה
+        }
+      </span>
+      <button nbButton ghost size="tiny" status="basic" type="button" (click)="cancelUpdateMessage()"
+              [disabled]="isSending" aria-label="ביטול העריכה">
+        <nb-icon icon="close-outline"></nb-icon>
+        ביטול
+      </button>
+    </div>
+  }
+
+  @if (hasQuote) {
+    <div class="composer__mode composer__mode--quote" role="status">
+      <nb-icon icon="corner-up-left-outline"></nb-icon>
+      <span class="composer__mode-text">מצטטים הודעה — הציטוט יופיע בראש ההודעה שלכם</span>
+      <button nbButton ghost size="tiny" status="basic" type="button" (click)="removeQuote()" aria-label="הסרת הציטוט">
+        <nb-icon icon="close-outline"></nb-icon>
+        הסרה
+      </button>
+    </div>
+  }
+
+  @if (schedulingMessage && !message) {
+    <div class="composer__mode composer__mode--schedule" role="status">
+      <nb-icon icon="clock-outline"></nb-icon>
+      <span class="composer__mode-text">ההודעה תתפרסם מעצמה: {{ schedulingMessage | messageTime }}</span>
+      <button nbButton ghost size="tiny" status="basic" type="button" (click)="openTimePicker()" aria-label="שינוי מועד הפרסום">
+        שינוי
+      </button>
+      <button nbButton ghost size="tiny" status="basic" type="button" (click)="schedulingMessage = undefined" aria-label="ביטול התזמון — לפרסם מיד">
+        <nb-icon icon="close-outline"></nb-icon>
+        ביטול התזמון
+      </button>
+    </div>
+  }
+
+  @if (isAds) {
+    <div class="composer__mode composer__mode--ads" role="status">
+      <nb-icon icon="pricetags-outline"></nb-icon>
+      <span class="composer__mode-text">ההודעה תסומן כפרסומת: הקוראים יראו עליה את התווית "פרסומת", ולא יוכלו להגיב עליה באימוג'י</span>
+      <button nbButton ghost size="tiny" status="basic" type="button" (click)="isAds = false" aria-label="ביטול הסימון כפרסומת">
+        <nb-icon icon="close-outline"></nb-icon>
+        ביטול
+      </button>
+    </div>
+  }
+
+  <div class="composer__surface">
+    @if (attachments.length) {
+      <div class="composer__files">
         @for (attachment of attachments; track attachment) {
-        <div class="d-flex flex-row rounded-5 bg-primary-subtle text-primary align-items-center p-1 ms-1"
-            style="border-style: solid; border-width: 0.06rem;">
+          <div class="file-chip">
             @if (attachment.uploading || !attachment.url) {
-            <div class="spinner-border spinner-border-sm text-primary"></div>
+              <span class="file-chip__spin" aria-hidden="true"></span>
+            } @else if (attachment.file.type.startsWith('image/')) {
+              <img [src]="attachment.url" width="28" height="28" alt="" class="file-chip__thumb">
             } @else {
-            <img [src]="attachment.url" width="30" height="30" class="rounded-5">
+              <nb-icon icon="file-text-outline" class="file-chip__icon"></nb-icon>
             }
-            <small class="m-1">{{ attachment.file.name.substring(attachment.file.name.length - 15) }}</small>
-            <button nbButton ghost status="primary" style="padding: 0" (click)="removeAttachment(attachment)"
-                title="הסר קובץ">
-                <nb-icon icon="close"></nb-icon>
+            <span class="file-chip__name" dir="auto">{{ attachment.file.name.substring(attachment.file.name.length - 18) }}</span>
+            @if (attachment.uploading && attachment.uploadProgress != null) {
+              <span class="file-chip__pct">{{ attachment.uploadProgress }}%</span>
+            }
+            <button type="button" class="file-chip__remove" (click)="removeAttachment(attachment)"
+                    aria-label="הסרת הקובץ" nbTooltip="הסרת הקובץ">
+              <nb-icon icon="close-outline"></nb-icon>
             </button>
-        </div>
+          </div>
         }
+      </div>
+    }
+
+    <div class="composer__toolbar" role="toolbar" aria-label="עיצוב ההודעה">
+      <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('bold')"
+              aria-label="הדגשה" nbTooltip="הדגשה">
+        <ng-icon name="heroBold" class="toolbar-icon"></ng-icon>
+      </button>
+      <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('italic')"
+              aria-label="נטוי" nbTooltip="נטוי">
+        <ng-icon name="heroItalic" class="toolbar-icon"></ng-icon>
+      </button>
+      <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('underline')"
+              aria-label="קו תחתון" nbTooltip="קו תחתון">
+        <ng-icon name="heroUnderline" class="toolbar-icon"></ng-icon>
+      </button>
+      <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('code')"
+              aria-label="קטע קוד" nbTooltip="קטע קוד">
+        <nb-icon icon="code-outline"></nb-icon>
+      </button>
+      <span class="tb-sep" aria-hidden="true"></span>
+      @if (chatService.fileUploadsEnabled) {
+        <button nbButton ghost shape="round" type="button" class="tb" (click)="fileInput.click()"
+                aria-label="צירוף קובץ — תמונה, סרטון, הקלטה או מסמך" nbTooltip="צירוף קובץ">
+          <nb-icon icon="attach-2-outline"></nb-icon>
+        </button>
+        <input type="file" #fileInput multiple (change)="onFileSelected($event)" hidden aria-hidden="true">
+      }
+      <button nbButton ghost shape="round" type="button" class="tb tb--help" [nbPopover]="helpTpl" nbPopoverTrigger="click"
+              nbPopoverPlacement="top" aria-label="עזרה לעיצוב הטקסט" aria-haspopup="dialog" #helpPop="nbPopover"
+              [attr.aria-expanded]="helpShown" (nbPopoverShowStateChange)="onHelpState($event.isShown)"
+              (keydown.escape)="helpPop.hide()">
+        <nb-icon icon="question-mark-circle-outline"></nb-icon>
+      </button>
+      <button nbButton ghost shape="round" type="button" class="tb tb--text" [class.tb--on]="showMarkdownPreview"
+              (click)="showMarkdownPreview = !showMarkdownPreview" [disabled]="!input"
+              [attr.aria-pressed]="showMarkdownPreview" aria-label="תצוגה מקדימה"
+              [nbTooltip]="showMarkdownPreview ? 'חזרה לכתיבה' : 'איך ההודעה תיראה לקוראים'">
+        <nb-icon [icon]="showMarkdownPreview ? 'eye-off-outline' : 'eye-outline'"></nb-icon>
+        <span class="tb__label">תצוגה מקדימה</span>
+      </button>
+      <span class="tb-sep" aria-hidden="true"></span>
+      <button nbButton ghost shape="round" type="button" class="tb" [class.tb--on]="isAds"
+              (click)="isAds = !isAds" [attr.aria-pressed]="isAds"
+              [attr.aria-label]="isAds ? 'ההודעה מסומנת כפרסומת — לחיצה מבטלת' : 'סימון ההודעה כפרסומת'"
+              [nbTooltip]="isAds ? 'מסומנת כפרסומת (לחיצה מבטלת)' : 'סימון ההודעה כפרסומת'">
+        <nb-icon icon="pricetags-outline"></nb-icon>
+      </button>
+      <span class="tb-spacer"></span>
+      <nb-toggle class="tb-toggle" labelPosition="start" [checked]="enterSendsMessage"
+                 (checkedChange)="setEnterSendsMessage($event)"
+                 nbTooltip="כשמסומן: Enter שולח את ההודעה ו-Ctrl+Enter יורד שורה. כשלא: Enter יורד שורה">
+        <span class="tb__label">Enter שולח</span>
+      </nb-toggle>
     </div>
-    <div class="d-flex flex-row flex-wrap align-items-center rounded-5 bg-light px-2">
-        <button nbButton ghost shape="round" title="הגדרה הודעה כפרסום" (click)="isAds = !isAds">
-            <ng-icon [name]="isAds ? 'heroLockClosed' : 'heroLockOpen'" class="toolbar-icon"></ng-icon>
-        </button>
-        <button nbButton ghost shape="round" title="הדגשה" (click)="applyFormat('bold')" class="toolbar-button">
-            <ng-icon name="heroBold" class="toolbar-icon"></ng-icon>
-        </button>
-        <button nbButton ghost shape="round" title="נטוי" (click)="applyFormat('italic')" class="toolbar-button">
-            <ng-icon name="heroItalic" class="toolbar-icon"></ng-icon>
-        </button>
-        <button nbButton ghost shape="round" title="קו תחתון" (click)="applyFormat('underline')" class="toolbar-button">
-            <ng-icon name="heroUnderline" class="toolbar-icon"></ng-icon>
-        </button>
-        <button nbButton ghost shape="round" title="הוסף בלוק קוד" (click)="applyFormat('code')" class="toolbar-button">
-            <ng-icon name="heroCodeBracket" class="toolbar-icon"></ng-icon>
-        </button>
-        @if (chatService.fileUploadsEnabled) {
-        <button nbButton ghost shape="round" title="צרף קובץ" (click)="fileInput.click()" class="toolbar-button">
-            <ng-icon name="heroPaperClip" class="toolbar-icon"></ng-icon>
-        </button>
-        <input type="file" #fileInput multiple (change)="onFileSelected($event)" hidden>
-        }
-        <button nbButton ghost shape="round" title="עזרה לmarkdown" (click)="openMarkdownDocs()" class="toolbar-button">
-            <ng-icon name="heroQuestionMarkCircle" class="toolbar-icon"></ng-icon>
-        </button>
-        <nb-toggle class="me-md-auto" labelPosition="start" [(checked)]="showMarkdownPreview" [disabled]="!input">
-            <span class="d-none d-md-inline-block">תצוגה מקדימה</span>
-        </nb-toggle>
-        <nb-toggle class="ms-2" labelPosition="start" [checked]="enterSendsMessage"
-            (checkedChange)="setEnterSendsMessage($event)"
-            title="לחיצה על Enter תשלח את ההודעה. Ctrl+Enter יוריד שורה.">
-            <span class="d-none d-md-inline-block">Enter שולח</span>
-        </nb-toggle>
-    </div>
-    <div class="d-flex flex-row">
-        <div class="flex-grow-1 overflow-auto">
-            @if (showMarkdownPreview) {
-            <nb-card class="rounded-5 mb-0">
-                <nb-card-body>
-                    <markdown [data]="input" [disableSanitizer]="true" class="fs-5"></markdown>
-                </nb-card-body>
-            </nb-card>
-            } @else {
-            <div class="d-flex flex-row border rounded-5 fs-4 align-items-center">
-                <textarea #inputTextArea autosize nbInput fullWidth placeholder="הקלד/י הודעה..."
-                    (resized)="inputHeightChanged.emit($event)" [minRows]="1" [maxRows]="6"
-                    [maxlength]="maxMessageLength" [disabled]="showMarkdownPreview || isSending"
-                    class="bg-transparent border-0 flex-grow-1 fs-5" [(ngModel)]="input" (input)="checkScrollbar()"
-                    (keydown)="onKeydown($event)" (paste)="onPaste($event)"
-                    style="resize: none"></textarea>
-                <div class="d-flex flex-row align-self-end">
-                    @if (message?.id != undefined) {
-                    <button nbButton ghost title="בטל" shape="round" [size]="'tiny'" (click)="cancelUpdateMessage()"
-                        [disabled]="isSending">
-                        <ng-icon class="fs-4" [name]="'heroXMark'"></ng-icon>
-                    </button>
-                    @if (schedulingMessage) {
-                    <button nbButton ghost title="שנה שעת תזמון הודעה" shape="round" [size]="'medium'"
-                        (click)="openTimePicker()">
-                        <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
-                    </button>
-                    }
-                    <button nbButton ghost title="ערוך" shape="round" [size]="'tiny'" (click)="sendMessage()"
-                        [disabled]="isSending">
-                        <ng-icon class="fs-4" [name]="'heroCheck'"></ng-icon>
-                    </button>
-                    } @else {
-                    @if (chatService.scheduledMessagesEnabled) {
-                    <button nbButton ghost title="תזמן הודעה" shape="round" [size]="'medium'"
-                        (click)="openTimePicker()">
-                        <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
-                    </button>
-                    }
-                    <button nbButton ghost title="שלח" shape="round" [size]="'tiny'" (click)="sendMessage()">
-                        <ng-icon class="fs-4" [name]="'heroPaperAirplane'" style="scale: -1 1"></ng-icon>
-                    </button>
-                    }
-                </div>
-            </div>
-            }
+
+    <div class="composer__input">
+      @if (showMarkdownPreview) {
+        <div class="composer__preview" aria-live="polite">
+          <markdown [data]="input" [disableSanitizer]="true"></markdown>
         </div>
+      } @else {
+        <label for="composer-text" class="visually-hidden">תוכן ההודעה</label>
+        <textarea id="composer-text" #inputTextArea autosize nbInput fullWidth
+                  [placeholder]="message ? 'ערכו את ההודעה…' : 'כתבו הודעה לקוראי הערוץ…'"
+                  (resized)="inputHeightChanged.emit($event)" [minRows]="1" [maxRows]="6"
+                  [maxlength]="maxMessageLength" [disabled]="isSending"
+                  class="composer__textarea" [(ngModel)]="input" (input)="checkScrollbar()"
+                  (keydown)="onKeydown($event)" (paste)="onPaste($event)"></textarea>
+      }
+
+      <div class="composer__send">
+        @if (message?.id != undefined ? !!schedulingMessage : chatService.scheduledMessagesEnabled) {
+          <button nbButton ghost shape="round" type="button" class="tb" [class.tb--on]="!!schedulingMessage"
+                  (click)="openTimePicker()"
+                  [attr.aria-label]="schedulingMessage ? 'שינוי מועד הפרסום' : 'תזמון — פרסום במועד שתבחרו'"
+                  [nbTooltip]="schedulingMessage ? 'שינוי מועד הפרסום' : 'תזמון הודעה'">
+            <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
+          </button>
+        }
+        <button nbButton status="primary" shape="round" type="button" class="composer__send-btn"
+                (click)="sendMessage()" [disabled]="!canSend"
+                [attr.aria-label]="message?.id != undefined && !schedulingMessage ? 'שמירת העריכה' : schedulingMessage ? 'תזמון ההודעה' : 'שליחת ההודעה'"
+                [nbTooltip]="message?.id != undefined && !schedulingMessage ? 'שמירה' : schedulingMessage ? 'תזמון' : 'שליחה'">
+          @if (isSending) {
+            <span class="composer__spin" aria-hidden="true"></span>
+          } @else {
+            <nb-icon [icon]="message?.id != undefined && !schedulingMessage ? 'checkmark-outline' : 'paper-plane-outline'"
+                     class="composer__send-icon"></nb-icon>
+          }
+        </button>
+      </div>
     </div>
+
+    @if (input.length >= counterFrom) {
+      <div class="composer__counter" [class.composer__counter--limit]="input.length >= maxMessageLength" aria-live="polite">
+        {{ input.length }} / {{ maxMessageLength }} תווים
+        @if (input.length >= maxMessageLength) { — הגעתם לאורך המרבי }
+      </div>
+    }
+  </div>
 </div>
+
+<!-- Formatting help, in Hebrew and in place; the full (English) guide stays one tap away. -->
+<ng-template #helpTpl>
+  <div class="help" role="dialog" aria-label="עזרה לעיצוב הטקסט" tabindex="-1" (keydown)="onHelpKeydown($event)">
+    <strong class="help__title">כך מעצבים טקסט בהודעה</strong>
+    <p class="help__lead">אלה הסימנים לעיצוב הטקסט; את ארבעת הראשונים כפתורי הסרגל מוסיפים גם בלחיצה, סביב הטקסט המסומן:</p>
+    <dl class="help__list">
+      <dt><code class="help__code">**טקסט**</code></dt><dd>טקסט <strong>מודגש</strong></dd>
+      <dt><code class="help__code">*טקסט*</code></dt><dd>טקסט <em>נטוי</em></dd>
+      <dt><code class="help__code">&lt;u&gt;טקסט&lt;/u&gt;</code></dt><dd>טקסט <u>עם קו תחתון</u></dd>
+      <dt><code class="help__code">```טקסט```</code></dt><dd>בלוק <code>קוד</code> (גרש בודד מכל צד — קוד בתוך שורה)</dd>
+      <dt><code class="help__code">[כותרת](https://…)</code></dt><dd>קישור עם כותרת</dd>
+    </dl>
+    <p class="help__lead">שורה שמתחילה ב-<code class="help__code">&gt;</code> מוצגת כציטוט, וקישור ליוטיוב הופך לסרטון מעצמו.</p>
+    <button nbButton ghost size="small" status="primary" type="button" class="help__more" (click)="openMarkdownDocs()">
+      <nb-icon icon="external-link-outline"></nb-icon>
+      המדריך המלא (באנגלית, נפתח בחלון חדש)
+    </button>
+  </div>
+</ng-template>

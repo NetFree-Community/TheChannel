@@ -1,5 +1,8 @@
 @if (sayfeUrl) {
-<iframe [src]="sayfeUrl" height="100%" [width]="ad?.width" title="פרסומת"
-  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
-  referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <div class="side-ad" [style.width.px]="ad?.width">
+    <span class="side-ad__label">פרסומת</span>
+    <iframe [src]="sayfeUrl" height="100%" [width]="ad?.width" title="פרסומת" loading="lazy"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+      referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  </div>
 }

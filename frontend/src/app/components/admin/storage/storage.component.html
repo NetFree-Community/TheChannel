@@ -1,0 +1,87 @@
+<div class="storage-page">
+  <nb-card>
+    <nb-card-header class="card-head">
+      <nb-icon icon="hard-drive-outline"></nb-icon>
+      <h2>כמה מקום תופסים הקבצים</h2>
+    </nb-card-header>
+    <nb-card-body>
+      @if (loading) {
+        <div class="storage-loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="בודקים את האחסון…"></div>
+      } @else if (loadFailed || !info) {
+        <div class="storage-empty">
+          <nb-icon icon="wifi-off-outline"></nb-icon>
+          <strong>לא הצלחנו לטעון את נתוני האחסון</strong>
+          <button nbButton status="primary" size="small" type="button" (click)="load()">
+            <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+          </button>
+        </div>
+      } @else {
+        <p class="lead">
+          כל תמונה, סרטון או קובץ שמצורפים להודעה נשמרים כאן. המכסה נקבעת על ידי הנהלת המערכת;
+          כדי לחסוך מקום אפשר להגדיר כיווץ תמונות במדור "הגדרות".
+        </p>
+
+        <div class="usage">
+          <div class="usage__numbers">
+            <span class="usage__used">{{ formatBytes(info.usedBytes) }}</span>
+            <span class="usage__of">
+              @if (unlimited) { בשימוש, בלי הגבלת מקום } @else { מתוך <span class="ltr-figure">{{ formatBytes(info.quotaBytes) }}</span> }
+            </span>
+          </div>
+          @if (!unlimited) {
+            <nb-progress-bar [value]="percentDisplay()" [status]="progressStatus()" size="large" [displayValue]="true"
+                             aria-label="אחוז האחסון בשימוש"></nb-progress-bar>
+            <p class="usage__free">
+              @if (freeBytes > 0) {
+                נשארו <span class="ltr-figure">{{ formatBytes(freeBytes) }}</span> פנויים.
+              } @else {
+                לא נשאר מקום פנוי.
+              }
+            </p>
+          }
+        </div>
+
+        @if (!unlimited && info.level === 'critical') {
+          <nb-alert status="danger" class="storage-alert">
+            <strong>האחסון כמעט מלא.</strong>
+            @if (info.autoCleanup) {
+              הניקוי האוטומטי דלוק, כך שהעלאות חדשות ימשיכו לעבוד על חשבון קבצים ישנים.
+            } @else {
+              בקרוב העלאות חדשות ייכשלו. הפעילו ניקוי אוטומטי, או בקשו מהנהלת המערכת להגדיל את המכסה.
+            }
+          </nb-alert>
+        } @else if (!unlimited && info.level === 'warning') {
+          <nb-alert status="warning" class="storage-alert">
+            האחסון מתמלא ({{ percentDisplay() }}%). כדאי להחליט כבר עכשיו מה קורה כשהוא נגמר.
+          </nb-alert>
+        }
+      }
+    </nb-card-body>
+  </nb-card>
+
+  @if (!loading && info) {
+    <nb-card>
+      <nb-card-header class="card-head">
+        <nb-icon icon="trash-2-outline"></nb-icon>
+        <h2>מה קורה כשהמקום נגמר</h2>
+        <span class="pill" [class.pill--on]="info.autoCleanup">{{ info.autoCleanup ? 'ניקוי אוטומטי דלוק' : 'ניקוי אוטומטי כבוי' }}</span>
+      </nb-card-header>
+      <nb-card-body>
+        <div class="cleanup">
+          <nb-toggle [checked]="cleanupChecked" (checkedChange)="onAutoCleanupChange($event)" [disabled]="saving || unlimited"
+                     labelPosition="end" status="warning">
+            <span class="cleanup__label">למחוק קבצים ישנים אוטומטית כשהמקום נגמר</span>
+          </nb-toggle>
+        </div>
+        <ul class="cleanup__list">
+          <li><strong>כבוי:</strong> כשהמכסה מלאה, העלאה חדשה נדחית עם הודעה לכותב. שום קובץ לא נמחק מעצמו.</li>
+          <li><strong>דלוק:</strong> כשהעלאה לא נכנסת, המערכת מוחקת את הקבצים הישנים ביותר עד שמתפנה כחמישית מהמכסה. הלוגו של הערוץ לא נמחק לעולם. הקישור לקובץ שנמחק יפסיק לעבוד בהודעה שבה הופיע.</li>
+          @if (unlimited) {
+            <li class="cleanup__note">לערוץ הזה אין הגבלת מקום, ולכן ההגדרה לא רלוונטית כרגע.</li>
+          }
+        </ul>
+        <p class="cleanup__hint">השינוי נשמר מיד, בלי כפתור שמירה.</p>
+      </nb-card-body>
+    </nb-card>
+  }
+</div>

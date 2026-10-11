@@ -1,0 +1,75 @@
+// The emoji-mart picker's stylesheet. It used to be @use'd from the global
+// styles.scss, so every visitor downloaded it for a picker only channel
+// managers ever open; from here it ships inside the lazily loaded manage
+// chunk instead. ViewEncapsulation.None on the component is what makes these
+// rules reach the <emoji-mart> child's own elements.
+@use '@ctrl/ngx-emoji-mart/picker';
+@use '../admin-shared' as *;
+
+// Every rule below is global for the same reason, so each one is scoped
+// under .emojis-tab and nothing here may use a generic class name.
+.emojis-tab {
+  @include admin-page;
+
+  .emojis-tab__head {
+    @include admin-card-header;
+  }
+
+  .emojis-tab__count {
+    @include admin-pill(var(--background-basic-color-3), var(--text-hint-color));
+  }
+
+  .emojis-tab__lead {
+    @include admin-lead;
+  }
+
+  .emojis-tab__loading {
+    min-height: 5rem;
+  }
+
+  .emojis-tab__empty {
+    @include admin-empty;
+  }
+
+  .emojis-tab__chips {
+    nb-tag {
+      font-family: var(--font-emoji);
+      font-size: 1.35rem;
+      line-height: 1;
+      // Each chip is a tap target: the × must be reachable with a thumb.
+      min-height: 2.5rem;
+    }
+  }
+
+  .emojis-tab__picker {
+    display: flex;
+    justify-content: center;
+  }
+
+  .emoji-mart {
+    // The picker computes a pixel width from perLine; on a phone that can
+    // exceed the card. The rows wrap on their own once the box is narrower.
+    max-width: 100%;
+    border-color: var(--border-basic-color-3);
+    border-radius: var(--border-radius);
+    font-family: inherit;
+  }
+
+  .emoji-mart-bar,
+  .emoji-mart-search input {
+    border-color: var(--border-basic-color-3);
+  }
+
+  .emoji-mart-anchor-selected,
+  .emoji-mart-anchor:hover {
+    color: var(--color-primary-600);
+  }
+
+  .emoji-mart-anchor-bar {
+    background-color: var(--color-primary-500);
+  }
+
+  .emojis-tab__save {
+    @include admin-save-bar;
+  }
+}

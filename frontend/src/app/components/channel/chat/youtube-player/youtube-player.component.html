@@ -1,4 +1,10 @@
-@if (videoId) {
-  <youtube-player [videoId]="videoId" disablePlaceholder [playerVars]="playerConfig" [width]="iframeWidth"
-    [height]="iframeHeight" />
-}
+<div class="yt">
+  <button nbButton ghost shape="round" type="button" class="yt__close" (click)="closeDialog()"
+          aria-label="סגירת הסרטון" nbTooltip="סגירה">
+    <nb-icon icon="close-outline"></nb-icon>
+  </button>
+  @if (videoId) {
+    <youtube-player [videoId]="videoId" disablePlaceholder [playerVars]="playerConfig" [width]="iframeWidth"
+      [height]="iframeHeight" />
+  }
+</div>

@@ -1,13 +1,20 @@
 import { uploadErrorMessage } from '../../../services/upload-error';
 import { Component, OnInit } from '@angular/core';
-import { NbCardModule, NbDialogRef, NbButtonModule, NbSpinnerModule, NbInputModule, NbToastrService, NbPopoverModule } from '@nebular/theme';
+import {
+  NbButtonModule, NbCardModule, NbIconModule, NbInputModule, NbSpinnerModule, NbToastrService, NbTooltipModule,
+} from '@nebular/theme';
 import { FormsModule } from '@angular/forms';
 import { HttpEventType } from '@angular/common/http';
 import { Channel } from '../../../models/channel.model';
 import { AdminService } from '../../../services/admin.service';
 import { ChatService, Attachment, ChatFile } from '../../../services/chat.service';
+import { MyChannelsService } from '../../../services/my-channels.service';
 
-
+/**
+ * "פרטי הערוץ": the name, description, logo and contact link readers see in
+ * the channel header. Edits are local until "שמירה"; the logo file itself is
+ * uploaded the moment it is picked, so the save only ever posts a server URL.
+ */
 @Component({
   selector: 'app-channel-info-form',
   imports: [
@@ -16,26 +23,63 @@ import { ChatService, Attachment, ChatFile } from '../../../services/chat.servic
     NbButtonModule,
     NbSpinnerModule,
     NbInputModule,
-    NbPopoverModule,
+    NbIconModule,
+    NbTooltipModule,
   ],
   templateUrl: './channel-info-form.component.html',
   styleUrl: './channel-info-form.component.scss'
 })
 export class ChannelInfoFormComponent implements OnInit {
 
+  readonly nameMax = 80;
+  readonly descriptionMax = 2000;
+
   constructor(
     private chatService: ChatService,
     private adminService: AdminService,
     private toastrService: NbToastrService,
+    private myChannels: MyChannelsService,
   ) { }
 
+  attachment?: Attachment;
+  channel: Channel = {};
+  isSending = false;
+  loading = true;
+  /** The last copy the server confirmed — what "ביטול שינויים" goes back to. */
+  private saved: Channel = {};
+
   ngOnInit(): void {
-    this.channel = { ...this.chatService.channelInfo };
+    // Opened by deep link the channel info may still be in flight; the dialog
+    // this used to be could rely on the feed having loaded it already.
+    this.chatService.ensureChannelInfo()
+      .catch(() => undefined)
+      .finally(() => {
+        this.saved = { ...this.chatService.channelInfo };
+        this.channel = { ...this.saved };
+        this.loading = false;
+      });
   }
 
-  attachment!: Attachment;
-  channel: Channel = {};
-  isSending: boolean = false;
+  get initial(): string {
+    return (this.channel.name || '?').trim().charAt(0).toUpperCase();
+  }
+
+  get dirty(): boolean {
+    const a = this.channel, b = this.saved;
+    return (a.name ?? '') !== (b.name ?? '')
+      || (a.description ?? '') !== (b.description ?? '')
+      || (a.logoUrl ?? '') !== (b.logoUrl ?? '')
+      || (a.contact_us ?? '') !== (b.contact_us ?? '');
+  }
+
+  get uploading(): boolean {
+    return !!this.attachment?.uploading;
+  }
+
+  resetChanges(): void {
+    if (this.uploading) return;
+    this.channel = { ...this.saved };
+  }
 
   editChannelInfo() {
     if (!this.channel.name?.trim()) {
@@ -50,16 +94,20 @@ export class ChannelInfoFormComponent implements OnInit {
       return;
     }
     this.isSending = true;
-    this.chatService.editChannelInfo(
-      this.channel.name.trim(),
-      this.channel.description || '',
-      this.channel.logoUrl || '',
-      (this.channel.contact_us || '').trim(),
-    ).subscribe({
+    const name = this.channel.name.trim();
+    const description = this.channel.description || '';
+    const logoUrl = this.channel.logoUrl || '';
+    const contactUs = (this.channel.contact_us || '').trim();
+    this.chatService.editChannelInfo(name, description, logoUrl, contactUs).subscribe({
       next: () => {
         this.isSending = false;
-        this.toastrService.success("", "עריכת פרטי ערוץ בוצעה בהצלחה");
-        this.chatService.updateChannelInfo();
+        this.toastrService.success("", "פרטי הערוץ נשמרו");
+        this.saved = { ...this.channel, name, description, logoUrl, contact_us: contactUs };
+        this.channel = { ...this.saved };
+        // The header on this page and the channel switcher both show the name
+        // and logo; refresh the sources they read from.
+        this.chatService.updateChannelInfo().catch(() => undefined);
+        this.myChannels.invalidate();
       },
       error: (err) => {
         this.isSending = false;
@@ -80,6 +128,10 @@ export class ChannelInfoFormComponent implements OnInit {
           this.toastrService.danger("", "כתובת הלוגו אינה תקינה, בחרו את הלוגו מחדש");
           return;
         }
+        if (err?.status === 403 || err?.status === 401) {
+          this.toastrService.danger("", "אין לכם הרשאה לערוך את פרטי הערוץ");
+          return;
+        }
         this.toastrService.danger("", "עריכת פרטי ערוץ נכשלה");
       }
     });
@@ -88,11 +140,11 @@ export class ChannelInfoFormComponent implements OnInit {
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
 
-    if (input.files) {
+    if (input.files && input.files[0]) {
       this.attachment = { file: input.files[0] }
       // Kept so a failed upload can put the previous logo back: the data: URL
       // preview set below is only ever replaced on success, and leaving it in
-      // place made every later save of this dialog fail on 'invalid logo URL'.
+      // place made every later save of this form fail on 'invalid logo URL'.
       const previousLogoUrl = this.channel.logoUrl;
       const reader = new FileReader();
       reader.readAsDataURL(this.attachment.file);

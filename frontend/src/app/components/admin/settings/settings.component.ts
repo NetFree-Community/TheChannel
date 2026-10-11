@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { AdminService } from '../../../services/admin.service';
 import { AdsService } from '../../../services/ads.service';
 import {
@@ -11,11 +11,12 @@ import {
   NbToggleModule,
   NbAccordionModule,
   NbTooltipModule,
+  NbSpinnerModule,
 } from "@nebular/theme";
 
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { Setting } from '../../../models/setting.model';
+import { ShareService } from '../../../services/share.service';
 import {
   SETTINGS_SCHEMA,
   SettingsCategorySchema,
@@ -38,7 +39,6 @@ interface ExtraSetting {
 @Component({
   selector: 'app-settings',
   imports: [
-    CommonModule,
     NbAlertModule,
     NbCardModule,
     NbButtonModule,
@@ -47,12 +47,15 @@ interface ExtraSetting {
     NbToggleModule,
     NbAccordionModule,
     NbTooltipModule,
+    NbSpinnerModule,
     FormsModule,
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
 export class SettingsComponent implements OnInit {
+  /** The settings endpoint answered 403: the role changed since sign-in. */
+  @Output() accessDenied = new EventEmitter<void>();
 
   schema: SettingsCategorySchema[] = SETTINGS_SCHEMA;
   values: Record<string, any> = {};
@@ -60,12 +63,20 @@ export class SettingsComponent implements OnInit {
   extraSettings: ExtraSetting[] = [];
   // Settings another tab owns (magnet ads): never shown, re-sent as loaded.
   private passthrough: Setting[] = [];
+  // The server copy as last loaded — what "ביטול שינויים" goes back to.
+  private lastLoaded: Setting[] = [];
+  // Serialised payload at load/save time; anything else means unsaved edits.
+  private snapshot = '';
+
+  /** Which password fields are currently shown in clear. */
+  revealed: Record<string, boolean> = {};
 
   setInProgress: boolean = false;
   // Save stays disabled until the server copy arrived: the form starts empty,
   // and settings/set replaces the whole blob (no merge), so a save after a
   // failed load wiped api_secret_key, webhook_*, regex rules and magnet_*.
   loaded = false;
+  loading = true;
   loadFailed = false;
   // Super-admin lock on the iframe ad: the ad-iframe-* fields still save, but
   // the public endpoint serves the global src/width and they are ignored.
@@ -77,6 +88,7 @@ export class SettingsComponent implements OnInit {
     private adminService: AdminService,
     private adsService: AdsService,
     private tostService: NbToastrService,
+    private shareService: ShareService,
   ) { }
 
   ngOnInit(): void {
@@ -88,22 +100,64 @@ export class SettingsComponent implements OnInit {
       .catch(() => { /* hint only */ });
   }
 
+  get dirty(): boolean {
+    return this.loaded && JSON.stringify(this.buildSettingsArray()) !== this.snapshot;
+  }
+
   loadSettings() {
     this.loadFailed = false;
+    this.loading = true;
     this.adminService.getSettings()
       .then(settings => {
-        this.loadFromSettings(settings || []);
+        this.lastLoaded = settings || [];
+        this.loadFromSettings(this.lastLoaded);
         this.loaded = true;
+        this.snapshot = JSON.stringify(this.buildSettingsArray());
       })
-      .catch(() => {
+      .catch((err) => {
         this.loadFailed = true;
-        this.tostService.danger('', 'אין הרשאה לצפות בהגדרות');
-      });
+        if (err?.status === 403 || err?.status === 401) {
+          this.accessDenied.emit();
+          return;
+        }
+        this.tostService.danger('', 'לא הצלחנו לטעון את ההגדרות — נסו שוב');
+      })
+      .finally(() => this.loading = false);
+  }
+
+  /** Back to the server copy, without a round trip. */
+  resetChanges() {
+    this.loadFromSettings(this.lastLoaded);
+    this.revealed = {};
   }
 
   /** Only the two iframe-ad fields are frozen by the ads lock. */
   isFieldLocked(field: SettingFieldSchema): boolean {
     return this.adsLocked && SettingsComponent.AD_IFRAME_KEYS.has(field.key);
+  }
+
+  toggleReveal(key: string) {
+    this.revealed[key] = !this.revealed[key];
+  }
+
+  /** The owner has to paste the key into the other system; a masked field cannot be read back. */
+  async copySecret(key: string) {
+    const value = String(this.values[key] ?? '');
+    if (!value) return;
+    if (await this.shareService.copy(value)) this.tostService.success('', 'הועתק');
+  }
+
+  /**
+   * Fills a random 32-character key (letters and digits, from the browser's
+   * CSPRNG) so the owner never has to invent one — the server rejects
+   * anything under 16 characters, and a short key is guessable.
+   */
+  generateSecret(key: string) {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    this.values[key] = Array.from(bytes, b => alphabet[b % alphabet.length]).join('');
+    this.revealed[key] = true;
   }
 
   private loadFromSettings(settings: Setting[]) {
@@ -231,7 +285,11 @@ export class SettingsComponent implements OnInit {
     this.setInProgress = true;
     const payload = this.buildSettingsArray();
     this.adminService.setSettings(payload)
-      .then(() => this.tostService.success('', 'השינויים נשמרו בהצלחה!'))
+      .then(() => {
+        this.tostService.success('', 'ההגדרות נשמרו');
+        this.lastLoaded = payload;
+        this.snapshot = JSON.stringify(payload);
+      })
       .catch((err) => this.tostService.danger('', this.saveErrorText(err)))
       .finally(() => this.setInProgress = false);
   }
@@ -246,13 +304,14 @@ export class SettingsComponent implements OnInit {
   private saveErrorText(err: any): string {
     const text = typeof err?.error === 'string' ? err.error : '';
     if (err?.status === 400) {
-      if (text.includes('webhook_url')) return 'כתובת ה-Webhook חייבת להתחיל ב-http:// או https://';
-      if (text.includes('ad-iframe-src')) return 'כתובת ה-iframe חייבת להתחיל ב-http:// או https://';
-      if (text.includes('regex')) return 'אחד מכללי ההחלפה (regex) אינו תקין';
+      if (text.includes('webhook_url')) return 'כתובת העדכון (Webhook) חייבת להתחיל ב-http:// או https://';
+      if (text.includes('ad-iframe-src')) return 'כתובת עמוד הפרסומת חייבת להתחיל ב-http:// או https://';
+      if (text.includes('regex')) return 'אחד מכללי ההחלפה אינו תקין — בדקו את שדה "מה לחפש"';
       if (text.includes('max_file_size')) return 'גודל הקובץ המרבי חייב להיות בין 1 ל-512 MB';
-      if (text.includes('api_secret_key')) return 'מפתח ה-API חייב להכיל לפחות 16 תווים';
+      if (text.includes('api_secret_key')) return 'המפתח לפרסום מבחוץ חייב להכיל לפחות 16 תווים';
     }
-    return 'שגיאה בשמירת השינויים';
+    if (err?.status === 403 || err?.status === 401) return 'אין לכם הרשאה לשנות את ההגדרות של הערוץ';
+    return 'שמירת ההגדרות נכשלה — נסו שוב';
   }
 }
 

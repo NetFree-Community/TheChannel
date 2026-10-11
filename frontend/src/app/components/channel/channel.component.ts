@@ -1,5 +1,6 @@
-import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, Renderer2, RendererStyleFlags2, ViewChild } from '@angular/core';
+import { AfterViewChecked, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, Renderer2, RendererStyleFlags2, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Title } from '@angular/platform-browser';
 import { AdvertisingComponent } from "./advertising/advertising.component";
 
 import { Ad, AdsService } from '../../services/ads.service';
@@ -12,6 +13,7 @@ import {
   NbListModule,
   NbMenuModule,
   NbSidebarModule,
+  NbDialogService,
   NbSpinnerModule,
   NbToastrService,
 } from "@nebular/theme";
@@ -20,21 +22,27 @@ import { AuthService } from "../../services/auth.service";
 import { ChannelHeaderComponent } from "./channel-header/channel-header.component";
 import { ChatComponent } from "./chat/chat.component";
 import { User } from '../../models/user.model';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SlugService } from '../../services/slug.service';
 import { AdminService } from '../../services/admin.service';
 import { ChatService } from '../../services/chat.service';
 import { MagnetAdsService } from '../../services/magnet-ads.service';
 import { ChannelStatusService } from '../../services/channel-status.service';
 import { NotificationsService } from '../../services/notifications.service';
+import { MyChannelsService } from '../../services/my-channels.service';
+import { ShareService } from '../../services/share.service';
+import { MAX_CHANNELS_PER_ACCOUNT } from '../../services/channel.service';
+import { MyChannel, ROLE_LABELS, canManage } from '../../models/my-channel.model';
 import { CreateChannelFormComponent } from '../channel-create/create-channel-form.component';
 import { PlatformAttributionComponent } from './platform-attribution/platform-attribution.component';
+import { SupportBoxComponent } from '../support/support-box.component';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-channel',
   imports: [
     FormsModule,
+    RouterLink,
     AdvertisingComponent,
     NbLayoutModule,
     NbCardModule,
@@ -52,7 +60,9 @@ import { Subscription } from 'rxjs';
     PlatformAttributionComponent
   ],
   templateUrl: './channel.component.html',
-  styleUrl: './channel.component.scss'
+  // The hub (my channels) has its own sheet so each file stays under the
+  // component-style budget; both end up on this component.
+  styleUrls: ['./channel.component.scss', './channel-hub.scss']
 })
 export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
 
@@ -79,6 +89,11 @@ export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
     private channelStatus: ChannelStatusService,
     private notificationsService: NotificationsService,
     private toastr: NbToastrService,
+    private myChannelsService: MyChannelsService,
+    private share: ShareService,
+    private titleService: Title,
+    private dialogService: NbDialogService,
+    private cdr: ChangeDetectorRef,
   ) { }
 
   ad: Ad = { src: '', width: 0 };
@@ -86,47 +101,139 @@ export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
   slugReady = false;
   noChannel = false;
 
-  // The "my channel" page: shown to a signed-in owner at /channel instead of
-  // redirecting them straight in, so they can find and share the direct link.
+  // The "my channels" hub: shown to a signed-in user at /channel instead of
+  // dropping them straight into a channel, so they can switch between their
+  // channels, share the links and reach the manage page of each.
   showChannelsList = false;
-  ownedChannels: string[] = [];
+  myChannels: MyChannel[] = [];
+  channelsLoading = false;
+  channelsError = '';
   copiedSlug = '';
+  readonly roleLabels = ROLE_LABELS;
+  readonly maxChannels = MAX_CHANNELS_PER_ACCOUNT;
+  readonly canManage = canManage;
   private copyResetTimer?: ReturnType<typeof setTimeout>;
-  readonly siteOrigin = window.location.origin;
+  // Bumped by every initChannel(); an await that resumes under a newer
+  // sequence belongs to a page the user already left and must not touch state.
+  private initSeq = 0;
+
+  /** Channels this account owns — the only ones the 5-per-account cap counts. */
+  get ownedCount(): number {
+    return this.myChannels.filter(c => c.role === 'owner').length;
+  }
+
+  get canCreateMore(): boolean {
+    return this.ownedCount < this.maxChannels;
+  }
 
   /** The direct, shareable URL of a channel. */
   channelUrl(slug: string): string {
-    return `${this.siteOrigin}/channel/${slug}`;
+    return this.share.channelUrl(slug);
+  }
+
+  whatsappHref(channel: MyChannel): string {
+    return this.share.whatsappUrl(this.share.inviteText(channel.name, this.channelUrl(channel.slug)));
+  }
+
+  get canShareSheet(): boolean {
+    return this.share.canShare;
   }
 
   async copyChannelUrl(slug: string): Promise<void> {
-    try {
-      // `navigator.clipboard?.writeText(...)` resolved to undefined in an
-      // insecure context (plain-HTTP deployment), so the button flipped to
-      // "הועתק" with nothing copied. Fail explicitly instead, like copyUrl()
-      // in the create form does.
-      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
-      await navigator.clipboard.writeText(this.channelUrl(slug));
-      this.copiedSlug = slug;
-    } catch {
-      // Insecure context or a browser that refuses the API — the URL is shown
-      // and selectable, so say so rather than claim success.
-      this.copiedSlug = '';
-      this.toastr.warning('', 'ההעתקה האוטומטית נחסמה בדפדפן — סמנו את הקישור והעתיקו אותו ידנית');
-    }
+    // The service shows the "copy blocked" notice itself; the link is still
+    // reachable through the WhatsApp button and the channel page.
+    const ok = await this.share.copy(this.channelUrl(slug));
+    this.copiedSlug = ok ? slug : '';
     if (this.copyResetTimer) clearTimeout(this.copyResetTimer);
     this.copyResetTimer = setTimeout(() => (this.copiedSlug = ''), 2500);
+  }
+
+  async shareChannel(channel: MyChannel): Promise<void> {
+    const url = this.channelUrl(channel.slug);
+    const outcome = await this.share.share({
+      title: channel.name,
+      text: this.share.inviteText(channel.name, url),
+      url,
+    });
+    if (outcome === 'unsupported') await this.copyChannelUrl(channel.slug);
   }
 
   enterOwnedChannel(slug: string): void {
     this.router.navigate(['/channel', slug]);
   }
 
+  manageChannel(slug: string): void {
+    this.router.navigate(['/channel', slug, 'manage']);
+  }
+
+  /**
+   * A stable pastel per channel for the initial avatar, so the same channel
+   * always gets the same colour across visits and the list does not look like
+   * one grey column.
+   */
+  avatarTone(slug: string): number {
+    let h = 0;
+    for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
+    return h % 6;
+  }
+
+  initial(channel: MyChannel): string {
+    return (channel.name || channel.slug).trim().charAt(0).toUpperCase() || '?';
+  }
+
   /** Switch this page to the create-a-new-channel flow. */
   openCreateChannel(): void {
+    if (!this.canCreateMore) return;
     this.showChannelsList = false;
     this.noChannel = true;
+    this.titleService.setTitle('פתיחת ערוץ · הערוץ');
+    // The URL says what is on screen, so a reload or a shared link lands on
+    // the same view. A query-only navigation does not re-emit paramMap, so
+    // initChannel() is not re-run and the list is not refetched.
+    this.router.navigate([], { relativeTo: this.route, queryParams: { new: '1' }, replaceUrl: true });
   }
+
+  /** Back from the create form to the list (same route, query param dropped). */
+  showMyChannelsList(): void {
+    this.noChannel = false;
+    this.showChannelsList = true;
+    this.titleService.setTitle('הערוצים שלי · הערוץ');
+    this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    this.loadMyChannels();
+  }
+
+  /** Fetches the hub's list; an empty list sends a new user to onboarding. */
+  async loadMyChannels(force = false): Promise<void> {
+    const seq = this.initSeq;
+    this.channelsLoading = true;
+    this.channelsError = '';
+    try {
+      const rows = await this.myChannelsService.list(force);
+      if (seq !== this.initSeq) return;
+      this.myChannels = rows;
+      if (!rows.length) {
+        // No channel yet — the onboarding + create-channel flow.
+        this.showChannelsList = false;
+        this.noChannel = true;
+        this.titleService.setTitle('פתיחת ערוץ · הערוץ');
+      }
+    } catch {
+      if (seq !== this.initSeq) return;
+      const roles = this.userInfo?.channelRoles;
+      if (!roles || !Object.keys(roles).length) {
+        // Nothing to list even if the request had worked: go straight to
+        // onboarding instead of showing an error about an empty list.
+        this.showChannelsList = false;
+        this.noChannel = true;
+        this.titleService.setTitle('פתיחת ערוץ · הערוץ');
+      } else {
+        this.channelsError = 'לא הצלחנו לטעון את רשימת הערוצים. בדקו את החיבור לאינטרנט ונסו שוב.';
+      }
+    } finally {
+      if (seq === this.initSeq) this.channelsLoading = false;
+    }
+  }
+
   private paramSub?: Subscription;
   /** Watches the fixed header's height; see ngAfterViewChecked. */
   private chromeObserver?: ResizeObserver;
@@ -147,17 +254,17 @@ export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   readonly onboardingSteps = [
-    { icon: 'edit-2-outline', title: 'בוחרים שם וכתובת', text: 'הכתובת נבדקת מול השרת בזמן אמת.' },
-    { icon: 'flash-outline', title: 'פותחים בלחיצה', text: 'הערוץ נוצר מיד ואתם הבעלים שלו.' },
-    { icon: 'paper-plane-outline', title: 'מתחילים לשדר', text: 'מפרסמים הודעה ראשונה ומזמינים קוראים.' },
+    { icon: 'edit-2-outline', title: 'נותנים שם', text: 'הכתובת של הערוץ נקבעת מהשם, ואנחנו בודקים מיד שהיא פנויה.' },
+    { icon: 'flash-outline', title: 'לוחצים "פתיחת הערוץ"', text: 'הערוץ נפתח באותו רגע ונרשם על שמכם. בלי המתנה לאישור.' },
+    { icon: 'share-outline', title: 'משתפים את הקישור', text: 'כל מי שיש לו את הקישור רואה את מה שאתם מפרסמים — גם בלי להתחבר.' },
   ];
 
-  // Shown on the "my channel" page as a reminder of how to run the channel.
+  // Shown on the hub as a reminder of how the channel is run.
   readonly channelHelp = [
-    { icon: 'share-outline', title: 'שיתוף הקישור', text: 'זה מה ששולחים לאנשים כדי שיצטרפו לערוץ.' },
-    { icon: 'paper-plane-outline', title: 'פרסום הודעה', text: 'תיבת הכתיבה נמצאת בתחתית מסך הערוץ.' },
-    { icon: 'people-outline', title: 'כותבים ומנהלים', text: 'מוסיפים דרך פאנל הניהול, במסך ההרשאות.' },
-    { icon: 'brush-outline', title: 'עיצוב הערוץ', text: 'שם, תיאור ולוגו — גם הם בפאנל הניהול.' },
+    { icon: 'share-outline', title: 'שיתוף הקישור', text: 'כפתורי השיתוף שליד כל ערוץ כאן, או כפתור השיתוף בראש הערוץ, שולחים את הקישור בוואטסאפ או מעתיקים אותו. כל מי שפותח אותו רואה את הערוץ.' },
+    { icon: 'paper-plane-outline', title: 'פרסום הודעה', text: 'נכנסים לערוץ וכותבים בתיבה שבתחתית המסך. ההודעה מגיעה מיד לכל הקוראים.' },
+    { icon: 'settings-2-outline', title: 'ניהול הערוץ', text: 'הכפתור "ניהול" כאן, או "ניהול הערוץ" בתפריט שנפתח בלחיצה על השם שלכם בראש הערוץ: שם, לוגו, הגדרות, כותבים ומנהלים, סטטיסטיקות.' },
+    { icon: 'swap-outline', title: 'מעבר בין ערוצים', text: 'מהדף הזה, או מאותו תפריט בראש כל ערוץ — הערוצים שלכם מופיעים שם תחת "הערוצים שלי".' },
   ];
 
   ngAfterViewChecked(): void {
@@ -197,15 +304,24 @@ export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   private async initChannel(slug: string | null): Promise<void> {
+    const seq = ++this.initSeq;
     this.slugReady = false;
     this.noChannel = false;
     this.showChannelsList = false;
-    // A flag raised for the previous channel must not follow us to the next one.
-    this.channelStatus.reset();
-    // Yield to Angular's change detection so the @if (slugReady) block
-    // actually destroys ChatComponent before we reinitialise with the new slug.
-    // Without this, false→true in the same synchronous frame is collapsed and
-    // the child is never torn down, leaving stale state (isVisible, messages, etc).
+    this.channelsError = '';
+    // A flag raised for the previous channel must not follow us to the next
+    // one — but the guard's own /info probe may already have answered for THIS
+    // slug (not found / disabled); wiping that would mount the chat shell for
+    // one round trip and request everything again before the card appears.
+    if (slug === null || (this.channelStatus.notFoundSlug() !== slug && this.channelStatus.disabledSlug() !== slug)) {
+      this.channelStatus.reset();
+    }
+    // Run change detection now so the @if (slugReady) block actually destroys
+    // ChatComponent and the header before we reinitialise with the new slug.
+    // A microtask yield alone was not enough: no tick runs in it, so
+    // false→true collapsed into one frame and the child was never torn down —
+    // switching channels kept the previous feed, its SSE stream and its title.
+    this.cdr.detectChanges();
     await Promise.resolve();
 
     if (!slug) {
@@ -219,6 +335,7 @@ export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
       } catch {
         user = undefined;
       }
+      if (seq !== this.initSeq) return;
 
       if (!user) {
         // No session: there is no "my channels" list to show, so send the
@@ -233,24 +350,28 @@ export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
       }
 
       this.userInfo = user;
-      const roles = user.channelRoles;
-      const slugs = roles ? Object.keys(roles) : [];
-      if (slugs.length) {
-        // Show the "my channel" page rather than dropping the owner straight
-        // into the channel: it is where they find the direct link to share and
-        // a reminder of what to do next. Entering the channel is a click from
-        // here.
-        this.ownedChannels = slugs;
-        this.showChannelsList = true;
-      } else {
-        // No channel yet — the onboarding + create-channel flow.
-        this.noChannel = true;
+      // Show the hub rather than dropping the user straight into a channel:
+      // it is where they switch channels, find the link to share and reach
+      // the manage page. Entering a channel is a click from here. A user
+      // with no channel at all is sent on to onboarding by loadMyChannels().
+      this.showChannelsList = true;
+      // The header sets the title to the channel's name inside a channel; on
+      // the way back here it would otherwise keep the last channel's name.
+      this.titleService.setTitle('הערוצים שלי · הערוץ');
+      await this.loadMyChannels();
+      // The header's "פתיחת ערוץ חדש" lands here with ?new=1: open the form
+      // straight away instead of showing the list first.
+      if (seq === this.initSeq && this.showChannelsList
+        && this.route.snapshot.queryParamMap.get('new') === '1') {
+        this.openCreateChannel();
       }
       return;
     }
 
+    if (seq !== this.initSeq) return;
     this.slugService.slug = slug;
-    this.chatService.clearCache();
+    // Keep the /info the route guard already fetched for this channel.
+    this.chatService.clearCache(slug);
     this.adminService.clearCache();
     this.notificationsService.reset();
     // Drop any in-progress edit/compose state from the previous channel, otherwise
@@ -260,13 +381,24 @@ export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.magnetAds.clearCache();
     this.slugReady = true;
 
-    this.adsService.getAds().then(ad => {
-      this.ad = ad;
-    });
+    // The guard's /info probe already said "no such channel" / "disabled":
+    // the card renders off that flag and the shell never mounts, so nothing
+    // of the channel's is fetched for it. The session still is — the card's
+    // buttons ("לערוצים שלי", "פנייה לתמיכה", logout) depend on it, and
+    // /api/user-info is not a request for the missing channel.
+    const flagged = this.channelStatus.notFoundSlug() === slug || this.channelStatus.disabledSlug() === slug;
+
+    if (!flagged) {
+      this.adsService.getAds().then(ad => {
+        this.ad = ad;
+      }).catch(() => {
+        // No ad column without settings; the chat shell does not depend on it.
+      });
+    }
     this._authService.loadUserInfo().then(res => {
       this.userInfo = res;
       // Count this signed-in viewer as a channel participant (fire-and-forget).
-      this._authService.registerChannelVisit(slug);
+      if (!flagged) this._authService.registerChannelVisit(slug);
     }).catch(() => {
       // Anonymous visitor on a public channel — read-only view.
       this.userInfo = undefined;
@@ -288,15 +420,31 @@ export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   backToMyChannels(): void {
-    this.channelStatus.reset();
-    this.router.navigate(['/channel']);
+    // Same order as goHome(): leave the view, then clear the flag.
+    this.router.navigate(['/channel']).then(() => this.channelStatus.reset());
   }
 
   // For a visitor on the disabled / not-found card: /channel is guarded and
   // would only bounce them to /login, so they are offered the landing page.
+  /** The disabled-channel card: the same support box the header menu opens. */
+  openSupport(): void {
+    this.dialogService.open(SupportBoxComponent, {
+      closeOnBackdropClick: true,
+      context: {
+        signedIn: true,
+        channelSlug: this.channelDisabled || '',
+        dialogMode: true,
+        title: 'פנייה לתמיכה',
+        subtitle: 'שאלה, תקלה או בקשה — הפנייה מגיעה להנהלת המערכת, והתשובה תופיע כאן.',
+      },
+    });
+  }
+
   goHome(): void {
-    this.channelStatus.reset();
-    this.router.navigate(['/']);
+    // Navigate first: clearing the flag while this view is still mounted let
+    // the chat shell appear for a frame and fire its requests for the missing
+    // channel on the way out. initChannel() resets a stale flag on arrival.
+    this.router.navigate(['/']).then(() => this.channelStatus.reset());
   }
 
   async logout(): Promise<void> {

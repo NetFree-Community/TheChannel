@@ -55,6 +55,11 @@ export class ChatService {
   private emojisRequest?: Promise<string[]>;
   public channelInfo?: Channel;
   private channelInfoRequest?: Promise<void>;
+  // Which channel the cached info / in-flight request belong to, so
+  // clearCache can keep them across the route change that loads that very
+  // channel (the guard fetches /info before the components mount).
+  private channelInfoSlug = '';
+  private channelInfoRequestSlug = '';
 
   constructor(private http: HttpClient, private slugService: SlugService) { }
 
@@ -69,9 +74,17 @@ export class ChatService {
     // flight, and if it resolves after the new channel's it would otherwise
     // overwrite the wrong channel's info (name, feature flags, require-auth).
     const requestedSlug = this.slug;
-    this.channelInfoRequest ??= firstValueFrom(this.http.get<Channel>(`/api/channel/${requestedSlug}/info`))
-      .then(info => { if (requestedSlug === this.slug) this.channelInfo = info; })
-      .finally(() => { this.channelInfoRequest = undefined; });
+    if (!this.channelInfoRequest) {
+      this.channelInfoRequestSlug = requestedSlug;
+      this.channelInfoRequest = firstValueFrom(this.http.get<Channel>(`/api/channel/${requestedSlug}/info`))
+        .then(info => {
+          if (requestedSlug === this.slug) {
+            this.channelInfo = info;
+            this.channelInfoSlug = requestedSlug;
+          }
+        })
+        .finally(() => { this.channelInfoRequest = undefined; });
+    }
     return this.channelInfoRequest;
   }
 
@@ -111,11 +124,18 @@ export class ChatService {
     return firstValueFrom(this.http.post<ResponseResult>(`/api/channel/${this.slug}/reactions/set-reactions`, { messageId, emoji: react }));
   }
 
-  clearCache() {
+  /**
+   * Drops everything cached for the previous channel. With `keepInfoFor`, the
+   * channel info (or the request for it) is kept when it is already the
+   * named channel's: AuthGuard starts /info while the route resolves, and
+   * throwing that answer away here made the header fetch it a second time
+   * and pushed every other first-paint request one round trip later.
+   */
+  clearCache(keepInfoFor?: string) {
     this.emojis = null;
     this.emojisRequest = undefined;
-    this.channelInfo = undefined;
-    this.channelInfoRequest = undefined;
+    if (!keepInfoFor || this.channelInfoSlug !== keepInfoFor) this.channelInfo = undefined;
+    if (!keepInfoFor || this.channelInfoRequestSlug !== keepInfoFor) this.channelInfoRequest = undefined;
   }
 
   async getEmojisList(reload: boolean = false): Promise<string[]> {

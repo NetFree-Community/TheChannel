@@ -3,6 +3,7 @@ export type SettingFieldType = 'boolean' | 'text' | 'number' | 'url' | 'textarea
 export interface SettingFieldSchema {
   key: string;
   label: string;
+  /** What the setting does for readers and writers, in plain Hebrew. */
   description?: string;
   type: SettingFieldType;
   placeholder?: string;
@@ -13,6 +14,10 @@ export interface SettingFieldSchema {
   min?: number;
   max?: number;
   minLength?: number;
+  /** A secret: shown masked with a reveal button and tagged as such. */
+  sensitive?: boolean;
+  /** A key the owner has to invent: offer a button that fills a random one. */
+  generate?: boolean;
 }
 
 export interface SettingsCategorySchema {
@@ -20,71 +25,70 @@ export interface SettingsCategorySchema {
   title: string;
   icon?: string;
   description?: string;
+  /** 'warning' marks a group whose fields hand out access (keys, tokens). */
+  tone?: 'warning';
   fields: SettingFieldSchema[];
 }
 
+// Grouped by what the owner is trying to do, not by where the backend keeps
+// the value: files and their size together, every external key together.
 export const SETTINGS_SCHEMA: SettingsCategorySchema[] = [
   {
-    id: 'general',
-    title: 'הגדרות כלליות',
-    icon: 'settings-2-outline',
+    id: 'files',
+    title: 'קבצים ותמונות',
+    icon: 'attach-2-outline',
+    description: 'מה מותר לצרף להודעה וכמה מקום זה תופס. המכסה הכוללת של הערוץ מופיעה במדור "אחסון".',
     fields: [
       {
         key: 'max_file_size',
-        label: 'הגבלת גודל קובץ להעלאה (MB)',
-        description: 'גודל מקסימלי בקבצים שניתן להעלות לערוץ. ברירת מחדל: 100 MB, מרבי: 512 MB.',
+        label: 'גודל מרבי לקובץ (במגה-בייט)',
+        description: 'קובץ גדול מזה יידחה בהעלאה עם הודעה לכותב. בלי ערך — 100 MB. אי אפשר לעבור 512 MB, וערך גדול יותר פשוט לא ייקלט.',
         type: 'number',
         placeholder: '100',
         default: 100,
         min: 1,
         max: 512,
       },
-    ],
-  },
-  {
-    id: 'security',
-    title: 'אבטחה ו-API',
-    icon: 'shield-outline',
-    fields: [
       {
-        key: 'api_secret_key',
-        label: 'מפתח API ליבוא הודעות',
-        description: 'מפתח סודי שיש לכלול בכותרת X-API-Key בעת קריאות יבוא הודעות. מפתח חדש חייב להכיל לפחות 16 תווים.',
+        key: 'tinypng_api_key',
+        label: 'מפתח TinyPNG לכיווץ תמונות',
+        description: 'כשיש מפתח, כל תמונה (PNG, JPEG, WebP) נדחסת לפני השמירה ותופסת הרבה פחות מקום — הקוראים לא ירגישו בהבדל. מפתח חינמי מקבלים באתר tinypng.com. לא חובה.',
         type: 'password',
-        placeholder: 'מפתח סודי חזק',
-        minLength: 16,
+        placeholder: 'המפתח מהאתר של TinyPNG',
+        sensitive: true,
       },
     ],
   },
   {
-    id: 'storage',
-    title: 'אחסון ומדיה',
-    icon: 'hard-drive-outline',
+    id: 'notifications',
+    title: 'התראות לנייד ולדפדפן',
+    icon: 'bell-outline',
+    description: 'התראה קופצת אצל הקוראים על כל הודעה חדשה. הקורא עצמו מאשר קבלת התראות בלחיצה על הפעמון בכותרת הערוץ.',
     fields: [
       {
-        key: 'tinypng_api_key',
-        label: 'מפתח API של TinyPNG לכיווץ תמונות',
-        description: 'כשמוגדר מפתח, תמונות PNG/JPEG/WebP ייכוצו אוטומטית לפני העלאה לאחסון ויחסכו מקום. קבלו מפתח חינמי ב-tinypng.com.',
-        type: 'password',
-        placeholder: 'YOUR_TINYPNG_API_KEY',
+        key: 'on_notification',
+        label: 'לשלוח התראה על כל הודעה חדשה',
+        description: 'דלוק — מי שאישר התראות לערוץ מקבל התראה בכל פרסום. כבוי — כפתור הפעמון לא מופיע ואף התראה לא נשלחת. תשתית ההתראות מוגדרת על ידי הנהלת המערכת; אם היא לא הוגדרה, המתג לא ישנה דבר.',
+        type: 'boolean',
       },
     ],
   },
   {
     id: 'ads',
-    title: 'פרסומות',
+    title: 'פרסומת במסגרת',
     icon: 'pricetags-outline',
+    description: 'מסגרת פרסומת שמוצגת לצד הערוץ. הכנסת כתובת מדליקה אותה, ריקון השדה מכבה. פרסומות של מגנט ADS מוגדרות במדור נפרד.',
     fields: [
       {
         key: 'ad-iframe-src',
-        label: 'קישור HTML של פרסומת להטמעה',
-        description: 'הכנסת קישור תפעיל הצגת מסגרת פרסומת בערוץ.',
+        label: 'כתובת עמוד הפרסומת',
+        description: 'כתובת אינטרנט מלאה (https://…) של העמוד שיוצג במסגרת. השאירו ריק כדי לא להציג פרסומת.',
         type: 'url',
         placeholder: 'https://ad.example.com/banner.html',
       },
       {
         key: 'ad-iframe-width',
-        label: 'רוחב חלון הפרסומת (פיקסלים)',
+        label: 'רוחב המסגרת (פיקסלים)',
         description: 'רוחב מומלץ: 300.',
         type: 'number',
         placeholder: '300',
@@ -92,38 +96,37 @@ export const SETTINGS_SCHEMA: SettingsCategorySchema[] = [
     ],
   },
   {
-    id: 'webhook',
-    title: 'וובהוק (Webhook)',
+    id: 'integrations',
+    title: 'חיבור למערכות חיצוניות',
     icon: 'link-2-outline',
-    description: 'שליחת התראה לשרת חיצוני בעת יצירה, עדכון או מחיקה של הודעות.',
+    tone: 'warning',
+    description: 'למי שמחבר את הערוץ לתוכנה אחרת: פרסום הודעות מבחוץ, ועדכון שרת חיצוני על כל שינוי. אם אין לכם כזו — אפשר לדלג על המדור כולו.',
     fields: [
       {
+        key: 'api_secret_key',
+        label: 'מפתח לפרסום הודעות מבחוץ',
+        description: 'מערכת חיצונית ששולחת את המפתח הזה יכולה לפרסם הודעות בערוץ בלי להתחבר. כל עוד השדה ריק — הדרך הזו סגורה. לפחות 16 תווים; שמרו עליו כמו על סיסמה והחליפו אותו אם דלף.',
+        type: 'password',
+        placeholder: 'מפתח סודי ארוך ואקראי',
+        minLength: 16,
+        sensitive: true,
+        generate: true,
+      },
+      {
         key: 'webhook_url',
-        label: 'כתובת ה-Webhook',
-        description: 'כתובת ה-URL שאליה תישלח בקשת POST בעת שינוי בהודעות.',
+        label: 'כתובת לעדכון על שינויים (Webhook)',
+        description: 'בכל פרסום, עריכה או מחיקה של הודעה נשלחת בקשה לכתובת הזו. חייבת להתחיל ב-http:// או https://. ריק — לא נשלח דבר.',
         type: 'url',
         placeholder: 'https://example.com/webhook',
       },
       {
         key: 'webhook_verify_token',
-        label: 'טוקן אימות',
-        description: 'טוקן סודי שיישלח עם כל בקשה לאימות שהבקשה הגיעה ממערכת זו (מומלץ).',
+        label: 'מחרוזת אימות סודית לכתובת העדכון',
+        description: 'מצורפת לכל בקשה שנשלחת לכתובת העדכון, כדי שהשרת שמקבל אותה יוכל לוודא שהיא באמת מכאן. מומלץ כשיש כתובת עדכון; מעתיקים את אותו ערך גם לצד השני.',
+        generate: true,
         type: 'password',
         placeholder: 'your-secret-token',
-      },
-    ],
-  },
-  {
-    id: 'notifications',
-    title: 'התראות דחיפה (Push)',
-    icon: 'bell-outline',
-    description: 'שליחת התראה לנייד/דפדפן בעת פרסום הודעה חדשה. תשתית ה-FCM מוגדרת על ידי מנהל המערכת.',
-    fields: [
-      {
-        key: 'on_notification',
-        label: 'הפעלת התראות דחיפה בערוץ זה',
-        description: 'מנויי הערוץ יקבלו התראת Push בכל הודעה חדשה.',
-        type: 'boolean',
+        sensitive: true,
       },
     ],
   },

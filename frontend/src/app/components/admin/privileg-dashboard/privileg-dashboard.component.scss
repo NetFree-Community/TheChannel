@@ -1,0 +1,261 @@
+@use '../admin-shared' as *;
+
+:host {
+  display: block;
+}
+
+.team-page {
+  @include admin-page;
+}
+
+.card-head {
+  @include admin-card-header;
+}
+
+.lead {
+  @include admin-lead;
+}
+
+// ---------- the three roles ----------
+.roles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.role {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  border-radius: var(--card-border-radius);
+  background: var(--background-basic-color-1);
+  border: 1px solid var(--border-basic-color-3);
+  box-shadow: var(--card-shadow);
+  border-inline-start: 4px solid var(--color-basic-500);
+
+  &--owner {
+    border-inline-start-color: var(--color-primary-500);
+
+    .role__icon {
+      color: var(--color-primary-600);
+    }
+  }
+
+  &--moderator {
+    border-inline-start-color: var(--color-info-500);
+
+    .role__icon {
+      color: var(--color-info-600);
+    }
+  }
+
+  &--writer {
+    border-inline-start-color: var(--color-success-500);
+
+    .role__icon {
+      color: var(--color-success-600);
+    }
+  }
+}
+
+.role__icon {
+  flex-shrink: 0;
+  font-size: 1.4rem;
+  margin-top: 0.1rem;
+}
+
+.role__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.role__label {
+  color: var(--text-basic-color);
+}
+
+.role__desc {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
+
+.team-note {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--text-hint-color);
+
+  nb-icon {
+    flex-shrink: 0;
+    font-size: 1.2rem;
+    color: var(--color-info-600);
+  }
+}
+
+// ---------- add form ----------
+.add {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) auto;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.add__field {
+  .field__label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-basic-color);
+  }
+}
+
+.add__error {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--color-danger-600);
+}
+
+.add__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  // Lines the buttons up with the inputs, under the labels.
+  padding-top: 1.55rem;
+}
+
+// ---------- members ----------
+.pill {
+  @include admin-pill(var(--background-basic-color-3), var(--text-hint-color));
+
+  &--owner {
+    background: var(--color-primary-100);
+    color: var(--color-primary-700);
+  }
+
+  &--me {
+    background: var(--color-info-100);
+    color: var(--color-info-700);
+  }
+
+  &--pending {
+    background: var(--color-warning-100);
+    color: var(--color-warning-700);
+  }
+}
+
+.team-loading {
+  min-height: 6rem;
+}
+
+.team-empty {
+  @include admin-empty;
+}
+
+.members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border-basic-color-3);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &.is-pending {
+    background: linear-gradient(90deg, var(--color-warning-100), transparent 40%);
+    border-radius: var(--border-radius);
+    padding-inline: 0.5rem;
+  }
+}
+
+.member__avatar {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+}
+
+.member__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.member__email {
+  display: block;
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-basic-color);
+}
+
+.member__tags {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.member__role {
+  flex-shrink: 0;
+  min-width: 7rem;
+}
+
+.member__remove {
+  @include admin-icon-button;
+  flex-shrink: 0;
+}
+
+.save-bar {
+  @include admin-save-bar;
+}
+
+// ---------- phone ----------
+@media (max-width: 767px) {
+  .roles {
+    grid-template-columns: 1fr;
+  }
+
+  .add {
+    grid-template-columns: 1fr;
+  }
+
+  .add__actions {
+    padding-top: 0;
+  }
+
+  .member {
+    flex-wrap: wrap;
+  }
+
+  .member__text {
+    flex-basis: calc(100% - 3rem);
+  }
+
+  .member__role {
+    flex: 1;
+  }
+}

@@ -1,0 +1,64 @@
+// Shared classes (.sa-*) come from the panel stylesheet.
+:host {
+  display: block;
+}
+
+.magnet {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.magnet nb-card,
+.applies-alert {
+  margin: 0;
+}
+
+.toggle-label {
+  font-weight: 600;
+  color: var(--text-basic-color);
+}
+
+// A field the chosen counting method ignores stays editable (its value is
+// still saved) but steps back visually.
+.field--muted {
+  opacity: 0.6;
+}
+
+.locked {
+  margin-top: 0.5rem;
+}
+
+.locked__add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.locked__add input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.locked__add [nbButton] {
+  flex: none;
+  min-height: 2.5rem;
+}
+
+.locked__tags {
+  display: block;
+  margin-top: 0.75rem;
+}
+
+.locked__empty {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-hint-color);
+}
+
+.save-card {
+  position: sticky;
+  bottom: 0.5rem;
+  z-index: 1;
+  border-color: var(--color-primary-200);
+}

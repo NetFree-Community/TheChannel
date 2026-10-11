@@ -1,18 +1,22 @@
 import { Component, OnInit } from '@angular/core';
-import { NbDialogRef } from '@nebular/theme';
+import { NbButtonModule, NbDialogRef, NbIconModule, NbTooltipModule } from '@nebular/theme';
 import { YouTubePlayer } from "@angular/youtube-player";
 
 
 @Component({
   selector: 'app-youtube-player',
   imports: [
-    YouTubePlayer
-],
+    YouTubePlayer,
+    NbButtonModule,
+    NbIconModule,
+    NbTooltipModule,
+  ],
   templateUrl: './youtube-player.component.html',
   styleUrl: './youtube-player.component.scss'
 })
 export class YoutubePlayerComponent implements OnInit {
-  iframeWidth = window.innerWidth / 100 * 80;
+  // 16:9, as wide as the viewport allows with a margin on either side.
+  iframeWidth = Math.min(window.innerWidth * 0.92, 960);
   iframeHeight = this.iframeWidth * 9 / 16;
 
   constructor(private dialogRef: NbDialogRef<YoutubePlayerComponent>) { }

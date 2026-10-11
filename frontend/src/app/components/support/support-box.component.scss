@@ -1,0 +1,237 @@
+:host {
+  display: block;
+}
+
+// Opened as its own dialog (header menu): without a width the overlay sizes
+// the card to its content, and without a height cap a long thread runs past a
+// phone screen with nothing behind it that can scroll.
+:host(.support-dialog) {
+  width: min(640px, 95vw);
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow-y: auto;
+}
+
+.support-box {
+  margin-bottom: 1rem;
+}
+
+.support-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.support-head__text {
+  min-width: 0;
+}
+
+.support-head__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-basic-color);
+
+  nb-icon {
+    font-size: 1.2rem;
+    color: var(--color-primary-600);
+  }
+}
+
+.support-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
+
+.support-alert {
+  margin-bottom: 1rem;
+}
+
+.support-loading {
+  min-height: 4rem;
+}
+
+// ---------- form ----------
+.support-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.support-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field__label {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--text-basic-color);
+}
+
+.field__hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-hint-color);
+}
+
+.field__counter {
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--text-hint-color);
+  text-align: end;
+}
+
+.support-form__actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+// ---------- tickets ----------
+.ticket {
+  border-bottom: 1px solid var(--border-basic-color-3);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.ticket__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--text-basic-color);
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+  border-radius: var(--border-radius);
+
+  &:hover {
+    background: var(--color-basic-transparent-100);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+}
+
+.ticket__subject {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ticket__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 1rem;
+  white-space: nowrap;
+
+  nb-icon {
+    font-size: 0.9rem;
+  }
+}
+
+.st-open {
+  background: var(--color-warning-100);
+  color: var(--color-warning-700);
+}
+
+.st-answered {
+  background: var(--color-success-100);
+  color: var(--color-success-700);
+}
+
+.st-closed {
+  background: var(--background-basic-color-3);
+  color: var(--text-hint-color);
+}
+
+.ticket__chevron {
+  flex-shrink: 0;
+  color: var(--text-hint-color);
+}
+
+.thread {
+  padding: 0.25rem 0.25rem 0.75rem;
+}
+
+.msg {
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 0.4rem;
+  background: var(--background-basic-color-2);
+}
+
+// The operator's replies: brand tint and a bar, and only ever "ניהול" as the
+// name — the identity behind it is never shown.
+.msg--admin {
+  background: var(--color-primary-transparent-100);
+  border-inline-start: 3px solid var(--color-primary-500);
+}
+
+.msg__meta {
+  display: flex;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--text-hint-color);
+  margin-bottom: 0.2rem;
+
+  strong {
+    color: var(--text-basic-color);
+  }
+}
+
+// Bodies are plain text, rendered by interpolation — never markdown, so a
+// ticket cannot inject markup into the operator's inbox.
+.msg__body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+}
+
+.reply {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.reply__send {
+  align-self: flex-start;
+}
+
+.thread__closed {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  color: var(--text-hint-color);
+}
+
+@media (max-width: 575px) {
+  .support-form__row {
+    grid-template-columns: 1fr;
+  }
+}

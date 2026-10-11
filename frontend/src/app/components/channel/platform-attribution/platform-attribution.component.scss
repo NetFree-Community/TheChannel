@@ -7,45 +7,51 @@
   // channel.component.scss, which has the header-height theme token). Being
   // pinned means the feed scrolls underneath it, so the host needs its own
   // opaque background — without one the messages passing behind would read
-  // through the padding around the pill.
-  background: var(--background-basic-color-1, #fff);
-  padding-top: 0.5rem;
+  // through the padding around the strip.
+  background: var(--background-basic-color-1);
 }
 
+// A hairline strip, not a pill: it is a credit line under the header and
+// should read as part of the chrome rather than as the first message.
 .attribution {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem 0.4rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 0.4rem;
-  margin-bottom: 0.75rem;
-  background: var(--background-basic-color-2, #f7f9fc);
-  border: 1px solid var(--divider-color, #edf1f7);
+  gap: 0 0.4rem;
+  padding: 0.1rem 0.75rem;
+  margin: 0 0 0.5rem;
+  border-bottom: 1px solid var(--border-basic-color-3);
   font-size: 0.78rem;
   line-height: 1.5;
   text-align: center;
-}
-
-.attribution__text {
-  color: var(--text-hint-color, #8f9bb3);
+  color: var(--text-hint-color);
 }
 
 .attribution__sep {
-  color: var(--text-hint-color, #8f9bb3);
   opacity: 0.6;
 }
 
 .attribution__link {
-  color: var(--color-primary-default, #3366ff);
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  // A thumb-sized target even though the text is small.
+  min-height: 2.5rem;
+  color: var(--color-primary-600);
+  font-weight: 700;
   text-decoration: none;
-}
 
-.attribution__link:hover,
-.attribution__link:focus-visible {
-  text-decoration: underline;
+  nb-icon {
+    font-size: 0.9rem;
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
 }
 
 // On a narrow phone the two halves stack; the middle dot would then float on a
@@ -53,8 +59,8 @@
 @media (max-width: 575px) {
   .attribution {
     flex-direction: column;
-    gap: 0.1rem;
-    font-size: 0.72rem;
+    gap: 0;
+    font-size: 0.74rem;
   }
 
   .attribution__sep {

@@ -1,187 +1,250 @@
 <div class="settings-page">
 
-  @for (cat of schema; track cat.id) {
-    <nb-card class="settings-card">
-      <nb-card-header class="settings-card-header">
-        @if (cat.icon) {
-          <nb-icon [icon]="cat.icon"></nb-icon>
-        }
-        <span>{{ cat.title }}</span>
-      </nb-card-header>
-
-      <nb-card-body>
-        @if (cat.description) {
-          <p class="category-description">{{ cat.description }}</p>
-        }
-
-        @if (cat.id === 'ads' && adsLocked) {
-          <nb-alert status="warning" class="mb-3">
-            ההגדרות בתחום זה נעולות על ידי הנהלת המערכת — השינויים כאן לא ישפיעו על הערוץ
-          </nb-alert>
-        }
-
-        @for (field of cat.fields; track field.key) {
-          @if (isFieldVisible(field)) {
-            <div class="setting-field" [class.is-toggle]="field.type === 'boolean'">
-
-              @if (field.type === 'boolean') {
-                <div class="toggle-row">
-                  <nb-toggle [(checked)]="values[field.key]">
-                    <span class="field-label">{{ field.label }}</span>
-                  </nb-toggle>
-                </div>
-                @if (field.description) {
-                  <p class="field-description toggle-description">{{ field.description }}</p>
-                }
-              } @else {
-                <label class="field-label" [attr.for]="'f-' + field.key">{{ field.label }}</label>
-                @if (field.description) {
-                  <p class="field-description">{{ field.description }}</p>
-                }
-
-                @switch (field.type) {
-                  @case ('textarea') {
-                    <textarea
-                      nbInput
-                      fullWidth
-                      rows="3"
-                      [id]="'f-' + field.key"
-                      [(ngModel)]="values[field.key]"
-                      [placeholder]="field.placeholder || ''">
-                    </textarea>
-                  }
-                  @case ('number') {
-                    <input
-                      nbInput
-                      fullWidth
-                      type="number"
-                      [id]="'f-' + field.key"
-                      [attr.min]="field.min ?? null"
-                      [attr.max]="field.max ?? null"
-                      [disabled]="isFieldLocked(field)"
-                      [(ngModel)]="values[field.key]"
-                      [placeholder]="field.placeholder || ''">
-                  }
-                  @case ('password') {
-                    <input
-                      nbInput
-                      fullWidth
-                      type="password"
-                      autocomplete="new-password"
-                      [id]="'f-' + field.key"
-                      [attr.minlength]="field.minLength ?? null"
-                      [(ngModel)]="values[field.key]"
-                      [placeholder]="field.placeholder || ''">
-                  }
-                  @default {
-                    <input
-                      nbInput
-                      fullWidth
-                      type="text"
-                      [id]="'f-' + field.key"
-                      [disabled]="isFieldLocked(field)"
-                      [(ngModel)]="values[field.key]"
-                      [placeholder]="field.placeholder || ''">
-                  }
-                }
-              }
-            </div>
-          }
-        }
+  @if (loading) {
+    <nb-card>
+      <nb-card-body class="settings-loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים את ההגדרות…"></nb-card-body>
+    </nb-card>
+  } @else if (loadFailed) {
+    <nb-card>
+      <nb-card-body class="settings-empty">
+        <nb-icon icon="wifi-off-outline"></nb-icon>
+        <strong>לא הצלחנו לטעון את ההגדרות</strong>
+        <span>בלי העותק השמור אי אפשר לשמור — אחרת הגדרות קיימות היו נמחקות. נסו שוב.</span>
+        <button nbButton status="primary" size="small" type="button" (click)="loadSettings()">
+          <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+        </button>
       </nb-card-body>
     </nb-card>
-  }
+  } @else {
 
-  <nb-card class="settings-card">
-    <nb-card-header class="settings-card-header">
-      <nb-icon icon="swap-outline"></nb-icon>
-      <span>החלפות טקסט אוטומטיות</span>
-    </nb-card-header>
-    <nb-card-body>
-      <p class="category-description">
-        ניתן להגדיר ביטויים רגולריים (Regex) שיוחלפו אוטומטית בעת פרסום הודעות חדשות.
-        בשדה "תבנית" יש להזין את הביטוי הרגולרי, ובשדה "החלפה" את הטקסט החלופי.
-        לדוגמא: תבנית <code>(.*?\!)(.*)</code> והחלפה <code>**$1**$2</code> תדגיש כותרות הודעה.
-      </p>
+    @for (cat of schema; track cat.id) {
+      <nb-card class="settings-card" [class.is-warning]="cat.tone === 'warning'">
+        <nb-card-header class="card-head">
+          @if (cat.icon) {
+            <nb-icon [icon]="cat.icon"></nb-icon>
+          }
+          <h2>{{ cat.title }}</h2>
+          @if (cat.tone === 'warning') {
+            <span class="pill pill--warning" nbTooltip="השדות כאן נותנים גישה לערוץ — לא לשתף">
+              <nb-icon icon="shield-outline"></nb-icon> רגיש
+            </span>
+          }
+        </nb-card-header>
 
-      @if (regexRules.length === 0) {
-        <p class="empty-state">לא הוגדרו כללי החלפה.</p>
-      }
+        <nb-card-body>
+          @if (cat.description) {
+            <p class="lead">{{ cat.description }}</p>
+          }
 
-      @for (rule of regexRules; track $index; let i = $index) {
-        <div class="regex-row">
-          <div class="regex-fields">
-            <div class="regex-field">
-              <label class="field-label small">תבנית (Regex)</label>
-              <input nbInput fullWidth fieldSize="small" type="text"
-                [(ngModel)]="rule.pattern"
-                placeholder="(.*?\!)(.*)">
-            </div>
-            <div class="regex-field">
-              <label class="field-label small">החלפה</label>
-              <input nbInput fullWidth fieldSize="small" type="text"
-                [(ngModel)]="rule.replace"
-                placeholder="**$1**$2">
-            </div>
-          </div>
-          <button nbButton status="danger" size="small" ghost (click)="removeRegexRule(i)" nbTooltip="הסר כלל">
-            <nb-icon icon="trash-2-outline"></nb-icon>
-          </button>
-        </div>
-      }
+          @if (cat.id === 'ads' && adsLocked) {
+            <nb-alert status="warning" class="settings-alert">
+              הנהלת המערכת קבעה פרסומת אחידה לכל הערוצים, ולכן השדות כאן נעולים — מה שתכתבו לא ישפיע על הערוץ.
+            </nb-alert>
+          }
 
-      <button nbButton size="small" status="primary" (click)="addRegexRule()">
-        <nb-icon icon="plus-outline"></nb-icon>
-        הוסף כלל החלפה
-      </button>
-    </nb-card-body>
-  </nb-card>
+          @for (field of cat.fields; track field.key) {
+            @if (isFieldVisible(field)) {
+              <div class="field" [class.is-toggle]="field.type === 'boolean'">
 
-  <nb-accordion class="advanced-accordion">
-    <nb-accordion-item>
-      <nb-accordion-item-header>
-        <nb-icon icon="options-2-outline"></nb-icon>
-        <span class="advanced-title">הגדרות מתקדמות / מותאמות אישית</span>
-      </nb-accordion-item-header>
-      <nb-accordion-item-body>
-        <p class="category-description">
-          אזור זה מאפשר להוסיף הגדרות שאינן מופיעות בטופס למעלה (לדוגמא: הגדרות חדשות
-          שטרם נוספו לממשק). יש להזין שם הגדרה וערך באופן ידני.
-        </p>
+                @if (field.type === 'boolean') {
+                  <div class="toggle-row">
+                    <nb-toggle [(checked)]="values[field.key]" labelPosition="end">
+                      <span class="field__label field__label--inline">{{ field.label }}</span>
+                    </nb-toggle>
+                    <span class="pill" [class.pill--on]="values[field.key]">{{ values[field.key] ? 'דלוק' : 'כבוי' }}</span>
+                  </div>
+                  @if (field.description) {
+                    <p class="field__hint field__hint--toggle">{{ field.description }}</p>
+                  }
+                } @else {
+                  <label class="field__label" [attr.for]="'f-' + field.key">{{ field.label }}</label>
+                  @if (field.description) {
+                    <p class="field__hint">{{ field.description }}</p>
+                  }
 
-        @if (extraSettings.length === 0) {
-          <p class="empty-state">אין הגדרות מותאמות אישית.</p>
-        }
-
-        @for (s of extraSettings; track $index; let i = $index) {
-          <div class="extra-row">
-            <input nbInput fieldSize="small" type="text" [(ngModel)]="s.key" placeholder="שם ההגדרה">
-            <input nbInput fullWidth fieldSize="small" type="text" [(ngModel)]="s.value" placeholder="ערך">
-            <button nbButton status="danger" size="small" ghost (click)="removeExtraSetting(i)" nbTooltip="הסר">
-              <nb-icon icon="trash-2-outline"></nb-icon>
-            </button>
-          </div>
-        }
-
-        <button nbButton size="small" status="primary" (click)="addExtraSetting()">
-          <nb-icon icon="plus-outline"></nb-icon>
-          הוסף הגדרה מותאמת
-        </button>
-      </nb-accordion-item-body>
-    </nb-accordion-item>
-  </nb-accordion>
-
-  <div class="save-bar align-items-center gap-2 flex-wrap">
-    <button nbButton status="primary" size="medium" (click)="saveSettings()" [disabled]="setInProgress || !loaded">
-      <nb-icon icon="save-outline"></nb-icon>
-      {{ setInProgress ? 'שומר...' : 'שמור שינויים' }}
-    </button>
-    @if (loadFailed) {
-      <span class="text-muted">טעינת ההגדרות נכשלה, לא ניתן לשמור</span>
-      <button nbButton status="basic" size="small" ghost (click)="loadSettings()">
-        <nb-icon icon="refresh-outline"></nb-icon>
-        נסו שוב
-      </button>
+                  @switch (field.type) {
+                    @case ('textarea') {
+                      <textarea
+                        nbInput
+                        fullWidth
+                        rows="3"
+                        [id]="'f-' + field.key"
+                        [(ngModel)]="values[field.key]"
+                        [placeholder]="field.placeholder || ''">
+                      </textarea>
+                    }
+                    @case ('number') {
+                      <input
+                        nbInput
+                        fullWidth
+                        type="number"
+                        inputmode="numeric"
+                        class="input--short"
+                        [id]="'f-' + field.key"
+                        [attr.min]="field.min ?? null"
+                        [attr.max]="field.max ?? null"
+                        [disabled]="isFieldLocked(field)"
+                        [(ngModel)]="values[field.key]"
+                        [placeholder]="field.placeholder || ''">
+                    }
+                    @case ('password') {
+                      <div class="secret">
+                        <input
+                          nbInput
+                          fullWidth
+                          [type]="revealed[field.key] ? 'text' : 'password'"
+                          autocomplete="new-password"
+                          dir="ltr"
+                          [id]="'f-' + field.key"
+                          [attr.minlength]="field.minLength ?? null"
+                          [(ngModel)]="values[field.key]"
+                          [placeholder]="field.placeholder || ''">
+                        <button nbButton ghost status="basic" type="button" class="secret__btn"
+                                (click)="toggleReveal(field.key)"
+                                [attr.aria-label]="revealed[field.key] ? 'הסתרת הערך' : 'הצגת הערך'"
+                                [nbTooltip]="revealed[field.key] ? 'הסתרה' : 'הצגה'"
+                                [attr.aria-pressed]="!!revealed[field.key]">
+                          <nb-icon [icon]="revealed[field.key] ? 'eye-off-outline' : 'eye-outline'"></nb-icon>
+                        </button>
+                        <button nbButton ghost status="basic" type="button" class="secret__btn"
+                                (click)="copySecret(field.key)" [disabled]="!values[field.key]"
+                                aria-label="העתקת הערך" nbTooltip="העתקה">
+                          <nb-icon icon="copy-outline"></nb-icon>
+                        </button>
+                        @if (field.generate) {
+                          <button nbButton ghost status="primary" type="button" class="secret__btn"
+                                  (click)="generateSecret(field.key)"
+                                  aria-label="יצירת ערך אקראי חדש" nbTooltip="יצירת ערך אקראי">
+                            <nb-icon icon="flash-outline"></nb-icon>
+                          </button>
+                        }
+                      </div>
+                      @if (field.generate) {
+                        <p class="field__hint field__hint--after">אפשר להמציא ערך לבד, או ללחוץ על הברק ליצירת ערך אקראי. כפתורי העין וההעתקה מאפשרים לקרוא אותו ולהעתיק אותו למערכת השנייה.</p>
+                      }
+                    }
+                    @default {
+                      <input
+                        nbInput
+                        fullWidth
+                        type="text"
+                        [attr.inputmode]="field.type === 'url' ? 'url' : null"
+                        [attr.dir]="field.type === 'url' ? 'ltr' : null"
+                        [id]="'f-' + field.key"
+                        [disabled]="isFieldLocked(field)"
+                        [(ngModel)]="values[field.key]"
+                        [placeholder]="field.placeholder || ''">
+                    }
+                  }
+                }
+              </div>
+            }
+          }
+        </nb-card-body>
+      </nb-card>
     }
-  </div>
+
+    <nb-accordion multi class="advanced-accordion">
+      <nb-accordion-item [expanded]="regexRules.length > 0">
+        <nb-accordion-item-header>
+          <nb-icon icon="swap-outline"></nb-icon>
+          <span class="advanced-title">החלפות אוטומטיות בטקסט</span>
+          <span class="muted advanced-sub">למתקדמים: ביטויים רגולריים (Regex)</span>
+          @if (regexRules.length) {
+            <span class="pill pill--count">{{ regexRules.length }}</span>
+          }
+        </nb-accordion-item-header>
+        <nb-accordion-item-body>
+          <p class="lead">
+            כלל החלפה רץ על כל הודעה חדשה שמתפרסמת: בשדה "מה לחפש" כותבים ביטוי רגולרי (Regex), ובשדה "במה להחליף" את
+            הטקסט שיבוא במקומו. למשל, חיפוש <code dir="ltr">(.*?\!)(.*)</code> והחלפה ב-<code dir="ltr">**$1**$2</code>
+            מדגישים כל כותרת הודעה שמסתיימת בסימן קריאה. מיועד למי שמכיר ביטויים רגולריים — אחרת אפשר לדלג.
+          </p>
+
+          @if (regexRules.length === 0) {
+            <p class="muted">אין כללי החלפה. ההודעות מתפרסמות כפי שנכתבו.</p>
+          }
+
+          @for (rule of regexRules; track $index; let i = $index) {
+            <div class="regex-row">
+              <div class="regex-fields">
+                <div class="regex-field">
+                  <label class="field__label field__label--small" [attr.for]="'rx-p-' + i">מה לחפש (Regex)</label>
+                  <input nbInput fullWidth fieldSize="small" type="text" dir="ltr" [id]="'rx-p-' + i"
+                    [(ngModel)]="rule.pattern"
+                    placeholder="(.*?\!)(.*)">
+                </div>
+                <div class="regex-field">
+                  <label class="field__label field__label--small" [attr.for]="'rx-r-' + i">במה להחליף</label>
+                  <input nbInput fullWidth fieldSize="small" type="text" dir="ltr" [id]="'rx-r-' + i"
+                    [(ngModel)]="rule.replace"
+                    placeholder="**$1**$2">
+                </div>
+              </div>
+              <button nbButton status="danger" ghost type="button" class="icon-btn" (click)="removeRegexRule(i)"
+                      aria-label="הסרת כלל ההחלפה" nbTooltip="הסרת הכלל">
+                <nb-icon icon="trash-2-outline"></nb-icon>
+              </button>
+            </div>
+          }
+
+          <button nbButton size="small" status="primary" outline type="button" (click)="addRegexRule()">
+            <nb-icon icon="plus-outline"></nb-icon>
+            הוספת כלל החלפה
+          </button>
+        </nb-accordion-item-body>
+      </nb-accordion-item>
+
+      <nb-accordion-item>
+        <nb-accordion-item-header>
+          <nb-icon icon="options-2-outline"></nb-icon>
+          <span class="advanced-title">הגדרות מתקדמות</span>
+          <span class="muted advanced-sub">רק אם נאמר לכם במפורש מה להזין</span>
+        </nb-accordion-item-header>
+        <nb-accordion-item-body>
+          <p class="lead">
+            כאן נשמרות הגדרות שעדיין אין להן שדה בטופס שלמעלה. מזינים שם הגדרה וערך בדיוק כפי שקיבלתם
+            מהנהלת המערכת — שם שגוי פשוט יישמר ולא יעשה דבר.
+          </p>
+
+          @if (extraSettings.length === 0) {
+            <p class="muted">אין הגדרות מתקדמות.</p>
+          }
+
+          @for (s of extraSettings; track $index; let i = $index) {
+            <div class="extra-row">
+              <input nbInput fieldSize="small" type="text" dir="ltr" [(ngModel)]="s.key" placeholder="שם ההגדרה"
+                     [attr.aria-label]="'שם הגדרה ' + (i + 1)">
+              <input nbInput fullWidth fieldSize="small" type="text" dir="ltr" [(ngModel)]="s.value" placeholder="ערך"
+                     [attr.aria-label]="'ערך הגדרה ' + (i + 1)">
+              <button nbButton status="danger" ghost type="button" class="icon-btn" (click)="removeExtraSetting(i)"
+                      aria-label="הסרת ההגדרה" nbTooltip="הסרה">
+                <nb-icon icon="trash-2-outline"></nb-icon>
+              </button>
+            </div>
+          }
+
+          <button nbButton size="small" status="primary" outline type="button" (click)="addExtraSetting()">
+            <nb-icon icon="plus-outline"></nb-icon>
+            הוספת הגדרה
+          </button>
+        </nb-accordion-item-body>
+      </nb-accordion-item>
+    </nb-accordion>
+
+    <div class="save-bar">
+      <button nbButton status="primary" type="button" (click)="saveSettings()" [disabled]="setInProgress || !loaded"
+              [nbSpinner]="setInProgress" nbSpinnerStatus="control" nbSpinnerSize="small">
+        <nb-icon icon="save-outline"></nb-icon>
+        {{ setInProgress ? 'שומרים…' : 'שמירת שינויים' }}
+      </button>
+      @if (dirty && !setInProgress) {
+        <button nbButton ghost status="basic" size="small" type="button" (click)="resetChanges()">ביטול שינויים</button>
+      }
+      <span class="save-bar__spacer"></span>
+      <span class="save-bar__state" [class.is-dirty]="dirty" aria-live="polite">
+        {{ dirty ? 'יש שינויים שלא נשמרו' : 'הכול שמור' }}
+      </span>
+    </div>
+  }
 </div>

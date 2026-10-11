@@ -1,58 +1,85 @@
-<div class="d-flex flex-column gap-3">
+<div class="stats">
   <nb-card>
-    <nb-card-header class="d-flex align-items-center gap-2">
-      <nb-icon icon="bar-chart-outline"></nb-icon>
-      <span>סטטיסטיקות מערכת</span>
-    </nb-card-header>
-    <nb-card-body>
-      <button nbButton status="danger" (click)="resetStatistics()" [disabled]="resetting">
-        <nb-icon icon="refresh-outline"></nb-icon>
-        {{ resetting ? 'מאפס...' : 'איפוס סטטיסטיקות חיבורים' }}
-      </button>
-      <p class="text-muted mt-2 mb-0">
-        <small>פעולה זו מאפסת את שיא מספר החיבורים בו-זמנית וגם את היסטוריית החיבורים של כל הערוצים (הגרפים במסכי הסטטיסטיקה). לא ניתן לשחזר.</small>
-      </p>
-    </nb-card-body>
-  </nb-card>
-
-  <nb-card>
-    <nb-card-header class="d-flex align-items-center justify-content-between">
-      <div class="d-flex align-items-center gap-2">
-        <nb-icon icon="pricetags-outline"></nb-icon>
-        <span>סטטיסטיקות מגנט</span>
+    <nb-card-header>
+      <div class="sa-card-head">
+        <h2 class="sa-card-title">
+          <nb-icon icon="pricetags-outline"></nb-icon>
+          נתוני הפרסומות ממגנט
+        </h2>
+        <button nbButton ghost status="basic" size="small" type="button" (click)="loadMagnetStats()" [disabled]="loadingStats">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          רענון
+        </button>
       </div>
-      <button nbButton size="small" status="info" ghost (click)="loadMagnetStats()" [disabled]="loadingStats">
-        <nb-icon icon="refresh-outline"></nb-icon>
-        רענן
-      </button>
     </nb-card-header>
     <nb-card-body>
+      <p class="sa-lead">הנתונים מגיעים ישירות מחשבון המפרסם במגנט, לפי מפתח ה-API שהוזן במסך "פרסומות מגנט".</p>
       @if (loadingStats) {
-        <p class="text-center">טוען...</p>
+        <div class="sa-state">
+          <span class="sa-spinner" role="status" aria-label="טוען"></span>
+          <p class="sa-state__text">מביא נתונים ממגנט…</p>
+        </div>
       } @else if (magnetError) {
-        <p class="text-center text-muted">{{ magnetError }}</p>
-      } @else if (!magnetStats) {
-        <p class="text-center text-muted">אין נתונים זמינים</p>
+        <div class="sa-state">
+          <span class="sa-state__icon" [class.sa-state__icon--danger]="!magnetNotConfigured">
+            <nb-icon [icon]="magnetNotConfigured ? 'pricetags-outline' : 'alert-triangle-outline'"></nb-icon>
+          </span>
+          <p class="sa-state__title">{{ magnetError }}</p>
+          @if (magnetNotConfigured) {
+            <p class="sa-state__text">הזינו את המפתח במסך "פרסומות מגנט" ושמרו; הנתונים יופיעו כאן.</p>
+          } @else {
+            <button nbButton status="primary" size="small" type="button" (click)="loadMagnetStats()">
+              <nb-icon icon="refresh-outline"></nb-icon>
+              ניסיון נוסף
+            </button>
+          }
+        </div>
+      } @else if (!magnetStats || getStatEntries().length === 0) {
+        <div class="sa-state">
+          <span class="sa-state__icon"><nb-icon icon="bar-chart-outline"></nb-icon></span>
+          <p class="sa-state__title">אין עדיין נתונים</p>
+          <p class="sa-state__text">מגנט לא החזיר נתונים לחשבון הזה. בדרך כלל זה אומר שעוד לא הוצגו פרסומות.</p>
+        </div>
       } @else {
-        <div class="table-responsive">
-          <table class="table table-sm table-hover">
+        <div class="sa-table-wrap">
+          <table class="table sa-table stats-table">
             <thead>
               <tr>
-                <th>מפתח</th>
-                <th>ערך</th>
+                <th scope="col">נתון</th>
+                <th scope="col">ערך</th>
               </tr>
             </thead>
             <tbody>
               @for (entry of getStatEntries(); track entry.key) {
                 <tr>
-                  <td><code>{{ entry.key }}</code></td>
-                  <td>{{ entry.value }}</td>
+                  <td><code class="sa-ltr stat-key">{{ entry.key }}</code></td>
+                  <td class="stat-value sa-ltr">{{ entry.value }}</td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
+        <p class="sa-field__hint">שמות הנתונים הם כפי שמגנט מחזיר אותם.</p>
       }
+    </nb-card-body>
+  </nb-card>
+
+  <nb-card class="danger-card">
+    <nb-card-header>
+      <h2 class="sa-card-title danger-title">
+        <nb-icon icon="alert-triangle-outline"></nb-icon>
+        איפוס מוני החיבורים
+      </h2>
+    </nb-card-header>
+    <nb-card-body>
+      <p class="sa-lead">
+        המערכת סופרת לכל ערוץ כמה קוראים מחוברים בו-זמנית, ושומרת שיא והיסטוריה חודשית — זה מה שמנהלי הערוצים רואים בגרפים שלהם.
+        האיפוס מוחק את השיא ואת ההיסטוריה של <strong>כל</strong> הערוצים, ואי אפשר לשחזר.
+      </p>
+      <button nbButton status="danger" appearance="outline" type="button" (click)="resetStatistics()" [disabled]="resetting">
+        <nb-icon icon="refresh-outline"></nb-icon>
+        {{ resetting ? 'מאפס…' : 'איפוס מוני החיבורים של כל הערוצים' }}
+      </button>
     </nb-card-body>
   </nb-card>
 </div>

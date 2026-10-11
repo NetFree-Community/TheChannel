@@ -1,3 +1,33 @@
-.advertising-card {
-    overflow-y: auto;
+:host {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+// A quiet frame around the ad column: the feed is the content, this is not.
+.side-ad {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  height: 100%;
+  border-inline-end: 1px solid var(--border-basic-color-3);
+  background: var(--background-basic-color-2);
+}
+
+.side-ad__label {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-hint-color);
+  border-bottom: 1px solid var(--border-basic-color-3);
+}
+
+iframe {
+  flex: 1 1 auto;
+  display: block;
+  border: 0;
+  max-width: 100%;
 }

@@ -1,13 +1,12 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { formatBytes, storageLevelStatus } from '../../../utils/storage-format';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import {
   NbCardModule, NbButtonModule, NbToggleModule,
-  NbProgressBarModule, NbToastrService, NbAlertModule, NbIconModule
+  NbProgressBarModule, NbToastrService, NbAlertModule, NbIconModule, NbSpinnerModule,
 } from '@nebular/theme';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { ConfirmService } from '../../../services/confirm.service';
 
 interface StorageInfo {
   usedBytes: number;
@@ -17,94 +16,122 @@ interface StorageInfo {
   level: 'ok' | 'warning' | 'critical';
 }
 
+/**
+ * "אחסון": how much of the channel's file quota is used, and the one switch an
+ * owner has when it runs out — auto-cleanup, which the server applies at the
+ * moment an upload would not fit (oldest files first, down to 80 % of the
+ * quota, the logo excepted). Everything else about the quota belongs to the
+ * platform operator.
+ */
 @Component({
   selector: 'app-channel-storage',
   standalone: true,
   imports: [
-    CommonModule, FormsModule,
     NbCardModule, NbButtonModule, NbToggleModule,
-    NbProgressBarModule, NbAlertModule, NbIconModule
+    NbProgressBarModule, NbAlertModule, NbIconModule, NbSpinnerModule,
   ],
-  template: `
-    <nb-card>
-      <nb-card-header>אחסון</nb-card-header>
-      <nb-card-body>
-        @if (info) {
-          <div class="mb-3">
-            <div class="d-flex justify-content-between mb-1">
-              <span>שימוש: {{ formatBytes(info.usedBytes) }}</span>
-              <span>מתוך: {{ info.quotaBytes ? formatBytes(info.quotaBytes) : 'ללא הגבלה' }}</span>
-            </div>
-            <nb-progress-bar
-              [value]="percentDisplay()"
-              [status]="progressStatus()"
-              [displayValue]="true">
-            </nb-progress-bar>
-          </div>
-
-          @if (info.level === 'critical') {
-            <nb-alert status="danger" closable class="mb-3">
-              <nb-icon icon="alert-triangle-outline"></nb-icon>
-              שטח האחסון כמעט מלא! פנה מקום או הפעל ניקוי אוטומטי.
-            </nb-alert>
-          } @else if (info.level === 'warning') {
-            <nb-alert status="warning" closable class="mb-3">
-              <nb-icon icon="alert-circle-outline"></nb-icon>
-              שטח האחסון מתמלא ({{ percentDisplay() }}%).
-            </nb-alert>
-          }
-
-          <div class="d-flex align-items-center gap-3">
-            <nb-toggle
-              [(ngModel)]="info.autoCleanup"
-              (change)="saveAutoCleanup()">
-              ניקוי אוטומטי של מדיה ישנה
-            </nb-toggle>
-            <small class="text-muted">
-              כשהאחסון עומד להיגמר, מוחק קבצים ישנים אוטומטית כדי לפנות מקום
-            </small>
-          </div>
-        } @else {
-          <p>טוען...</p>
-        }
-      </nb-card-body>
-    </nb-card>
-  `
+  templateUrl: './storage.component.html',
+  styleUrl: './storage.component.scss',
 })
 export class StorageComponent implements OnInit {
   @Input() slug!: string;
+  /** The storage endpoint answered 403: the role changed since sign-in. */
+  @Output() accessDenied = new EventEmitter<void>();
 
   info?: StorageInfo;
+  /**
+   * Mirrors info.autoCleanup for the toggle. The switch flips itself on tap,
+   * before anything is confirmed or saved; writing the stored value back here
+   * is what moves it back when the owner cancels or the save fails.
+   */
+  cleanupChecked = false;
+  loading = true;
+  loadFailed = false;
+  saving = false;
 
-  constructor(private http: HttpClient, private toastr: NbToastrService) {}
+  constructor(
+    private http: HttpClient,
+    private toastr: NbToastrService,
+    private confirm: ConfirmService,
+  ) {}
 
   ngOnInit() {
     this.load();
   }
 
+  get unlimited(): boolean {
+    return !!this.info && !this.info.quotaBytes;
+  }
+
+  get freeBytes(): number {
+    if (!this.info || !this.info.quotaBytes) return 0;
+    return Math.max(0, this.info.quotaBytes - this.info.usedBytes);
+  }
+
   async load() {
+    this.loading = true;
+    this.loadFailed = false;
     try {
       this.info = await firstValueFrom(
         this.http.get<StorageInfo>(`/api/channel/${this.slug}/admin/storage`)
       );
-    } catch {
-      this.toastr.danger('שגיאה בטעינת מידע אחסון', 'שגיאה');
+      this.cleanupChecked = !!this.info?.autoCleanup;
+    } catch (err: any) {
+      this.loadFailed = true;
+      if (err?.status === 403 || err?.status === 401) {
+        this.accessDenied.emit();
+      } else {
+        this.toastr.danger('', 'לא הצלחנו לטעון את נתוני האחסון — נסו שוב');
+      }
+    } finally {
+      this.loading = false;
     }
   }
 
-  async saveAutoCleanup() {
+  /**
+   * The toggle is bound one-way so the switch only moves once the owner has
+   * confirmed (when turning cleanup on — it deletes files) and the server has
+   * stored the new state.
+   */
+  async onAutoCleanupChange(enabled: boolean) {
+    if (!this.info || this.saving) return;
+    this.cleanupChecked = enabled;
+    if (enabled === this.info.autoCleanup) return;
+    if (enabled) {
+      const ok = await this.confirm.ask({
+        title: 'להפעיל ניקוי אוטומטי?',
+        message: 'כשהמקום ייגמר, הקבצים הישנים ביותר יימחקו מעצמם כדי לפנות מקום להעלאות חדשות. קובץ שנמחק אי אפשר להחזיר, והקישור אליו בהודעה הישנה יפסיק לעבוד.',
+        confirmLabel: 'הפעלה',
+        status: 'warning',
+        icon: 'trash-2-outline',
+      });
+      if (!ok) {
+        this.cleanupChecked = this.info.autoCleanup;
+        return;
+      }
+    }
+    await this.saveAutoCleanup(enabled);
+  }
+
+  private async saveAutoCleanup(enabled: boolean) {
     if (!this.info) return;
+    this.saving = true;
     try {
       await firstValueFrom(this.http.post(
         `/api/channel/${this.slug}/admin/storage/auto-cleanup`,
-        { enabled: this.info.autoCleanup }
+        { enabled }
       ));
-      this.toastr.success('הגדרות נשמרו', 'אחסון');
-    } catch {
-      // ngModel flipped the switch before the request went out; put it back so
-      // the toggle does not keep claiming a state the server never stored.
-      this.info.autoCleanup = !this.info.autoCleanup;
-      this.toastr.danger('שגיאה בשמירה', 'שגיאה');
+      this.info = { ...this.info, autoCleanup: enabled };
+      this.cleanupChecked = enabled;
+      this.toastr.success('', enabled ? 'הניקוי האוטומטי הופעל' : 'הניקוי האוטומטי כובה');
+    } catch (err: any) {
+      // Back to what the server still stores.
+      this.cleanupChecked = this.info.autoCleanup;
+      this.toastr.danger('', err?.status === 403 || err?.status === 401
+        ? 'רק בעלי הערוץ יכולים לשנות את הניקוי האוטומטי'
+        : 'השינוי לא נשמר — נסו שוב');
+    } finally {
+      this.saving = false;
     }
   }
 

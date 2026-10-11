@@ -2,8 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { NbToastrService } from '@nebular/theme';
 import { firstValueFrom } from 'rxjs';
-import { FirebaseApp, FirebaseOptions, getApp, getApps, initializeApp } from 'firebase/app';
-import { getMessaging, onMessage, getToken, isSupported } from 'firebase/messaging';
+import type { FirebaseApp, FirebaseOptions } from 'firebase/app';
 import { ResponseResult } from '../models/response-result.model';
 import { SlugService } from './slug.service';
 
@@ -22,6 +21,28 @@ export class NotificationsService {
   private app: FirebaseApp | null = null;
   private messaging: any;
   public config: NotificationsConfig | null = null;
+
+  // Firebase is ~150 KB of JavaScript that only matters on a channel whose
+  // operator switched push on and entered FCM keys. Imported on demand at that
+  // point, so every other channel (and the landing, login and manage pages)
+  // never downloads it. Both modules are fetched together, once.
+  private firebase?: Promise<{
+    app: typeof import('firebase/app');
+    messaging: typeof import('firebase/messaging');
+  }>;
+
+  private loadFirebase() {
+    if (!this.firebase) {
+      this.firebase = Promise.all([import('firebase/app'), import('firebase/messaging')])
+        .then(([app, messaging]) => ({ app, messaging }))
+        .catch(err => {
+          // A failed chunk download must not poison every later attempt.
+          this.firebase = undefined;
+          throw err;
+        });
+    }
+    return this.firebase;
+  }
 
   constructor(
     private http: HttpClient,
@@ -67,22 +88,29 @@ export class NotificationsService {
       // throws there, and since nobody awaits init() the throw surfaced as an
       // unhandled rejection on every channel load. Ask first, and keep the bell
       // hidden where it could never work.
-      if (!(await isSupported().catch(() => false))) return;
-      // Another await — the channel may have changed meanwhile.
+      let fb: Awaited<ReturnType<NotificationsService['loadFirebase']>>;
+      try {
+        fb = await this.loadFirebase();
+      } catch (err) {
+        console.warn('Push notifications unavailable: firebase failed to load', err);
+        return;
+      }
+      if (!(await fb.messaging.isSupported().catch(() => false))) return;
+      // More awaits — the channel may have changed meanwhile.
       if (requestedSlug !== this.slugService.slug) return;
 
       try {
         // initializeApp() refuses a second default app with different options;
         // reuse the one from a previous channel visit instead of tripping it.
-        this.app = getApps().length ? getApp() : initializeApp(this.config.firebaseConfig);
-        this.messaging = getMessaging(this.app);
+        this.app = fb.app.getApps().length ? fb.app.getApp() : fb.app.initializeApp(this.config.firebaseConfig);
+        this.messaging = fb.messaging.getMessaging(this.app);
       } catch (err) {
         console.warn('Push notifications unavailable in this browser', err);
         return;
       }
       this.initialized = true;
 
-      onMessage(this.messaging, (payload) => {
+      fb.messaging.onMessage(this.messaging, (payload) => {
         //this.tostrService.success("", 'התראה חדשה!');
       });
       return;
@@ -128,9 +156,10 @@ export class NotificationsService {
    * repeat: the server keeps one entry per token.
    */
   private subscribeThisDevice(successMessage: string): void {
-    getToken(this.messaging, {
-      vapidKey: this.config?.vapid,
-    })
+    // init() resolved the module before setting this.messaging, so this is the
+    // cached promise, not a second download.
+    this.loadFirebase()
+      .then(fb => fb.messaging.getToken(this.messaging, { vapidKey: this.config?.vapid }))
       .then((currentToken) => {
         if (currentToken) {
           this.subscribeNotifications(currentToken)

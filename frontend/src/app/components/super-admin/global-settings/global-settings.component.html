@@ -1,176 +1,190 @@
-<nb-card>
-  <nb-card-header>
-    <div class="d-flex align-items-center gap-2">
-      <nb-icon icon="settings-2-outline"></nb-icon>
-      <span>הגדרות גלובליות</span>
-    </div>
-  </nb-card-header>
+@if (loading) {
+  <nb-card>
+    <nb-card-body>
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את הגדרות המערכת…</p>
+      </div>
+    </nb-card-body>
+  </nb-card>
+} @else if (loadFailed) {
+  <nb-card>
+    <nb-card-body>
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">הגדרות המערכת לא נטענו</p>
+        <p class="sa-state__text">בלי העותק מהשרת שמירה הייתה דורסת את ההגדרות הקיימות. נסו לטעון שוב.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="load()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
+      </div>
+    </nb-card-body>
+  </nb-card>
+} @else {
+  <form class="settings" (ngSubmit)="save()" novalidate>
 
-  <nb-card-body>
-    @if (loading) {
-      <p class="text-center">טוען...</p>
-    } @else {
+    <!-- General -->
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
+          <nb-icon icon="globe-2-outline"></nb-icon>
+          האתר
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <div class="sa-field">
+          <label class="sa-field__label" for="customTitle">כותרת האתר</label>
+          <input nbInput fullWidth id="customTitle" name="customTitle" type="text" [(ngModel)]="values['custom_title']"
+                 placeholder="לדוגמה: הערוצים שלנו" maxlength="120">
+          <p class="sa-field__hint">מופיעה בלשונית הדפדפן ובתוצאות החיפוש של כל הערוצים. השאירו ריק לשם ברירת המחדל.</p>
+        </div>
+        <div class="sa-field">
+          <label class="sa-field__label" for="analyticsHead">קוד אנליטיקס</label>
+          <textarea nbInput fullWidth id="analyticsHead" name="analyticsHead" rows="5" dir="ltr" spellcheck="false"
+                    [(ngModel)]="values['analytics_head']"
+                    placeholder="<!-- Google tag -->&#10;<script async src=&quot;…&quot;></script>"></textarea>
+          <p class="sa-field__hint">קוד מ-Google Analytics, Tag Manager, Meta Pixel וכדומה. מוזרק כמו שהוא לכל עמוד באתר — להדביק רק קוד ממקור שסומכים עליו.</p>
+        </div>
+      </nb-card-body>
+    </nb-card>
 
-      <!-- General Section -->
-      <nb-accordion class="mb-3">
-        <nb-accordion-item [expanded]="true">
-          <nb-accordion-item-header>
-            <nb-icon icon="settings-2-outline" class="me-2"></nb-icon>
-            הגדרות כלליות
-          </nb-accordion-item-header>
-          <nb-accordion-item-body>
-            <div class="row g-3">
-              <div class="col-12">
-                <label class="form-label">כותרת האתר (SEO)</label>
-                <div class="text-muted small mb-1">כותרת שתשמש לקידום האתר בתוצאות חיפוש. משותפת לכל הערוצים.</div>
-                <input nbInput fullWidth type="text" [(ngModel)]="values['custom_title']" placeholder="לדוגמא: הערוץ החדשותי שלי">
-              </div>
-              <div class="col-12">
-                <label class="form-label">קוד אנליטיקס להטמעה ב-&lt;head&gt;</label>
-                <div class="text-muted small mb-1">קוד HTML/JS מ-Google Analytics / GTM / Meta Pixel וכדומה. מוזרק לכל עמוד באתר.</div>
-                <textarea nbInput fullWidth rows="5" [(ngModel)]="values['analytics_head']"
-                  placeholder="&lt;!-- Google tag --&gt;&#10;&lt;script async src=&quot;...&quot;&gt;&lt;/script&gt;"></textarea>
-              </div>
-            </div>
-          </nb-accordion-item-body>
-        </nb-accordion-item>
-      </nb-accordion>
-
-      <!-- Push Notifications Section -->
-      <nb-accordion>
-        <nb-accordion-item [expanded]="true">
-          <nb-accordion-item-header>
-            <nb-icon icon="bell-outline" class="me-2"></nb-icon>
-            התראות דחיפה (Push) — Firebase FCM
-          </nb-accordion-item-header>
-          <nb-accordion-item-body>
-            <p class="text-muted small mb-3">
-              הגדרות אלה משותפות לכל הערוצים במערכת. כל מנהל ערוץ יכול להפעיל/לכבות את ההתראות בנפרד בהגדרות הערוץ שלו.
-            </p>
-
-            <div class="mb-3">
-              <nb-toggle [(checked)]="values['on_notification']">
-                הפעלת תשתית התראות דחיפה
-              </nb-toggle>
-              <div class="text-muted small mt-1">יש להפעיל ולמלא את כל פרטי Firebase שבהמשך.</div>
-            </div>
-
+    <!-- Push notifications -->
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
+          <nb-icon icon="bell-outline"></nb-icon>
+          התראות לטלפון
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <p class="sa-lead">
+          ההתראות נשלחות דרך Firebase של Google. החיבור כאן משותף לכל הערוצים; כל מנהל ערוץ מחליט בנפרד אם להציע התראות לקוראים שלו.
+        </p>
+        <div class="sa-toggle">
+          <nb-toggle name="onNotification" [(checked)]="values['on_notification']">
+            <span class="toggle-label">הפעלת ההתראות במערכת</span>
+          </nb-toggle>
+          <p class="sa-toggle__hint">
             @if (values['on_notification']) {
-              <div class="row g-3 mb-3">
-                <div class="col-12">
-                  <label class="form-label">דומיין הפרויקט (להפניית לחיצה על התראה)</label>
-                  <input nbInput fullWidth type="url" [(ngModel)]="values['project_domain']" placeholder="https://example.com">
-                </div>
-                <div class="col-12">
-                  <label class="form-label">מפתח VAPID</label>
-                  <input nbInput fullWidth type="password" [(ngModel)]="values['vapid']" placeholder="Cloud Messaging → Web Push certificates → Key pair">
-                </div>
-              </div>
+              @if (missingPushFields) {
+                עוד {{ missingPushFields }} שדות חובה ריקים למטה — עד שימולאו, ההתראות לא יישלחו.
+              } @else {
+                כל פרטי החיבור מלאים.
+              }
+            } @else {
+              כשכבוי, אף ערוץ לא מציע התראות. אפשר למלא את הפרטים כבר עכשיו ולהפעיל אחר כך.
+            }
+          </p>
+        </div>
 
-              <h6 class="mt-3 mb-2">Firebase SDK Config</h6>
-              <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                  <label class="form-label">apiKey</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_api_key']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">authDomain</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_auth_domain']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">projectId</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_project_id']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">storageBucket</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_storage_bucket']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">messagingSenderId</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_messaging_sender_id']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">appId</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_app_id']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">measurementId</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_measurement_id']">
-                </div>
-              </div>
+        @if (values['on_notification']) {
+          <div class="push">
+            <div class="sa-field">
+              <label class="sa-field__label" for="projectDomain">כתובת האתר</label>
+              <input nbInput fullWidth id="projectDomain" name="projectDomain" type="url" dir="ltr" spellcheck="false"
+                     [(ngModel)]="values['project_domain']" placeholder="https://example.com">
+              <p class="sa-field__hint">לחיצה על התראה פותחת את הערוץ בכתובת הזאת. כתובת מלאה, בלי קו נטוי בסוף.</p>
+            </div>
+            <div class="sa-field">
+              <label class="sa-field__label" for="vapidKey">מפתח VAPID</label>
+              <nb-form-field>
+                <input nbInput fullWidth id="vapidKey" name="vapidKey" dir="ltr" spellcheck="false"
+                       [type]="showVapid ? 'text' : 'password'" autocomplete="new-password"
+                       [(ngModel)]="values['vapid']" placeholder="המפתח הציבורי מ-Web Push certificates">
+                <button nbSuffix nbButton ghost size="small" type="button" (click)="showVapid = !showVapid"
+                        [nbTooltip]="showVapid ? 'הסתרת המפתח' : 'הצגת המפתח'"
+                        [attr.aria-label]="showVapid ? 'הסתרת המפתח' : 'הצגת המפתח'" [attr.aria-pressed]="showVapid">
+                  <nb-icon [icon]="showVapid ? 'eye-off-outline' : 'eye-outline'"></nb-icon>
+                </button>
+              </nb-form-field>
+              <p class="sa-field__hint">ב-Firebase Console: Project settings ← Cloud Messaging ← Web Push certificates ← Key pair.</p>
+            </div>
 
-              <h6 class="mt-3 mb-2">Service Account (FCM JSON)</h6>
-              <p class="text-muted small">
-                ניתן להדביק את כל קובץ ה-JSON מ-serviceaccounts → Generate new private key לשם מילוי אוטומטי.
-              </p>
-              <div class="mb-2">
-                <textarea nbInput fullWidth rows="4" [(ngModel)]="fcmJsonPaste"
-                  placeholder="הדבק כאן את תוכן קובץ ה-JSON..."></textarea>
-                @if (fcmJsonError) {
-                  <div class="text-danger small mt-1">{{ fcmJsonError }}</div>
-                }
-                <button nbButton status="info" size="small" class="mt-2" (click)="applyFcmJsonPaste()" [disabled]="!fcmJsonPaste.trim()">
-                  מלא אוטומטית מ-JSON
+            <h3 class="sub-title">פרטי האפליקציה (Firebase SDK)</h3>
+            <p class="sa-field__hint sub-hint">ב-Firebase Console: Project settings ← Your apps ← האפליקציה של האתר ← SDK setup and configuration. השמות באנגלית הם כפי שהם מופיעים שם.</p>
+            <div class="sa-grid-2">
+              @for (f of sdkFields; track f.key) {
+                <div class="sa-field">
+                  <label class="sa-field__label" [for]="'f-' + f.key"><span class="sa-ltr">{{ f.label }}</span></label>
+                  <input nbInput fullWidth [id]="'f-' + f.key" [name]="f.key" type="text" dir="ltr" spellcheck="false"
+                         autocomplete="off" [(ngModel)]="values[f.key]">
+                  @if (f.hint) { <p class="sa-field__hint">{{ f.hint }}</p> }
+                </div>
+              }
+            </div>
+
+            <h3 class="sub-title">חשבון השירות (קובץ JSON)</h3>
+            <p class="sa-field__hint sub-hint">
+              ב-Firebase Console: Project settings ← Service accounts ← Generate new private key. הדביקו את כל תוכן הקובץ כאן — השדות למטה יתמלאו לבד.
+            </p>
+            <div class="sa-field paste">
+              <label class="sa-field__label" for="fcmJsonPaste">הדבקת קובץ ה-JSON</label>
+              <textarea nbInput fullWidth id="fcmJsonPaste" name="fcmJsonPaste" rows="4" dir="ltr" spellcheck="false"
+                        [(ngModel)]="fcmJsonPaste" placeholder="{ &quot;type&quot;: &quot;service_account&quot;, … }"></textarea>
+              @if (fcmJsonError) {
+                <p class="sa-field__error">{{ fcmJsonError }}</p>
+              }
+              <button nbButton status="primary" appearance="outline" size="small" type="button" class="paste__btn"
+                      (click)="applyFcmJsonPaste()" [disabled]="!fcmJsonPaste.trim()">
+                <nb-icon icon="flash-outline"></nb-icon>
+                מילוי השדות מהקובץ
+              </button>
+            </div>
+
+            <div class="sa-grid-2">
+              @for (f of serviceAccountFields; track f.key) {
+                <div class="sa-field" [class.wide]="f.wide">
+                  <label class="sa-field__label" [for]="'f-' + f.key"><span class="sa-ltr">{{ f.label }}</span></label>
+                  <input nbInput fullWidth [id]="'f-' + f.key" [name]="f.key" type="text" dir="ltr" spellcheck="false"
+                         autocomplete="off" [(ngModel)]="values[f.key]">
+                </div>
+              }
+            </div>
+
+            <div class="sa-field">
+              <label class="sa-field__label" for="privateKey"><span class="sa-ltr">private_key</span></label>
+              <!-- A secret, so masked by default. A password input cannot hold
+                   the key's line breaks, so editing happens only in the
+                   revealed textarea; the masked field is read-only. -->
+              @if (showPrivateKey) {
+                <textarea nbInput fullWidth id="privateKey" name="privateKey" rows="5" dir="ltr" spellcheck="false"
+                          [(ngModel)]="values['fcm_json_private_key']"
+                          placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+              } @else {
+                <nb-form-field>
+                  <input nbInput fullWidth id="privateKey" type="password" readonly dir="ltr" autocomplete="off"
+                         [value]="values['fcm_json_private_key'] || ''" placeholder="ריק — עדיין לא הוזן מפתח">
+                </nb-form-field>
+              }
+              <div class="key-actions">
+                <button nbButton ghost status="basic" size="small" type="button" (click)="showPrivateKey = !showPrivateKey"
+                        [attr.aria-pressed]="showPrivateKey">
+                  <nb-icon [icon]="showPrivateKey ? 'eye-off-outline' : 'eye-outline'"></nb-icon>
+                  {{ showPrivateKey ? 'הסתרת המפתח' : 'הצגה ועריכה של המפתח' }}
                 </button>
               </div>
+              <p class="sa-field__hint">המפתח הפרטי של חשבון השירות. סודי — מי שמחזיק בו יכול לשלוח התראות בשם האתר.</p>
+            </div>
+          </div>
+        }
+      </nb-card-body>
+    </nb-card>
 
-              <div class="row g-2">
-                <div class="col-md-6">
-                  <label class="form-label">type</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_type']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">project_id</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_project_id']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">private_key_id</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_private_key_id']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">client_email</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_client_email']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">client_id</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_client_id']">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">universe_domain</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_universe_domain']">
-                </div>
-                <div class="col-12">
-                  <label class="form-label">private_key</label>
-                  <textarea nbInput fullWidth rows="4" [(ngModel)]="values['fcm_json_private_key']" placeholder="-----BEGIN RSA PRIVATE KEY-----"></textarea>
-                </div>
-                <div class="col-12">
-                  <label class="form-label">auth_uri</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_auth_uri']">
-                </div>
-                <div class="col-12">
-                  <label class="form-label">token_uri</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_token_uri']">
-                </div>
-                <div class="col-12">
-                  <label class="form-label">auth_provider_x509_cert_url</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_auth_provider_x509_cert_url']">
-                </div>
-                <div class="col-12">
-                  <label class="form-label">client_x509_cert_url</label>
-                  <input nbInput fullWidth type="text" [(ngModel)]="values['fcm_json_client_x509_cert_url']">
-                </div>
-              </div>
-            }
-          </nb-accordion-item-body>
-        </nb-accordion-item>
-      </nb-accordion>
-    }
-  </nb-card-body>
-
-  <nb-card-footer>
-    <button nbButton status="primary" (click)="save()" [disabled]="saving || loading">
-      <nb-icon icon="save-outline"></nb-icon>
-      {{ saving ? 'שומר...' : 'שמור הגדרות' }}
-    </button>
-  </nb-card-footer>
-</nb-card>
+    <nb-card class="save-card">
+      <nb-card-body>
+        <div class="sa-save-bar">
+          <button nbButton status="primary" type="submit" [disabled]="saving">
+            <nb-icon icon="save-outline"></nb-icon>
+            {{ saving ? 'שומר…' : 'שמירת ההגדרות' }}
+          </button>
+          @if (dirty) {
+            <span class="sa-save-bar__note sa-save-bar__note--dirty">יש שינויים שעוד לא נשמרו</span>
+          } @else {
+            <span class="sa-save-bar__note">ההגדרות חלות על כל הערוצים מיד לאחר השמירה.</span>
+          }
+        </div>
+      </nb-card-body>
+    </nb-card>
+  </form>
+}

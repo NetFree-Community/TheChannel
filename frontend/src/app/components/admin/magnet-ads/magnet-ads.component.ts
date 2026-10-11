@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   NbAlertModule,
@@ -8,8 +8,10 @@ import {
   NbIconModule,
   NbInputModule,
   NbRadioModule,
+  NbSpinnerModule,
   NbToastrService,
   NbToggleModule,
+  NbTooltipModule,
 } from '@nebular/theme';
 import { AdminService } from '../../../services/admin.service';
 import { AuthService } from '../../../services/auth.service';
@@ -49,7 +51,7 @@ const MAGNET_KEYS = [
 @Component({
   selector: 'app-magnet-ads',
   imports: [
-    CommonModule,
+    DatePipe,
     FormsModule,
     NbAlertModule,
     NbCardModule,
@@ -58,11 +60,16 @@ const MAGNET_KEYS = [
     NbInputModule,
     NbToggleModule,
     NbRadioModule,
+    NbSpinnerModule,
+    NbTooltipModule,
   ],
   templateUrl: './magnet-ads.component.html',
   styleUrl: './magnet-ads.component.scss',
 })
 export class MagnetAdsComponent implements OnInit {
+  /** The settings endpoint answered 403: the role changed since sign-in. */
+  @Output() accessDenied = new EventEmitter<void>();
+
   enabled = false;
   snippet = '';
   mode: MagnetMode = 'by_messages';
@@ -77,10 +84,13 @@ export class MagnetAdsComponent implements OnInit {
   // the whole blob (no merge), so a save after a failed load dropped every
   // non-magnet key (api_secret_key, webhook_*, regex rules) along with it.
   loaded = false;
+  loading = true;
   loadFailed = false;
-  // Super-admin lock on this area: the form still saves, but the public
-  // endpoint serves the global config and everything saved here is ignored.
+  // Super-admin lock on this area: the public endpoint serves the global
+  // config, so Save is disabled rather than accepting values nobody sees.
   locked = false;
+  private lastLoaded: Setting[] = [];
+  private snapshot = '';
 
   stats: MagnetStatsResponse | null = null;
   statsLoading = false;
@@ -97,6 +107,15 @@ export class MagnetAdsComponent implements OnInit {
 
   get isSuperAdmin(): boolean {
     return this.authService.userInfo?.globalRole === 'super_admin';
+  }
+
+  get dirty(): boolean {
+    return this.loaded && JSON.stringify(this.buildPayload()) !== this.snapshot;
+  }
+
+  /** On, but nothing to show: the toggle alone does not make an ad appear. */
+  get enabledWithoutSnippet(): boolean {
+    return this.enabled && !this.snippet?.trim();
   }
 
   // Magnet returns a bare domain; bound to href as-is it resolved relative to
@@ -117,20 +136,39 @@ export class MagnetAdsComponent implements OnInit {
 
   loadSettings() {
     this.loadFailed = false;
+    this.loading = true;
     this.adminService.getSettings()
       .then(settings => {
-        this.load(settings || []);
+        this.lastLoaded = settings || [];
+        this.load(this.lastLoaded);
         this.loaded = true;
+        this.snapshot = JSON.stringify(this.buildPayload());
       })
-      .catch(() => {
+      .catch((err) => {
         this.loadFailed = true;
-        this.toast.danger('', 'אין הרשאה לצפות בהגדרות');
-      });
+        if (err?.status === 403 || err?.status === 401) {
+          this.accessDenied.emit();
+          return;
+        }
+        this.toast.danger('', 'לא הצלחנו לטעון את ההגדרות — נסו שוב');
+      })
+      .finally(() => this.loading = false);
+  }
+
+  resetChanges() {
+    this.load(this.lastLoaded);
   }
 
   private load(settings: Setting[]) {
     this.otherSettings = [];
     const known = new Set<string>(MAGNET_KEYS);
+    this.enabled = false;
+    this.snippet = '';
+    this.mode = 'by_messages';
+    this.perMessages = 5;
+    this.minTimeSeconds = 0;
+    this.perSeconds = 60;
+    this.minMessagesSince = 0;
 
     for (const s of settings) {
       if (!known.has(s.key)) {
@@ -170,9 +208,7 @@ export class MagnetAdsComponent implements OnInit {
     return isNaN(n) ? fallback : n;
   }
 
-  save() {
-    if (!this.loaded) return;
-    this.inProgress = true;
+  private buildPayload(): Setting[] {
     const out: Setting[] = [...this.otherSettings];
 
     if (this.enabled) out.push({ key: 'magnet_enabled', value: '1' as any });
@@ -186,10 +222,23 @@ export class MagnetAdsComponent implements OnInit {
       if (this.perSeconds > 0) out.push({ key: 'magnet_per_seconds', value: String(this.perSeconds) as any });
       if (this.minMessagesSince > 0) out.push({ key: 'magnet_min_messages_since', value: String(this.minMessagesSince) as any });
     }
+    return out;
+  }
+
+  save() {
+    if (!this.loaded) return;
+    this.inProgress = true;
+    const out = this.buildPayload();
 
     this.adminService.setSettings(out)
-      .then(() => this.toast.success('', 'הגדרות מגנט נשמרו בהצלחה'))
-      .catch(() => this.toast.danger('', 'שגיאה בשמירת ההגדרות'))
+      .then(() => {
+        this.toast.success('', 'הגדרות הפרסומות נשמרו');
+        this.lastLoaded = out;
+        this.snapshot = JSON.stringify(out);
+      })
+      .catch((err) => this.toast.danger('', err?.status === 403 || err?.status === 401
+        ? 'רק בעלי הערוץ יכולים לשנות את הגדרות הפרסומות'
+        : 'שמירת ההגדרות נכשלה — נסו שוב'))
       .finally(() => this.inProgress = false);
   }
 

@@ -1,0 +1,32 @@
+// Shared classes (.sa-*) come from the panel stylesheet.
+:host {
+  display: block;
+}
+
+.usage {
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-basic-color-3);
+}
+
+.usage__numbers {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.usage__used {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-basic-color);
+}
+
+.usage__of {
+  color: var(--text-hint-color);
+}
+
+.quota__field {
+  max-width: 16rem;
+}

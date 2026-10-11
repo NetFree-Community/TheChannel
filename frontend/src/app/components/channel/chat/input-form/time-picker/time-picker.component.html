@@ -1,13 +1,39 @@
-<nb-card>
-    <nb-card-header>תזמון הודעה</nb-card-header>
-    <nb-card-body>
-        <input nbInput placeholder="בחר תאריך ושעה" [nbDatepicker]="dateTimePicker" />
-        <nb-date-timepicker #dateTimePicker (dateTimeChange)="timeChange($event)"></nb-date-timepicker>
-    </nb-card-body>
-    <nb-card-footer>
-        <div class="d-flex gap-1 justify-content-end">
-            <button nbButton status="primary" [size]="'small'" (click)="close(true)">אישור</button>
-            <button nbButton status="danger" [size]="'small'" (click)="close()">ביטול</button>
-        </div>
-    </nb-card-footer>
+<nb-card class="tp">
+  <nb-card-header class="tp__head">
+    <div>
+      <h2 class="tp__title">תזמון הודעה</h2>
+      <p class="tp__sub">בחרו מתי ההודעה תתפרסם. עד אז היא תחכה ברשימת ההודעות המתוזמנות, ואפשר לערוך או למחוק אותה.</p>
+    </div>
+    <button nbButton ghost shape="round" size="small" type="button" (click)="close()" aria-label="סגירה" nbTooltip="סגירה">
+      <nb-icon icon="close-outline"></nb-icon>
+    </button>
+  </nb-card-header>
+  <nb-card-body>
+    <div class="tp__presets" role="group" aria-label="מועדים מהירים">
+      @for (preset of presets; track preset.label) {
+        <button nbButton size="small" type="button" [appearance]="isPreset(preset) ? 'filled' : 'outline'"
+                status="primary" (click)="pickPreset(preset)" [attr.aria-pressed]="isPreset(preset)">
+          {{ preset.label }}
+        </button>
+      }
+    </div>
+    <label for="schedule-at" class="tp__label">או בחרו תאריך ושעה</label>
+    <input id="schedule-at" nbInput fullWidth placeholder="לחצו לבחירת תאריך ושעה" [nbDatepicker]="dateTimePicker"
+           [ngModel]="date" (ngModelChange)="timeChange($event)" readonly />
+    <nb-date-timepicker #dateTimePicker (dateTimeChange)="timeChange($event)"></nb-date-timepicker>
+    <p class="tp__hint">
+      @if (date) {
+        ההודעה תתפרסם מעצמה: <strong>{{ date | messageTime }}</strong>
+      } @else {
+        עוד לא נבחר מועד. אפשר לסגור ולשלוח את ההודעה מיד כרגיל.
+      }
+    </p>
+  </nb-card-body>
+  <nb-card-footer class="tp__foot">
+    <button nbButton ghost status="basic" type="button" (click)="close()">ביטול</button>
+    <button nbButton status="primary" type="button" (click)="close(true)" [disabled]="!date">
+      <nb-icon icon="clock-outline"></nb-icon>
+      אישור המועד
+    </button>
+  </nb-card-footer>
 </nb-card>

@@ -1,77 +1,155 @@
+@if (addingUser) {
+  <nb-card class="add-card">
+    <nb-card-header>
+      <h2 class="sa-card-title">
+        <nb-icon icon="person-add-outline"></nb-icon>
+        הוספת משתמש לערוץ
+      </h2>
+    </nb-card-header>
+    <nb-card-body>
+      <form (ngSubmit)="addUser()" novalidate>
+        <div class="sa-field">
+          <label class="sa-field__label" for="newUserEmail">כתובת אימייל</label>
+          <input nbInput fullWidth id="newUserEmail" type="email" name="newUserEmail" [(ngModel)]="newEmail"
+                 placeholder="user@example.com" dir="ltr" autocomplete="off">
+          <p class="sa-field__hint">הכתובת שאיתה המשתמש נכנס ל-Google. ההרשאה חלה מיד לאחר השמירה.</p>
+        </div>
+        <div class="sa-field">
+          <label class="sa-field__label" for="newUserRole">תפקיד</label>
+          <nb-select fullWidth id="newUserRole" name="newUserRole" [(ngModel)]="newRole">
+            @for (opt of roleOptions; track opt.value) {
+              <nb-option [value]="opt.value">{{ opt.label }}</nb-option>
+            }
+          </nb-select>
+          <p class="sa-field__hint">{{ roleHint(newRole) }}</p>
+        </div>
+        <div class="sa-save-bar">
+          <button nbButton status="primary" type="submit">
+            <nb-icon icon="checkmark-outline"></nb-icon>
+            הוספה לרשימה
+          </button>
+          <button nbButton ghost status="basic" type="button" (click)="cancelAdd()">
+            <nb-icon icon="close-outline"></nb-icon>
+            ביטול
+          </button>
+          <span class="sa-save-bar__note">המשתמש נוסף לרשימה למטה, ונשמר רק בלחיצה על "שמירת השינויים".</span>
+        </div>
+      </form>
+    </nb-card-body>
+  </nb-card>
+}
+
 <nb-card>
-  <nb-card-header class="d-flex align-items-center justify-content-between">
-    <div class="d-flex align-items-center gap-2">
-      <nb-icon icon="people-outline"></nb-icon>
-      <span>משתמשי ערוץ: <strong>{{ slug }}</strong></span>
+  <nb-card-header>
+    <div class="sa-card-head">
+      <h2 class="sa-card-title">
+        <nb-icon icon="people-outline"></nb-icon>
+        בעלי תפקיד בערוץ
+        @if (!loading && !loadFailed) {
+          <span class="sa-chip">{{ users.length }}</span>
+        }
+      </h2>
+      @if (!addingUser && !loadFailed) {
+        <button nbButton status="primary" size="small" type="button" (click)="addingUser = true" [disabled]="loading">
+          <nb-icon icon="plus-outline"></nb-icon>
+          הוספת משתמש
+        </button>
+      }
     </div>
-    @if (!addingUser) {
-      <button nbButton status="primary" size="small" (click)="addingUser = true">
-        <nb-icon icon="plus-outline"></nb-icon>
-        הוסף משתמש
-      </button>
-    }
   </nb-card-header>
 
   <nb-card-body>
-    @if (addingUser) {
-      <nb-card class="mb-3">
-        <nb-card-header>הוספת משתמש חדש</nb-card-header>
-        <nb-card-body>
-          <div class="d-flex flex-column gap-2">
-            <div>
-              <label class="field-label">כתובת אימייל</label>
-              <input nbInput fullWidth type="email" [(ngModel)]="newEmail" placeholder="user@example.com">
-            </div>
-            <div>
-              <label class="field-label">תפקיד</label>
-              <nb-select fullWidth [(ngModel)]="newRole">
-                @for (opt of roleOptions; track opt.value) {
-                  <nb-option [value]="opt.value">{{ opt.label }}</nb-option>
-                }
-              </nb-select>
-            </div>
-            <div class="d-flex gap-2">
-              <button nbButton status="primary" size="small" (click)="addUser()">
-                <nb-icon icon="checkmark-outline"></nb-icon>
-                הוסף
-              </button>
-              <button nbButton status="danger" size="small" (click)="addingUser = false; newEmail = ''">
-                <nb-icon icon="close-outline"></nb-icon>
-                ביטול
-              </button>
-            </div>
-          </div>
-        </nb-card-body>
-      </nb-card>
-    }
+    @if (loading) {
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את משתמשי הערוץ…</p>
+      </div>
+    } @else if (loadFailed) {
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">רשימת המשתמשים לא נטענה</p>
+        <p class="sa-state__text">נסו לטעון שוב. שמירה בלי הרשימה המעודכנת אינה אפשרית.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="loadUsers()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
+      </div>
+    } @else {
+      <p class="sa-lead">
+        בעלים שולט בכול, מנהל מנהל וכותב, וכותב רק מפרסם הודעות. שינוי תפקיד או הסרה נשמרים רק בלחיצה על "שמירת השינויים".
+      </p>
 
-    @if (users.length === 0) {
-      <p class="text-center text-muted">אין משתמשים בערוץ זה</p>
-    }
-
-    @for (user of users; track $index; let i = $index) {
-      <nb-card class="mb-2">
-        <nb-card-body>
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="flex-grow-1">{{ user.email }}</span>
-            <nb-select [(ngModel)]="users[i].role" size="small">
-              @for (opt of roleOptions; track opt.value) {
-                <nb-option [value]="opt.value">{{ opt.label }}</nb-option>
-              }
-            </nb-select>
-            <button nbButton status="danger" size="tiny" (click)="removeUser(i)">
-              <nb-icon icon="trash-2-outline"></nb-icon>
+      @if (users.length === 0) {
+        <div class="sa-state">
+          <span class="sa-state__icon"><nb-icon icon="people-outline"></nb-icon></span>
+          <p class="sa-state__title">לאף אחד אין עדיין תפקיד בערוץ</p>
+          <p class="sa-state__text">הוסיפו את הבעלים או מנהל כדי שיוכלו לכתוב ולנהל.</p>
+          @if (!addingUser) {
+            <button nbButton status="primary" size="small" type="button" (click)="addingUser = true">
+              <nb-icon icon="plus-outline"></nb-icon>
+              הוספת משתמש
             </button>
-          </div>
-        </nb-card-body>
-      </nb-card>
+          }
+        </div>
+      } @else {
+        <ul class="user-list">
+          @for (user of users; track $index; let i = $index) {
+            <li class="user-row">
+              <span class="user-row__avatar" aria-hidden="true">{{ initial(user.email) }}</span>
+              <span class="user-row__email sa-ltr">{{ user.email }}</span>
+              <div class="user-row__role">
+                <label class="visually-hidden" [for]="'role-' + i">תפקיד של {{ user.email }}</label>
+                <nb-select [id]="'role-' + i" [name]="'role-' + i" [(ngModel)]="users[i].role" fullWidth
+                           [attr.aria-label]="'תפקיד של ' + user.email">
+                  @for (opt of roleOptions; track opt.value) {
+                    <nb-option [value]="opt.value">{{ opt.label }}</nb-option>
+                  }
+                </nb-select>
+              </div>
+              <button nbButton ghost status="danger" size="small" type="button" (click)="removeUser(i)"
+                      nbTooltip="הסרה מהערוץ" [attr.aria-label]="'הסרת ' + user.email + ' מהערוץ'">
+                <nb-icon icon="trash-2-outline"></nb-icon>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (removedUsers.length) {
+        <div class="removed">
+          <p class="removed__title">
+            <nb-icon icon="alert-circle-outline"></nb-icon>
+            יוסרו בשמירה:
+          </p>
+          <ul class="removed__list">
+            @for (r of removedUsers; track r.email; let i = $index) {
+              <li>
+                <span class="sa-ltr">{{ r.email }}</span>
+                <button nbButton ghost status="basic" size="small" type="button" (click)="undoRemove(i)">
+                  <nb-icon icon="undo-outline"></nb-icon>
+                  ביטול ההסרה
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
     }
   </nb-card-body>
 
-  <nb-card-footer>
-    <button nbButton status="primary" (click)="save()" [disabled]="saving">
-      <nb-icon icon="save-outline"></nb-icon>
-      {{ saving ? 'שומר...' : 'שמור שינויים' }}
-    </button>
-  </nb-card-footer>
+  @if (!loading && !loadFailed) {
+    <nb-card-footer>
+      <div class="sa-save-bar">
+        <button nbButton status="primary" type="button" (click)="save()" [disabled]="saving">
+          <nb-icon icon="save-outline"></nb-icon>
+          {{ saving ? 'שומר…' : 'שמירת השינויים' }}
+        </button>
+        @if (dirty) {
+          <span class="sa-save-bar__note sa-save-bar__note--dirty">יש שינויים שעוד לא נשמרו</span>
+        } @else {
+          <span class="sa-save-bar__note">הרשימה שמורה.</span>
+        }
+      </div>
+    </nb-card-footer>
+  }
 </nb-card>

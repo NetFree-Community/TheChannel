@@ -1,35 +1,55 @@
-@use '../../../../themes' as *;
+// Shared classes (.sa-*) come from the panel stylesheet.
+:host {
+  display: block;
+}
 
-// Theme tokens rather than fixed hex, so the destructive row keeps its contrast
-// in whichever Nebular theme is active.
-@include nb-install-component() {
-  .feature-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
 
-  .feature-row--destructive {
-    margin-top: 0.5rem;
-    padding: 0.85rem 1rem;
-    border-radius: nb-theme(border-radius);
-    border: 1px solid nb-theme(color-danger-400);
-    background: nb-theme(color-danger-100);
-  }
+.features nb-card {
+  margin: 0;
+}
 
-  .feature-row__warn {
-    color: nb-theme(color-danger-500);
-  }
+.group-body {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
 
-  .feature-row__label {
-    font-weight: 700;
-    color: nb-theme(color-danger-700);
-  }
+.toggle-label {
+  font-weight: 600;
+  color: var(--text-basic-color);
+}
 
-  .feature-row__desc {
-    margin: 0;
-    font-size: 0.8rem;
-    line-height: 1.5;
-    color: nb-theme(text-hint-color);
-  }
+.locks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.locks .sa-chip {
+  white-space: normal;
+}
+
+// The kill switch is the one setting that takes the channel down for
+// everyone; the theme's danger tokens keep it visibly apart.
+.danger-card {
+  border-color: var(--color-danger-300);
+}
+
+.danger-title {
+  color: var(--color-danger-700);
+}
+
+.danger-title nb-icon {
+  color: var(--color-danger-600);
+}
+
+.save-card {
+  position: sticky;
+  bottom: 0.5rem;
+  z-index: 1;
+  border-color: var(--color-primary-200);
 }

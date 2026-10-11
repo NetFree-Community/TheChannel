@@ -1,39 +1,96 @@
-<nb-card>
-  <nb-card-header>
-    טיפול בדיווחים שהתקבלו ממשתמשים
-  </nb-card-header>
-  <nb-card-body>
-    @if (!reports || reports.length === 0) {
-      <div>{{ status === 'all' ? 'אין דיווחים' : status === 'open' ? 'אין דיווחים פתוחים' : 'אין דיווחים מטופלים' }}</div>
+<div class="reports-page">
+  <nav class="filters" aria-label="סינון דיווחים">
+    @for (f of filters; track f.id) {
+      <a class="filters__item" [class.is-active]="status === f.status" [routerLink]="['/channel', slug, 'manage', f.id]"
+         [attr.aria-current]="status === f.status ? 'page' : null">
+        <nb-icon [icon]="f.icon"></nb-icon>
+        <span>{{ f.title }}</span>
+      </a>
     }
-    @for (report of reports; track report) {
-      <div class="d-flex flex-column gap-2 mb-2 border border-secondary rounded p-2">
-        <div>
-          <strong>
-            התקבל - {{report.createdAt | messageTime}}
-          </strong>
-          <br>
-            <strong>דווח על ידי:</strong> {{report.reporterName}}
-            <br>
-              @if (report.reportedEmail) {
-                <strong>דוא"ל:</strong> {{report.reportedEmail}}
-                <br>
-              }
-                <strong>סיבת דיווח:</strong><br> {{report.reason}}
-                <br>
-                  @if (report.closed) {
-                    <strong>טופל {{report.updatedAt | messageTime}}</strong>
-                  }
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                  <button nbButton size="small" status="success" (click)="toggleReport(report)">{{ report.closed ?
-                  'פתח דיווח מחדש' : 'סגור דיווח' }}</button>
-                  <button nbButton size="small" status="info" (click)="viewReport(report.messageId)">צפה בהודעה</button>
-                </div>
+  </nav>
+
+  @if (loading) {
+    <nb-card>
+      <nb-card-body class="reports-loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים דיווחים…"></nb-card-body>
+    </nb-card>
+  } @else if (loadFailed) {
+    <nb-card>
+      <nb-card-body class="reports-empty">
+        <nb-icon icon="wifi-off-outline"></nb-icon>
+        <strong>לא הצלחנו לטעון את הדיווחים</strong>
+        <button nbButton status="primary" size="small" type="button" (click)="load()">
+          <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+        </button>
+      </nb-card-body>
+    </nb-card>
+  } @else if (!reports.length) {
+    <nb-card>
+      <nb-card-body class="reports-empty">
+        <nb-icon [icon]="status === 'open' ? 'checkmark-circle-2-outline' : 'alert-triangle-outline'"></nb-icon>
+        <strong>{{ emptyText }}</strong>
+        <span>כשקורא לוחץ "דיווח על ההודעה" ליד הודעה בערוץ, הדיווח מופיע כאן.</span>
+      </nb-card-body>
+    </nb-card>
+  } @else {
+    <p class="reports-count">{{ reports.length }} דיווחים</p>
+    @for (report of reports; track report.id) {
+      <nb-card class="report" [class.is-closed]="report.closed">
+        <nb-card-body>
+          <div class="report__head">
+            <span class="pill" [class.pill--open]="!report.closed" [class.pill--closed]="report.closed">
+              <nb-icon [icon]="report.closed ? 'checkmark-circle-2-outline' : 'alert-triangle-outline'"></nb-icon>
+              {{ report.closed ? 'טופל' : 'פתוח' }}
+            </span>
+            <span class="report__time">התקבל {{ report.createdAt | messageTime }}</span>
+            @if (report.closed) {
+              <span class="report__time">· טופל {{ report.updatedAt | messageTime }}</span>
+            }
+          </div>
+
+          <p class="report__reason">{{ report.reason || 'ללא פירוט' }}</p>
+
+          <dl class="report__meta">
+            <div>
+              <dt>דווח על ידי</dt>
+              <dd>{{ report.reporterName || 'קורא' }}</dd>
+            </div>
+            @if (report.reportedEmail) {
+              <div>
+                <dt>מייל</dt>
+                <dd dir="ltr">{{ report.reportedEmail }}</dd>
               </div>
             }
-          </nb-card-body>
-          <!-- <nb-card-footer>
-          <button nbButton status="primary" status="danger">איפוס כל הדיווחים</button>
-        </nb-card-footer> -->
+            <div>
+              <dt>הודעה</dt>
+              <dd>
+                @if (deletedMessages.has(report.messageId)) {
+                  <span class="report__deleted"><nb-icon icon="trash-2-outline"></nb-icon> נמחקה</span>
+                } @else {
+                  מס' {{ report.messageId }}
+                }
+              </dd>
+            </div>
+          </dl>
+
+          <div class="report__actions">
+            <button nbButton size="small" [status]="report.closed ? 'basic' : 'primary'" [outline]="report.closed" type="button"
+                    (click)="toggleReport(report)" [disabled]="busy.has(report.id)">
+              <nb-icon [icon]="report.closed ? 'undo-outline' : 'checkmark-outline'"></nb-icon>
+              {{ report.closed ? 'פתיחה מחדש' : 'סימון כטופל' }}
+            </button>
+            <button nbButton size="small" status="basic" ghost type="button" (click)="viewReport(report.messageId)"
+                    [disabled]="deletedMessages.has(report.messageId)" nbTooltip="פותח את הערוץ בלשונית חדשה, על ההודעה">
+              <nb-icon icon="eye-outline"></nb-icon>
+              צפייה בהודעה
+            </button>
+            <button nbButton size="small" status="danger" ghost type="button" (click)="deleteMessage(report)"
+                    [disabled]="busy.has(report.id) || deletedMessages.has(report.messageId)">
+              <nb-icon icon="trash-2-outline"></nb-icon>
+              מחיקת ההודעה
+            </button>
+          </div>
+        </nb-card-body>
       </nb-card>
+    }
+  }
+</div>

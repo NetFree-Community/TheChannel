@@ -1,0 +1,269 @@
+// The landing hero: the one gradient on the page, and the mock channel card
+// that shows a visitor what they are about to open. Tokens only.
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2.5rem, 7vw, 5rem) 1.25rem clamp(3rem, 8vw, 5.5rem);
+  background:
+    radial-gradient(110% 80% at 85% 0%, var(--color-primary-400) 0%, transparent 55%),
+    linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
+  color: var(--color-basic-100);
+}
+
+.hero__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: center;
+  gap: clamp(1.5rem, 5vw, 4rem);
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.hero__copy {
+  animation: hero-in 0.5s ease-out both;
+}
+
+.hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  margin-bottom: 1.25rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+
+  nb-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.hero__title {
+  font-size: clamp(2rem, 5.5vw, 3.1rem);
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+}
+
+.hero__lead {
+  font-size: clamp(1rem, 2.2vw, 1.18rem);
+  line-height: 1.7;
+  opacity: 0.94;
+  margin: 0 0 1.75rem;
+  max-width: 560px;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+}
+
+// An outline button on the gradient: Nebular's outline colours are for a
+// light card, so it is redrawn in white here.
+.hero__alt {
+  display: inline-flex;
+  align-items: center;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  color: var(--color-basic-100) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+
+  &:hover,
+  &:focus-visible {
+    background: rgba(255, 255, 255, 0.18) !important;
+  }
+}
+
+.hero__note {
+  margin: 1.1rem 0 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  opacity: 0.82;
+}
+
+/* ---------- the mock channel ---------- */
+
+.preview {
+  justify-self: center;
+  width: 100%;
+  max-width: 360px;
+  border-radius: 1.25rem;
+  padding: 0.9rem;
+  background: var(--background-basic-color-1);
+  color: var(--text-basic-color);
+  box-shadow: 0 28px 60px -20px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.25);
+  animation: hero-in 0.6s 0.1s ease-out both;
+}
+
+.preview__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border-basic-color-3);
+}
+
+.preview__avatar {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.8rem;
+  font-weight: 800;
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+}
+
+.preview__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.preview__name {
+  font-weight: 800;
+  font-size: 0.98rem;
+}
+
+.preview__meta {
+  font-size: 0.75rem;
+  color: var(--text-hint-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.preview__live {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-success-500);
+  box-shadow: 0 0 0 0 var(--color-success-transparent-300);
+  animation: pulse 1.8s ease-out infinite;
+}
+
+.preview__feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.7rem;
+}
+
+.preview__msg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.85rem;
+  background: var(--background-basic-color-2);
+  font-size: 0.82rem;
+  line-height: 1.5;
+
+  &--sched {
+    border: 1px dashed var(--color-primary-300);
+    background: var(--color-primary-100);
+    color: var(--color-primary-800);
+  }
+
+  nb-icon {
+    font-size: 0.95rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    vertical-align: -0.15em;
+  }
+}
+
+.preview__img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 4.5rem;
+  border-radius: 0.6rem;
+  background: linear-gradient(135deg, var(--color-primary-200), var(--color-info-200));
+  color: var(--color-primary-700);
+
+  nb-icon {
+    font-size: 1.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+.preview__msg-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+}
+
+.preview__react {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--background-basic-color-1);
+  border: 1px solid var(--border-basic-color-3);
+}
+
+.preview__time {
+  margin-inline-start: auto;
+  color: var(--text-hint-color);
+}
+
+@media (max-width: 767px) {
+  .hero {
+    text-align: center;
+  }
+
+  .hero__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .hero__lead {
+    margin-inline: auto;
+  }
+
+  .hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero__cta,
+  .hero__alt {
+    justify-content: center;
+  }
+
+  .preview {
+    text-align: start;
+  }
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 var(--color-success-transparent-300); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}

@@ -1,5 +1,379 @@
-:host {
-  display: block;
+// Encapsulation is off (see the component): every selector is prefixed `sa-`
+// and only ever matches inside this lazy-loaded panel. Tokens come from the
+// theme as custom properties, so nothing here hardcodes a colour.
+
+// ---------- header ----------
+.sa-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   width: 100%;
-  height: 100%;
+  min-width: 0;
+}
+
+.sa-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.sa-header__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: 0.75rem;
+  color: var(--color-basic-100);
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  font-size: 1.3rem;
+}
+
+.sa-header__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sa-header__title {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--text-basic-color);
+  white-space: nowrap;
+}
+
+.sa-header__sub {
+  font-size: 0.78rem;
+  color: var(--text-hint-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sa-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: none;
+}
+
+.sa-header__btn {
+  min-height: 2.5rem;
+}
+
+// ---------- layout ----------
+.sa-panel {
+  display: grid;
+  grid-template-columns: 14.5rem minmax(0, 1fr);
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.sa-nav {
+  position: sticky;
+  top: calc(var(--header-height) + 1rem);
+  align-self: start;
+  padding: 0.5rem;
+  background: var(--background-basic-color-1);
+  border: 1px solid var(--border-basic-color-3);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.sa-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.sa-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--text-basic-color);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
+
+  &:hover { background: var(--color-basic-transparent-100); }
+  &:focus-visible { outline: 2px solid var(--color-primary-500); outline-offset: 2px; }
+}
+
+.sa-nav__item--active {
+  background: var(--color-primary-transparent-100);
+  color: var(--color-primary-700);
+}
+
+.sa-nav__icon {
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+
+.sa-content {
+  min-width: 0;
+  animation: sa-rise var(--motion-slow) var(--ease-out);
+}
+
+@keyframes sa-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+// ---------- section intro ----------
+.sa-intro { margin-bottom: 1rem; }
+
+.sa-intro__back { margin-bottom: 0.5rem; margin-inline-start: -0.5rem; }
+
+.sa-intro__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-basic-color);
+}
+
+.sa-intro__icon { color: var(--color-primary-500); font-size: 1.5rem; }
+
+.sa-intro__channel { font-weight: 600; font-size: 1.1rem; color: var(--text-hint-color); }
+
+.sa-intro__slug {
+  font-size: 0.85rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.375rem;
+  background: var(--color-basic-300);
+  color: var(--text-basic-color);
+}
+
+.sa-intro__description {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--text-hint-color);
+  line-height: 1.6;
+}
+
+// ---------- shared vocabulary for the sections ----------
+.sa-ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+.sa-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-basic-color);
+}
+
+.sa-card-title nb-icon { color: var(--color-primary-500); }
+
+.sa-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sa-lead {
+  margin: 0 0 1rem;
+  color: var(--text-hint-color);
+  line-height: 1.6;
+}
+
+.sa-field { margin-bottom: 1rem; }
+.sa-field:last-child { margin-bottom: 0; }
+
+.sa-field__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  color: var(--text-basic-color);
+}
+
+.sa-field__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
+
+.sa-field__error {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-danger-600);
+}
+
+.sa-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 1rem;
+}
+
+.sa-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-basic-color-3);
+}
+.sa-toggle:last-child { border-bottom: 0; }
+.sa-toggle nb-toggle { min-height: 2.5rem; }
+.sa-toggle__hint { margin: 0; font-size: 0.8rem; line-height: 1.5; color: var(--text-hint-color); }
+
+.sa-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  background: var(--color-basic-300);
+  color: var(--color-basic-800);
+}
+.sa-chip nb-icon { font-size: 0.9rem; width: 0.9rem; height: 0.9rem; }
+.sa-chip--success { background: var(--color-success-100); color: var(--color-success-700); }
+.sa-chip--danger { background: var(--color-danger-100); color: var(--color-danger-700); }
+.sa-chip--warning { background: var(--color-warning-100); color: var(--color-warning-800); }
+.sa-chip--info { background: var(--color-info-100); color: var(--color-info-700); }
+.sa-chip--primary { background: var(--color-primary-100); color: var(--color-primary-700); }
+
+.sa-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.sa-toolbar__search { flex: 1 1 14rem; min-width: 0; }
+.sa-toolbar__search nb-form-field { width: 100%; }
+
+.sa-filters {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+.sa-filters [nbButton] { min-height: 2.5rem; }
+
+.sa-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--text-hint-color);
+}
+.sa-state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  background: var(--color-primary-100);
+  color: var(--color-primary-600);
+}
+.sa-state__icon--danger { background: var(--color-danger-100); color: var(--color-danger-600); }
+.sa-spinner {
+  display: inline-block;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 3px solid var(--color-primary-200);
+  border-top-color: var(--color-primary-600);
+  animation: sa-spin 0.8s linear infinite;
+}
+@keyframes sa-spin { to { transform: rotate(360deg); } }
+.sa-state__title { margin: 0; font-weight: 700; color: var(--text-basic-color); }
+.sa-state__text { margin: 0; max-width: 46ch; line-height: 1.6; }
+.sa-state [nbButton] { margin-top: 0.5rem; }
+
+.sa-save-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.sa-save-bar__note { font-size: 0.85rem; color: var(--text-hint-color); }
+.sa-save-bar__note--dirty { color: var(--color-warning-800); font-weight: 600; }
+
+.sa-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.sa-table { width: 100%; margin: 0; }
+.sa-table th { font-size: 0.8rem; font-weight: 700; color: var(--text-hint-color); white-space: nowrap; }
+.sa-table td { vertical-align: middle; }
+
+.sa-actions { display: flex; gap: 0.375rem; flex-wrap: wrap; }
+.sa-actions [nbButton] { min-height: 2.5rem; min-width: 2.5rem; }
+
+// Every small button in a section is still a thumb-sized target.
+.sa-content [nbButton].size-small { min-height: 2.5rem; }
+
+// ---------- phones ----------
+@media (max-width: 767px) {
+  .sa-header__sub,
+  .sa-header__btn-text { display: none; }
+  .sa-header__btn { min-width: 2.5rem; }
+
+  .sa-panel { grid-template-columns: 1fr; gap: 0.75rem; min-width: 0; }
+
+  // The menu becomes a strip of chips that stays under the fixed header.
+  // It keeps the layout's own side padding: a negative margin here was
+  // one screen width away from a horizontal scrollbar.
+  .sa-nav {
+    position: sticky;
+    top: calc(var(--header-height) + 0.5rem);
+    z-index: 2;
+    padding: 0.5rem;
+    // A grid item is as wide as its content unless told otherwise, so the
+    // nowrap chip strip widened the whole page to 1300px on a phone instead
+    // of scrolling inside its box.
+    min-width: 0;
+    max-width: 100%;
+  }
+  .sa-nav__list {
+    flex-direction: row;
+    gap: 0.375rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.125rem;
+  }
+  .sa-nav__list::-webkit-scrollbar { display: none; }
+  .sa-nav__item {
+    width: auto;
+    min-height: 2.5rem;
+    padding: 0.4rem 0.75rem;
+    white-space: nowrap;
+    border: 1px solid var(--border-basic-color-3);
+    border-radius: 999px;
+    font-size: 0.875rem;
+  }
+  .sa-nav__item--active { border-color: var(--color-primary-300); }
+
+  .sa-intro__title { font-size: 1.3rem; }
+  .sa-grid-2 { grid-template-columns: 1fr; }
 }

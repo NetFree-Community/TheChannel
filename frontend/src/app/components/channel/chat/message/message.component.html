@@ -1,97 +1,137 @@
 @if (message && message.text) {
-<div class="d-flex flex-row align-content-center my-1 mx-4">
-  <div class="d-flex flex-column">
-    <nb-user class="pt-4" [shape]="'round'" [color]="'white'" [size]="'large'"
-      [picture]="chatService.channelInfo?.logoUrl || ''" [name]="chatService.channelInfo?.name || ''"
-      onlyPicture></nb-user>
-  </div>
-  <div class="d-flex flex-column gap-1 overflow-auto">
-    <div class="d-flex flex-row gap-2 pe-1">
-      <strong class="text-black-50">{{ canModerate ? message.author :
-        chatService.channelInfo?.name
-        }}</strong>
-      <small class="text-black-50">{{ message.timestamp | messageTime }}</small>
-      @if (isEdited(message)) {
-      <small class="text-black-50">
-        נערכה {{ message.last_edit | messageTime }}
-      </small>
+<article class="msg" [class.msg--dim]="message.deleted || isSchedulingMessage" [class.msg--ad]="message.is_ads"
+         (keydown.escape)="onEscape()">
+  <header class="msg__head">
+    <span class="msg__avatar" aria-hidden="true">
+      @if (chatService.channelInfo?.logoUrl) {
+        <img [src]="chatService.channelInfo?.logoUrl" alt="" width="32" height="32" loading="lazy" decoding="async">
+      } @else {
+        {{ (chatService.channelInfo?.name || '?').charAt(0) }}
       }
-      @if (message.deleted) {
-      <div>
-        <nb-icon icon="alert-circle" nbPopover="לחצו כאן לשחזור ההודעה" nbPopoverTrigger="hover"
-          (click)="editMessage(message)" status="danger"></nb-icon>
-      </div>
-      }
-      @if (canModify(message)) {
-      <button class="icon-button" nbButton ghost shape="round" size="small" (click)="editMessage(message)"
-        title="ערוך הודעה">
-        <nb-icon icon="edit"></nb-icon>
-      </button>
-      }
-      @if (canModify(message) && !message.deleted) {
-      <button class="icon-button" nbButton ghost shape="round" size="small" (click)="deleteMessage(message)"
-        title="מחק הודעה">
-        <nb-icon icon="trash-2"></nb-icon>
-      </button>
-      }
-      @if (canWrite) {
-      <button class="icon-button" nbButton ghost shape="round" size="small" (click)="quoteMessage(message)"
-        title="צטט הודעה">
-        <nb-icon icon="corner-down-left-outline"></nb-icon>
-      </button>
-      }
-      @if (_authService.userInfo && chatService.reportsEnabled) {
-      <button nbButton ghost shape="round" size="small" (click)="openReportDialog(message.id)" title="דווח על ההודעה"
-        class="icon-button">
-        <nb-icon icon="alert-triangle-outline"></nb-icon>
-      </button>
-      }
-      <button class="icon-button" nbButton ghost shape="round" size="small" (click)="copyLink(message.id)"
-        title="העתק קישור להודעה">
-        <nb-icon icon="link-2"></nb-icon>
-      </button>
+    </span>
+    <div class="msg__who">
+      <span class="msg__author">{{ canModerate ? message.author : chatService.channelInfo?.name }}</span>
+      <span class="msg__meta">
+        <time class="msg__time" [attr.datetime]="isoTime" [nbTooltip]="fullTime">{{ message.timestamp | messageTime }}</time>
+        @if (isSchedulingMessage) {
+          <span class="msg__tag msg__tag--warning">מתוזמנת</span>
+        }
+        @if (isEdited(message)) {
+          <span class="msg__tag" [nbTooltip]="'נערכה ' + (message.last_edit | messageTime)">נערכה</span>
+        }
+        @if (message.is_ads) {
+          <span class="msg__tag">פרסומת</span>
+        }
+        @if (message.deleted) {
+          <span class="msg__tag msg__tag--danger">מחוקה — מוסתרת מהקוראים</span>
+        }
+      </span>
     </div>
-    <div [ngbPopover]="emojiMenu" [placement]="['top', 'bottom']"
-      [disablePopover]="!reacts.length || !chatService.reactionsEnabled"
-      [triggers]="'manual'" [popoverContext]="{message}" [autoClose]="'outside'" [popoverClass]="'emoji-picker-popover'"
-      (mouseenter)="showEmojiMenu()" (mouseleave)="scheduleEmojiMenuClose()" #p="ngbPopover">
-      <div class="d-flex flex-column bg-light rounded-4 border fs-5 f lh-base message-card"
-        [ngStyle]="{'opacity': (message.deleted || isSchedulingMessage) ? 0.5 : 1}">
-        <div class="m-2" #media>
-          <markdown [data]="message.text" [disableSanitizer]="true" (click)="viewLargeImage($event)">
-          </markdown>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mx-2 gap-2 mb-1">
-          @if (message.views) {
-          <div class="d-flex flex-row align-items-center text-black-50 gap-1" title="צפיות">
-            <small>{{ message.views }}</small>
-            <nb-icon icon="eye-outline"></nb-icon>
-          </div>
-          }
-        </div>
-        @if (message.reactions && chatService.reactionsEnabled) {
-        <div class="emojis-section">
-          @for (reaction of message.reactions | keyvalue; track reaction) {
-          <div class="emoji-reaction" (click)="setReact(message.id, reaction.key)"
-            [title]="reaction.value + ' אנשים הגיבו עם ' + reaction.key">
+    @if (message.deleted && canModify(message)) {
+      <button nbButton ghost size="small" status="primary" type="button" class="msg__restore"
+              (click)="editMessage(message)" nbTooltip="פתיחה לעריכה — אישור העריכה יפרסם אותה מחדש">
+        <nb-icon icon="undo-outline"></nb-icon>
+        שחזור
+      </button>
+    }
+    @if (hasActions) {
+      <button nbButton ghost shape="round" status="basic" type="button" class="msg__kebab"
+              [nbPopover]="actionsTpl" nbPopoverTrigger="click" nbPopoverPlacement="bottom"
+              (nbPopoverShowStateChange)="onActionsState($event.isShown)"
+              #actionsMenu="nbPopover" aria-label="פעולות על ההודעה" aria-haspopup="menu">
+        <nb-icon icon="more-vertical-outline"></nb-icon>
+      </button>
+    }
+  </header>
+
+  <div class="msg__body" #media>
+    <markdown [data]="message.text" [disableSanitizer]="true" (click)="viewLargeImage($event)">
+    </markdown>
+  </div>
+
+  @if (message.views || canOfferReactions || (message.reactions && chatService.reactionsEnabled)) {
+  <footer class="msg__foot">
+    <div class="msg__reactions">
+      @if (message.reactions && chatService.reactionsEnabled) {
+        @for (reaction of message.reactions | keyvalue; track reaction.key) {
+          <button type="button" class="react" [class.react--on]="reaction.value > 0"
+                  (click)="setReact(message.id, reaction.key)" [disabled]="isSchedulingMessage"
+                  [attr.aria-label]="reaction.value + ' הגיבו עם ' + reaction.key"
+                  [nbTooltip]="reaction.value + ' הגיבו עם ' + reaction.key">
             <span class="emoji">{{ reaction.key }}</span>
-            <span class="count">{{ reaction.value }}</span>
-          </div>
-          }
-        </div>
+            <span class="react__count">{{ reaction.value }}</span>
+          </button>
+        }
+      }
+      @if (canOfferReactions) {
+        <button type="button" class="react react--add" (click)="toggleEmojiMenu()"
+                (mouseenter)="showEmojiMenu()" (mouseleave)="scheduleEmojiMenuClose()"
+                aria-label="הוספת תגובת אימוג'י" [attr.aria-expanded]="emojiOpen" nbTooltip="הוספת תגובה">
+          <nb-icon icon="smiling-face-outline"></nb-icon>
+          <span class="react__plus" aria-hidden="true">+</span>
+        </button>
+      }
+    </div>
+    @if (message.views) {
+      <span class="msg__views" [nbTooltip]="message.views + ' צפיות'" [attr.aria-label]="message.views + ' צפיות'">
+        <nb-icon icon="eye-outline"></nb-icon>
+        {{ message.views }}
+      </span>
+    }
+
+    <!-- The emoji row: floats above the footer so opening it never moves the feed. -->
+    @if (emojiOpen) {
+      <div class="react-picker" role="group" aria-label="בחירת אימוג'י"
+           (mouseenter)="cancelEmojiMenuClose()" (mouseleave)="scheduleEmojiMenuClose()">
+        @for (react of reacts; track react) {
+          <button type="button" class="react-picker__option emoji" (click)="pickReact(react)"
+                  [attr.aria-label]="'תגובה ' + react">{{ react }}</button>
         }
       </div>
-    </div>
-  </div>
-</div>
+    }
+  </footer>
+  }
+</article>
 }
 
-<ng-template #emojiMenu let-message="message">
-  <div class="emoji-picker-menu" (mouseenter)="cancelEmojiMenuClose()" (mouseleave)="scheduleEmojiMenuClose()">
-    @for (react of reacts; track react) {
-    <button class="emoji-option emoji" (click)="setReact(message.id, react)">
-      {{ react }}
-    </button>
+<!-- The kebab menu. Declared here so the component's scoped styles reach it. -->
+<ng-template #actionsTpl>
+  <div class="msg-actions" role="menu" (keydown)="onActionsKeydown($event)">
+    @if (message && canModify(message)) {
+      <button type="button" role="menuitem" class="msg-actions__item" (click)="editMessage(message)">
+        <nb-icon icon="edit-outline"></nb-icon>
+        {{ message.deleted ? 'שחזור ועריכה' : 'עריכה' }}
+      </button>
+    }
+    @if (message && canModify(message) && !message.deleted) {
+      <button type="button" role="menuitem" class="msg-actions__item msg-actions__item--danger" (click)="deleteMessage(message)">
+        <nb-icon icon="trash-2-outline"></nb-icon>
+        מחיקה
+      </button>
+    }
+    @if (message && canWrite && !isSchedulingMessage) {
+      <button type="button" role="menuitem" class="msg-actions__item" (click)="quoteMessage(message)">
+        <nb-icon icon="corner-up-left-outline"></nb-icon>
+        ציטוט
+      </button>
+    }
+    @if (message && _authService.userInfo && chatService.reportsEnabled && !isSchedulingMessage) {
+      <button type="button" role="menuitem" class="msg-actions__item" (click)="openReportDialog(message.id)">
+        <nb-icon icon="alert-triangle-outline"></nb-icon>
+        דיווח
+      </button>
+    }
+    @if (message && !isSchedulingMessage) {
+      <button type="button" role="menuitem" class="msg-actions__item" (click)="copyLink(message.id)">
+        <nb-icon icon="link-2-outline"></nb-icon>
+        העתקת קישור
+      </button>
+      @if (canShareSheet) {
+        <button type="button" role="menuitem" class="msg-actions__item" (click)="shareMessage(message.id)">
+          <nb-icon icon="share-outline"></nb-icon>
+          שיתוף ההודעה…
+        </button>
+      }
     }
   </div>
 </ng-template>

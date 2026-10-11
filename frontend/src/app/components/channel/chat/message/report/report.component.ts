@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NbDialogRef, NbCardModule, NbButtonModule, NbInputModule, NbToastrService } from '@nebular/theme';
+import {
+  NbDialogRef, NbCardModule, NbButtonModule, NbIconModule, NbInputModule, NbToastrService, NbTooltipModule,
+} from '@nebular/theme';
 import { ChatService } from '../../../../../services/chat.service';
 
 @Component({
@@ -9,6 +11,8 @@ import { ChatService } from '../../../../../services/chat.service';
     NbCardModule,
     NbButtonModule,
     NbInputModule,
+    NbIconModule,
+    NbTooltipModule,
     FormsModule
   ],
   templateUrl: './report.component.html',
@@ -17,6 +21,9 @@ import { ChatService } from '../../../../../services/chat.service';
 export class ReportComponent implements OnInit{
   messageId: number | undefined;
   reason: string = '';
+  sending = false;
+  // The Hebrew ceiling; see reportErrorMessage for the server's byte limit.
+  readonly maxLength = 250;
 
   constructor(
     public dialogRef: NbDialogRef<ReportComponent>,
@@ -29,16 +36,18 @@ export class ReportComponent implements OnInit{
   }
 
   reportMessage() {
-    if (!this.messageId || !this.reason.trim()) {
+    if (!this.messageId || !this.reason.trim() || this.sending) {
       return;
     }
 
+    this.sending = true;
     this.chatService.reportMessage(this.messageId, this.reason)
       .then(() => {
-        this.toastrService.success('', 'הדיווח נשלח בהצלחה!');
+        this.toastrService.success('', 'הדיווח נשלח למנהלי הערוץ. תודה!');
         this.dialogRef.close();
       })
-      .catch((err) => this.toastrService.danger('', reportErrorMessage(err)));
+      .catch((err) => this.toastrService.danger('', reportErrorMessage(err)))
+      .finally(() => { this.sending = false; });
   }
 }
 
@@ -53,8 +62,8 @@ export class ReportComponent implements OnInit{
 function reportErrorMessage(err: any): string {
   const body = typeof err?.error === 'string' ? err.error : String(err?.error?.text ?? '');
   switch (err?.status) {
-    case 400: return body.includes('too long') ? 'הסיבה ארוכה מדי' : 'אירעה שגיאה בעת שליחת הדיווח';
-    case 429: return 'יותר מדי דיווחים, נסו שוב מאוחר יותר';
-    default: return 'אירעה שגיאה בעת שליחת הדיווח';
+    case 400: return body.includes('too long') ? 'הסיבה ארוכה מדי — קצרו אותה ונסו שוב' : 'לא הצלחנו לשלוח את הדיווח. נסו שוב בעוד רגע';
+    case 429: return 'שלחתם יותר מדי דיווחים. נסו שוב מאוחר יותר';
+    default: return 'לא הצלחנו לשלוח את הדיווח. נסו שוב בעוד רגע';
   }
 }

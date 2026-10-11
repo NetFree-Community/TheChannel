@@ -1,0 +1,186 @@
+// Shared classes (.sa-*) come from the panel stylesheet.
+:host {
+  display: block;
+}
+
+.requests {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.request {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-basic-color-3);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+// Highlighted in flow (no negative margins): nb-card-body scrolls its
+// overflow, and anything pulled past its padding earned a horizontal bar.
+.request--active {
+  background: var(--background-basic-color-2);
+  padding: 1rem 0.75rem;
+  border-radius: var(--border-radius);
+  border-bottom-color: transparent;
+}
+
+.request__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.request__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.request__name {
+  font-weight: 700;
+  color: var(--text-basic-color);
+  overflow-wrap: anywhere;
+}
+
+.request__email {
+  font-size: 0.85rem;
+  color: var(--text-hint-color);
+  overflow-wrap: anywhere;
+}
+
+.request__side {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+}
+
+.request__date {
+  font-size: 0.75rem;
+  color: var(--text-hint-color);
+  white-space: nowrap;
+}
+
+.request__meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+
+  > div {
+    display: contents;
+  }
+
+  dt {
+    color: var(--text-hint-color);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    color: var(--text-basic-color);
+    overflow-wrap: anywhere;
+  }
+
+  code {
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.375rem;
+    background: var(--color-basic-300);
+    color: var(--text-basic-color);
+  }
+}
+
+.request__text {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.result {
+  margin: 0 0 1rem;
+}
+
+.result__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.result__close {
+  flex: none;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  margin-inline-end: -0.5rem;
+  margin-top: -0.25rem;
+}
+
+.result__title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+  flex-wrap: wrap;
+}
+
+.result__text {
+  margin: 0 0 0.5rem;
+}
+
+.result__link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+
+  code {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    background: var(--background-basic-color-1);
+    color: var(--text-basic-color);
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+}
+
+.inline-form {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  background: var(--background-basic-color-1);
+  border: 1px solid var(--border-basic-color-4);
+}
+
+.inline-form--approve {
+  border-color: var(--color-success-300);
+}
+
+.inline-form--reject {
+  border-color: var(--color-danger-300);
+}
+
+.inline-form__title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-basic-color);
+}
+
+@media (max-width: 767px) {
+  .request__meta {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+
+    dt {
+      margin-top: 0.35rem;
+    }
+  }
+}

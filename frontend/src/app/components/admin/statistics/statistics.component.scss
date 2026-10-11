@@ -1,0 +1,90 @@
+@use '../admin-shared' as *;
+
+:host {
+  display: block;
+}
+
+.stats-page {
+  @include admin-page;
+}
+
+.stats-loading {
+  min-height: 8rem;
+}
+
+.stats-empty {
+  @include admin-empty;
+}
+
+.card-head {
+  @include admin-card-header;
+
+  .card-head__action {
+    margin-inline-start: auto;
+  }
+}
+
+.lead {
+  @include admin-lead;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.kpi {
+  margin: 0;
+
+  nb-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}
+
+.kpi__icon {
+  font-size: 1.5rem;
+  color: var(--color-primary-500);
+  margin-bottom: 0.35rem;
+
+  &--live {
+    color: var(--color-success-500);
+  }
+}
+
+.kpi__value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text-basic-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi__label {
+  font-weight: 600;
+  color: var(--text-basic-color);
+}
+
+.kpi__hint {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
+
+.chart {
+  position: relative;
+  height: 280px;
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .chart {
+    height: 220px;
+  }
+}

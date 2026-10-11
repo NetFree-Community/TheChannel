@@ -1,34 +1,74 @@
-<nb-card>
-    <nb-card-header>ניהול אימוג'ים מאופשרים</nb-card-header>
+<div class="emojis-tab">
+  <nb-card>
+    <nb-card-header class="emojis-tab__head">
+      <nb-icon icon="smiling-face-outline"></nb-icon>
+      <h2>האימוג'ים שהקוראים יכולים לבחור</h2>
+      @if (emojis) {
+        <span class="emojis-tab__count">{{ emojis.length }}</span>
+      }
+    </nb-card-header>
     <nb-card-body>
-        <nb-list>
-            <nb-list-item>
-                <strong class="me-2">אימוג'ים מאופשרים:</strong>
-            </nb-list-item>
-            <nb-list-item class="d-flex flex-wrap">
+      <p class="emojis-tab__lead">
+        לכל הודעה בערוץ הקוראים יכולים להגיב באימוג'י — ורק מהרשימה הזו. רשימה קצרה מרכזת את התגובות;
+        רשימה ריקה מבטלת את התגובות לגמרי. להסרה לוחצים על ה-× שעל האימוג'י, ובסיום על "שמירה".
+      </p>
 
-                @if (emojis?.length === 0) {
-                <p>אין אימוג'ים מאופשרים כרגע.</p>
-                } @else if (emojis) {
-                @for (item of emojis; track $index) {
-                <button nbButton size="small" (click)="removeEmoji($index)" class="me-2 mb-2 emoji">
-                    {{item}}
-                    <nb-icon icon="close"></nb-icon>
-                </button>
-                }
-                }@else {
-                <p>טוען אימוגים...</p>
-                }
-            </nb-list-item>
-            <nb-list-item>
-                <strong class="me-2">הוספת אימוג'ים:</strong>
-            </nb-list-item>
-            <nb-list-item>
-                <emoji-mart [set]="'google'" (emojiClick)="addEmoji($event)"></emoji-mart>
-            </nb-list-item>
-        </nb-list>
+      @if (loading) {
+        <div class="emojis-tab__loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים…"></div>
+      } @else if (!emojis) {
+        <div class="emojis-tab__empty">
+          <nb-icon icon="wifi-off-outline"></nb-icon>
+          <strong>לא הצלחנו לטעון את הרשימה</strong>
+          <span>כדי לא למחוק בטעות את הרשימה הקיימת, אי אפשר לשמור עד שהיא נטענת.</span>
+          <button nbButton status="primary" size="small" type="button" (click)="load()">
+            <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+          </button>
+        </div>
+      } @else if (emojis.length === 0) {
+        <div class="emojis-tab__empty">
+          <nb-icon icon="smiling-face-outline"></nb-icon>
+          <strong>אין אימוג'ים ברשימה</strong>
+          <span>במצב הזה הקוראים לא יכולים להגיב. בחרו אימוג'ים מהבורר שלמטה.</span>
+        </div>
+      } @else {
+        <nb-tag-list class="emojis-tab__chips" (tagRemove)="onTagRemove($event)" aria-label="האימוג'ים שנבחרו">
+          @for (item of emojis; track $index) {
+            <nb-tag [text]="item" removable appearance="outline" status="basic" size="medium"></nb-tag>
+          }
+        </nb-tag-list>
+      }
     </nb-card-body>
-    <nb-card-footer>
-        <button nbButton status="primary" (click)="setEmojis()">שמור</button>
-    </nb-card-footer>
-</nb-card>
+  </nb-card>
+
+  @if (!loading && emojis) {
+    <nb-card>
+      <nb-card-header class="emojis-tab__head">
+        <nb-icon icon="plus-circle-outline"></nb-icon>
+        <h2>הוספת אימוג'י</h2>
+      </nb-card-header>
+      <nb-card-body>
+        <p class="emojis-tab__lead">לחיצה על אימוג'י מוסיפה אותו לרשימה שלמעלה. אפשר לחפש לפי שם באנגלית.</p>
+        <div class="emojis-tab__picker" dir="ltr">
+          <emoji-mart [set]="'google'" [i18n]="pickerI18n" [perLine]="perLine" [emojiSize]="24"
+                      [showPreview]="false" title="בחרו אימוג'י" emoji="point_up"
+                      (emojiClick)="addEmoji($event)"></emoji-mart>
+        </div>
+      </nb-card-body>
+    </nb-card>
+
+    <div class="emojis-tab__save">
+      <button nbButton status="primary" type="button" (click)="setEmojis()" [disabled]="saving"
+              [nbSpinner]="saving" nbSpinnerStatus="control" nbSpinnerSize="small">
+        <nb-icon icon="save-outline"></nb-icon>
+        {{ saving ? 'שומרים…' : 'שמירה' }}
+      </button>
+      @if (dirty && !saving) {
+        <button nbButton ghost status="basic" size="small" type="button" (click)="load()">ביטול שינויים</button>
+      }
+      <span class="save-bar__spacer"></span>
+      <span class="save-bar__state" [class.is-dirty]="dirty" aria-live="polite">
+        {{ dirty ? 'יש שינויים שלא נשמרו' : 'הכול שמור' }}
+      </span>
+    </div>
+  }
+</div>

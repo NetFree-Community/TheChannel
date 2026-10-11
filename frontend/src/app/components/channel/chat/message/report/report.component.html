@@ -1,15 +1,24 @@
-<nb-card>
-    <nb-card-header>דיווח על הודעה #{{ messageId }}</nb-card-header>
-    <nb-card-body class="d-flex flex-column gap-3">
-        <strong>
-            שימו לב!<br>
-            חובה לציין את הסיבה לדיווח בכדי שנוכל לטפל בדיווח.
-        </strong>
-        <input [(ngModel)]="reason" nbInput fullWidth maxlength="250"
-            placeholder="פרט במספר מילים את הבעיה בהודעה זו..." />
-    </nb-card-body>
-    <nb-card-footer class="d-flex justify-content-end gap-2">
-        <button nbButton status="primary" (click)="dialogRef.close()">ביטול</button>
-        <button nbButton status="danger" (click)="reportMessage()" [disabled]="!reason.trim()">דווח</button>
-    </nb-card-footer>
+<nb-card class="report">
+  <nb-card-header class="report__head">
+    <div>
+      <h2 class="report__title">דיווח על הודעה</h2>
+      <p class="report__sub">הדיווח מגיע למנהלי הערוץ בלבד, והם יחליטו מה לעשות. כתבו בקצרה מה הבעיה.</p>
+    </div>
+    <button nbButton ghost shape="round" size="small" type="button" (click)="dialogRef.close()" aria-label="סגירה" nbTooltip="סגירה">
+      <nb-icon icon="close-outline"></nb-icon>
+    </button>
+  </nb-card-header>
+  <nb-card-body>
+    <label for="report-reason" class="report__label">מה הבעיה בהודעה? <span class="report__req">(חובה)</span></label>
+    <textarea id="report-reason" [(ngModel)]="reason" nbInput fullWidth rows="3" [maxlength]="maxLength"
+              placeholder="לדוגמה: תוכן פוגעני, ספאם, מידע שגוי…"></textarea>
+    <div class="report__counter" aria-live="polite">{{ reason.length }} / {{ maxLength }}</div>
+  </nb-card-body>
+  <nb-card-footer class="report__foot">
+    <button nbButton ghost status="basic" type="button" (click)="dialogRef.close()">ביטול</button>
+    <button nbButton status="danger" type="button" (click)="reportMessage()" [disabled]="!reason.trim() || sending">
+      <nb-icon icon="alert-triangle-outline"></nb-icon>
+      שליחת הדיווח
+    </button>
+  </nb-card-footer>
 </nb-card>

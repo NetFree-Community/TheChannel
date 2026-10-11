@@ -1,27 +1,66 @@
-import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Title } from '@angular/platform-browser';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  NbAlertModule, NbButtonModule, NbCardModule, NbIconModule, NbLayoutModule, NbSpinnerModule,
+} from '@nebular/theme';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 
-
+/**
+ * The sign-in page. There is no password: the only way in is a Google
+ * account, which Google sends back here with a one-time code that the server
+ * swaps for a session. The page therefore has three states — the button, the
+ * "connecting" spinner while that swap runs, and a failure with a retry —
+ * and otherwise only decides where to send the user afterwards.
+ */
 @Component({
   selector: 'app-login',
-  imports: [FormsModule],
+  standalone: true,
+  imports: [
+    RouterLink,
+    NbLayoutModule,
+    NbCardModule,
+    NbButtonModule,
+    NbIconModule,
+    NbAlertModule,
+    NbSpinnerModule,
+  ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
   code: string = '';
   checkUserInfo: boolean = false;
   status!: 'failed';
+  /** What went wrong, in the user's words; shown with the retry button. */
+  errorMessage = '';
+  /** True while the user is being sent to Google (the button was pressed). */
+  redirecting = false;
+
+  private paramsSub?: Subscription;
 
   constructor(
     private _authService: AuthService,
     private _route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private titleService: Title,
   ) { }
 
+  /** The spinner's caption: the initial session check vs. the code exchange. */
+  get busyText(): string {
+    if (this.code) return 'מחברים אתכם…';
+    if (this.redirecting) return 'עוברים לגוגל…';
+    return 'רק רגע…';
+  }
+
+  get busy(): boolean {
+    return !!this.code || this.checkUserInfo || this.redirecting;
+  }
+
   async ngOnInit() {
+    // index.html ships an empty <title>; without this the tab shows the URL.
+    this.titleService.setTitle('התחברות · הערוץ');
     this.checkUserInfo = true;
 
     try {
@@ -37,14 +76,16 @@ export class LoginComponent implements OnInit {
 
     this.checkUserInfo = false;
 
-    this._route.queryParams.subscribe(params => {
+    this.paramsSub = this._route.queryParams.subscribe(params => {
       if (params['error']) {
         // Google sends the user back with error=access_denied when they cancel
         // the consent screen (and other error codes for a misconfigured app).
         // Only params['code'] used to be inspected, so this showed the login
         // button again as if nothing had happened.
         this.clearOauthState();
-        this.status = 'failed';
+        this.fail(params['error'] === 'access_denied'
+          ? 'ההתחברות בוטלה לפני שהסתיימה. אפשר לנסות שוב.'
+          : 'גוגל לא השלימה את ההתחברות. נסו שוב — ואם זה חוזר, פנו אלינו מדף הבית.');
         return;
       }
       if (params['code'] && params['state'] !== localStorage.getItem('google_oauth_state')) {
@@ -52,12 +93,13 @@ export class LoginComponent implements OnInit {
         // browser stored (storage cleared, a second tab, a replayed link).
         // Previously this fell through silently and the page just showed the
         // login button again, as if nothing had happened.
-        this.status = 'failed';
+        this.fail('ההתחברות לא הושלמה: הקישור פג תוקף או נפתח בדפדפן אחר. נסו להתחבר שוב מכאן.');
         return;
       }
       if (params['code'] && params['state'] === localStorage.getItem('google_oauth_state')) {
         this.code = params['code'];
         this.checkUserInfo = true;
+        this.errorMessage = '';
         // The state is single-use: once the code is consumed the callback URL
         // must stop matching, otherwise the Back button (after a logout) lands
         // on this history entry and re-posts the already-spent code, which the
@@ -68,12 +110,20 @@ export class LoginComponent implements OnInit {
           this.redirectAfterLogin();
         }).catch(() => {
           this.code = '';
-          this.status = 'failed';
           this.checkUserInfo = false;
-          alert('התחברות נכשלה, נסה שוב');
+          this.fail('ההתחברות נכשלה בדרך חזרה מגוגל. נסו שוב — ואם זה חוזר, פנו אלינו מדף הבית.');
         });
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.paramsSub?.unsubscribe();
+  }
+
+  private fail(message: string): void {
+    this.status = 'failed';
+    this.errorMessage = message;
   }
 
   private clearOauthState() {
@@ -112,7 +162,23 @@ export class LoginComponent implements OnInit {
     this.router.navigate(['/channel']);
   }
 
-  login() {
-    this._authService.loginWithGoogle();
+  // Back from Google's account picker restores this page from the
+  // back-forward cache with its state intact — i.e. the spinner that replaced
+  // the button. A restored page is idle again.
+  @HostListener('window:pageshow', ['$event'])
+  onPageShow(event: PageTransitionEvent) {
+    if (event.persisted) this.redirecting = false;
+  }
+
+  async login() {
+    this.errorMessage = '';
+    this.redirecting = true;
+    try {
+      await this._authService.loginWithGoogle();
+    } catch {
+      // GET /auth/google failed; without this the click did nothing at all.
+      this.redirecting = false;
+      this.fail('ההתחברות אינה זמינה כרגע. בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.');
+    }
   }
 }

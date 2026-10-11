@@ -92,6 +92,17 @@ export class AuthService {
     return this.userInfoRequest;
   }
 
+  /**
+   * The server answered 401 to a signed-in call: the session ended behind the
+   * cached user. Dropping the cache here matters — the login page and the
+   * guards trust loadUserInfo(), and with the stale user still cached the
+   * login page sent the operator straight back to the panel, whose first
+   * request got 401 again, and so on in a loop.
+   */
+  sessionEnded() {
+    this.forgetUserInfo();
+  }
+
   private forgetUserInfo() {
     this.userInfo = undefined;
     this.anonymousError = undefined;

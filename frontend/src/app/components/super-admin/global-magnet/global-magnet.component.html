@@ -1,103 +1,180 @@
-<nb-card>
-  <nb-card-header class="d-flex align-items-center gap-2">
-    <nb-icon icon="pricetags-outline"></nb-icon>
-    <span>הגדרות פרסומות מגנט גלובליות</span>
-  </nb-card-header>
-
-  <nb-card-body>
-    <div class="d-flex flex-column gap-3">
-      <!-- These settings only reach a channel that is locked to them: otherwise
-           each channel uses its own magnet settings and this whole form has no
-           effect. That is easy to miss, because the lock lives at the bottom of
-           the form, so say so here rather than letting it fail silently. -->
-      @if (config.enabled && !config.lockAll && !config.lockedChannels.length) {
-        <nb-alert status="warning" class="mb-0">
-          <strong>ההגדרות האלה עדיין לא חלות על אף ערוץ.</strong>
-          מגנט גלובלי חל רק על ערוצים נעולים. הפעילו למטה
-          <em>"נעל מגנט על כל הערוצים"</em>, או הוסיפו ערוץ לרשימת
-          <em>"ערוצים נעולים"</em>. בלי זה כל ערוץ משתמש בהגדרות המגנט שלו.
-        </nb-alert>
-      }
-
-      <div>
-        <nb-toggle [(checked)]="config.enabled">
-          <span>הפעל מגנט</span>
-        </nb-toggle>
+@if (loading) {
+  <nb-card>
+    <nb-card-body>
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את הגדרות המגנט…</p>
       </div>
-
-      <div>
-        <label class="field-label">מפתח API</label>
-        <input nbInput fullWidth type="password" autocomplete="new-password" [(ngModel)]="config.apiKey" placeholder="magnet-api-key">
+    </nb-card-body>
+  </nb-card>
+} @else if (loadFailed) {
+  <nb-card>
+    <nb-card-body>
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">הגדרות המגנט לא נטענו</p>
+        <p class="sa-state__text">בלי העותק מהשרת שמירה הייתה דורסת את ההגדרות הקיימות. נסו לטעון שוב.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="load()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
       </div>
+    </nb-card-body>
+  </nb-card>
+} @else {
+  <form class="magnet" (ngSubmit)="save()" novalidate>
+    <!-- These settings only reach a channel that is locked to them: otherwise
+         each channel uses its own magnet settings and this whole form has no
+         effect. That is easy to miss, because the lock lives at the bottom of
+         the form, so say so here rather than letting it fail silently. -->
+    @if (appliesNowhere) {
+      <nb-alert status="warning" class="applies-alert" role="status">
+        <strong>ההגדרות האלה עדיין לא חלות על אף ערוץ.</strong>
+        מגנט של המערכת חל רק על ערוצים נעולים. הפעילו למטה "נעילת כל הערוצים" או הוסיפו ערוץ לרשימה — בלי זה כל ערוץ משתמש בהגדרות המגנט שלו.
+      </nb-alert>
+    }
 
-      <div>
-        <label class="field-label">קוד Snippet</label>
-        <textarea nbInput fullWidth rows="4" [(ngModel)]="config.snippet" placeholder="<script>...</script>"></textarea>
-      </div>
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
+          <nb-icon icon="pricetags-outline"></nb-icon>
+          חיבור למגנט
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <div class="sa-toggle">
+          <nb-toggle name="enabled" [(checked)]="config.enabled">
+            <span class="toggle-label">הצגת פרסומות מגנט</span>
+          </nb-toggle>
+          <p class="sa-toggle__hint">כשכבוי, שום ערוץ נעול לא מציג פרסומות מגנט, גם אם שאר הפרטים מלאים.</p>
+        </div>
+        <div class="sa-field">
+          <label class="sa-field__label" for="magnetApiKey">מפתח API של מגנט</label>
+          <nb-form-field>
+            <input nbInput fullWidth id="magnetApiKey" name="magnetApiKey" dir="ltr"
+                   [type]="showApiKey ? 'text' : 'password'" autocomplete="new-password" spellcheck="false"
+                   [(ngModel)]="config.apiKey" placeholder="המפתח מחשבון המפרסם במגנט">
+            <button nbSuffix nbButton ghost size="small" type="button" (click)="showApiKey = !showApiKey"
+                    [nbTooltip]="showApiKey ? 'הסתרת המפתח' : 'הצגת המפתח'"
+                    [attr.aria-label]="showApiKey ? 'הסתרת המפתח' : 'הצגת המפתח'" [attr.aria-pressed]="showApiKey">
+              <nb-icon [icon]="showApiKey ? 'eye-off-outline' : 'eye-outline'"></nb-icon>
+            </button>
+          </nb-form-field>
+          <p class="sa-field__hint">סודי — משמש גם לקריאת הסטטיסטיקות במסך "סטטיסטיקות". לא לשתף.</p>
+        </div>
+        <div class="sa-field">
+          <label class="sa-field__label" for="magnetSnippet">קוד ההטמעה</label>
+          <textarea nbInput fullWidth id="magnetSnippet" name="magnetSnippet" rows="4" dir="ltr" spellcheck="false"
+                    [(ngModel)]="config.snippet" placeholder="<script>…</script>"></textarea>
+          <p class="sa-field__hint">הקוד שמגנט נותן למפרסם, כפי שהוא. מוזרק לדף הערוץ בכל ערוץ נעול.</p>
+        </div>
+      </nb-card-body>
+    </nb-card>
 
-      <div>
-        <label class="field-label">מצב הפעלה</label>
-        <nb-select fullWidth [(ngModel)]="config.mode">
-          @for (opt of modeOptions; track opt.value) {
-            <nb-option [value]="opt.value">{{ opt.label }}</nb-option>
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
+          <nb-icon icon="clock-outline"></nb-icon>
+          כל כמה זמן מוצגת פרסומת
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <div class="sa-field">
+          <label class="sa-field__label" for="magnetMode">שיטת הספירה</label>
+          <nb-select fullWidth id="magnetMode" name="magnetMode" [(ngModel)]="config.mode">
+            @for (opt of modeOptions; track opt.value) {
+              <nb-option [value]="opt.value">{{ opt.label }}</nb-option>
+            }
+          </nb-select>
+          <p class="sa-field__hint">{{ modeHint(config.mode) }}</p>
+        </div>
+
+        <div class="sa-grid-2">
+          <div class="sa-field" [class.field--muted]="byTime">
+            <label class="sa-field__label" for="magnetPerMessages">פרסומת כל כמה הודעות</label>
+            <input nbInput fullWidth id="magnetPerMessages" name="magnetPerMessages" type="number" min="1" step="1"
+                   inputmode="numeric" dir="ltr" [(ngModel)]="config.perMessages" placeholder="10">
+            <p class="sa-field__hint">{{ byTime ? 'לא בשימוש בשיטה "לפי זמן".' : 'למשל 10 — פרסומת אחרי כל עשר הודעות.' }}</p>
+          </div>
+          <div class="sa-field" [class.field--muted]="!byTime">
+            <label class="sa-field__label" for="magnetPerSeconds">פרסומת כל כמה שניות</label>
+            <input nbInput fullWidth id="magnetPerSeconds" name="magnetPerSeconds" type="number" min="1" step="1"
+                   inputmode="numeric" dir="ltr" [(ngModel)]="config.perSeconds" placeholder="300">
+            <p class="sa-field__hint">{{ byTime ? 'למשל 300 — פרסומת אחרי כל חמש דקות.' : 'לא בשימוש בשיטה "לפי הודעות".' }}</p>
+          </div>
+          <!-- Each gap guards the other mode's counter: the message counter
+               is held back by time, the timer by messages. -->
+          <div class="sa-field" [class.field--muted]="byTime">
+            <label class="sa-field__label" for="magnetMinTime">הפסקה מינימלית בין פרסומות (שניות)</label>
+            <input nbInput fullWidth id="magnetMinTime" name="magnetMinTime" type="number" min="0" step="1"
+                   inputmode="numeric" dir="ltr" [(ngModel)]="config.minTimeSeconds" placeholder="60">
+            <p class="sa-field__hint">{{ byTime ? 'לא בשימוש בשיטה "לפי זמן".' : 'גם אם הספירה הגיעה — לא תוצג פרסומת לפני שעבר הזמן הזה מהקודמת.' }}</p>
+          </div>
+          <div class="sa-field" [class.field--muted]="!byTime">
+            <label class="sa-field__label" for="magnetMinMessages">מינימום הודעות בין פרסומות</label>
+            <input nbInput fullWidth id="magnetMinMessages" name="magnetMinMessages" type="number" min="0" step="1"
+                   inputmode="numeric" dir="ltr" [(ngModel)]="config.minMessagesSinceLast" placeholder="5">
+            <p class="sa-field__hint">{{ byTime ? 'גם אם הזמן עבר — לא תוצג פרסומת לפני שהופיעו כל כך הרבה הודעות מהקודמת.' : 'לא בשימוש בשיטה "לפי הודעות".' }}</p>
+          </div>
+        </div>
+      </nb-card-body>
+    </nb-card>
+
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
+          <nb-icon icon="lock-outline"></nb-icon>
+          על אילו ערוצים זה חל
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <div class="sa-toggle">
+          <nb-toggle name="lockAll" [(checked)]="config.lockAll">
+            <span class="toggle-label">נעילת כל הערוצים</span>
+          </nb-toggle>
+          <p class="sa-toggle__hint">כל ערוץ במערכת ישתמש בהגדרות האלה, וההגדרות של מנהלי הערוץ לא ישפיעו.</p>
+        </div>
+        <div class="sa-field locked">
+          <label class="sa-field__label" for="magnetLockedChannel">ערוצים נעולים</label>
+          <div class="locked__add">
+            <input nbInput fullWidth id="magnetLockedChannel" name="magnetLockedChannel" type="text" dir="ltr"
+                   [(ngModel)]="newLockedChannel" placeholder="כתובת הערוץ, למשל my-channel"
+                   autocomplete="off" autocapitalize="none" spellcheck="false"
+                   (keydown.enter)="$event.preventDefault(); addLockedChannel()">
+            <button nbButton status="primary" size="medium" type="button" (click)="addLockedChannel()"
+                    [disabled]="!newLockedChannel.trim()">
+              <nb-icon icon="plus-outline"></nb-icon>
+              הוספה
+            </button>
+          </div>
+          <p class="sa-field__hint">הכתובת של הערוץ כפי שהיא מופיעה ברשימת הערוצים. ערוץ ברשימה נעול גם כשהנעילה הכללית כבויה.</p>
+          @if (config.lockedChannels.length) {
+            <nb-tag-list class="locked__tags" (tagRemove)="removeLockedChannel($event.text)" aria-label="ערוצים נעולים">
+              @for (slug of config.lockedChannels; track slug) {
+                <nb-tag [text]="slug" removable status="primary" appearance="outline" size="small"></nb-tag>
+              }
+            </nb-tag-list>
+          } @else {
+            <p class="locked__empty">אין ערוצים ברשימה.</p>
           }
-        </nb-select>
-      </div>
+        </div>
+      </nb-card-body>
+    </nb-card>
 
-      <div>
-        <label class="field-label">כל כמה הודעות (perMessages)</label>
-        <input nbInput fullWidth type="number" [(ngModel)]="config.perMessages" placeholder="10">
-      </div>
-
-      <div>
-        <label class="field-label">זמן מינימלי בין הצגות (שניות)</label>
-        <input nbInput fullWidth type="number" [(ngModel)]="config.minTimeSeconds" placeholder="60">
-      </div>
-
-      <div>
-        <label class="field-label">כל כמה שניות (perSeconds)</label>
-        <input nbInput fullWidth type="number" [(ngModel)]="config.perSeconds" placeholder="300">
-      </div>
-
-      <div>
-        <label class="field-label">מינימום הודעות מהפעם האחרונה (minMessagesSinceLast)</label>
-        <input nbInput fullWidth type="number" [(ngModel)]="config.minMessagesSinceLast" placeholder="5">
-      </div>
-
-      <div>
-        <nb-toggle [(checked)]="config.lockAll">
-          <span>נעל מגנט על כל הערוצים</span>
-        </nb-toggle>
-        <small class="text-muted d-block mt-1">כאשר מופעל, הגדרות מנהלי הערוצים מתעלמות</small>
-      </div>
-
-      <div>
-        <label class="field-label">ערוצים נעולים</label>
-        <div class="d-flex gap-2 mb-2">
-          <input nbInput type="text" [(ngModel)]="newLockedChannel" placeholder="slug-of-channel"
-            (keyup.enter)="addLockedChannel()">
-          <button nbButton status="primary" size="small" (click)="addLockedChannel()">
-            <nb-icon icon="plus-outline"></nb-icon>
-            הוסף
+    <nb-card class="save-card">
+      <nb-card-body>
+        <div class="sa-save-bar">
+          <button nbButton status="primary" type="submit" [disabled]="saving">
+            <nb-icon icon="save-outline"></nb-icon>
+            {{ saving ? 'שומר…' : 'שמירת ההגדרות' }}
           </button>
-        </div>
-        <div class="d-flex flex-wrap gap-2">
-          @for (slug of config.lockedChannels; track slug) {
-            <span class="badge bg-secondary d-flex align-items-center gap-1 p-2">
-              {{ slug }}
-              <button class="btn-close btn-close-white ms-1" style="font-size: 0.6rem;"
-                (click)="removeLockedChannel(slug)"></button>
-            </span>
+          @if (dirty) {
+            <span class="sa-save-bar__note sa-save-bar__note--dirty">יש שינויים שעוד לא נשמרו</span>
+          } @else {
+            <span class="sa-save-bar__note">הנעילות מתעדכנות בערוצים תוך רגע לאחר השמירה.</span>
           }
         </div>
-      </div>
-    </div>
-  </nb-card-body>
-
-  <nb-card-footer>
-    <button nbButton status="primary" (click)="save()" [disabled]="saving">
-      <nb-icon icon="save-outline"></nb-icon>
-      {{ saving ? 'שומר...' : 'שמור הגדרות' }}
-    </button>
-  </nb-card-footer>
-</nb-card>
+      </nb-card-body>
+    </nb-card>
+  </form>
+}

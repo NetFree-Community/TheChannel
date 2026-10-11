@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/gob"
-	"html"
 	"log"
+	"mime"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -43,6 +43,9 @@ func hideTicketTokenQuery(next http.Handler) http.Handler {
 }
 
 func main() {
+	// Go's built-in table has no entry for the web app manifest, so the static
+	// handler served it as application/octet-stream and browsers ignored it.
+	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
 	// Sessions are signed with SECRET_KEY; with it unset, redistore signs with
 	// an empty key and every cookie is forgeable. Refuse to start rather than
 	// run with no session security at all.
@@ -111,6 +114,8 @@ func main() {
 	// The backend port must therefore never be exposed directly, since RealIP
 	// trusts whatever header it is given.
 	r.Use(middleware.RealIP)
+	// gzip for everything except the SSE stream; see compress.go.
+	r.Use(compressResponses)
 	r.Use(limitRequestBody)
 
 	// Auth routes
@@ -131,6 +136,9 @@ func main() {
 		// never from the body, so nobody can claim a slug for someone else.
 		r.Post("/api/channels/create", createChannelSelfService)
 		r.Get("/api/channels/slug-available", checkSlugAvailable)
+		// Every channel the user holds a role on, with names and logos: what
+		// the "my channels" page and the channel switcher list.
+		r.Get("/api/my-channels", listMyChannels)
 	})
 
 	// Super admin routes
@@ -312,15 +320,12 @@ func serveSpaFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cfg.CustomTitle != "" {
-		// The tag itself must survive: substituting bare text for it left the
-		// document with no <title> at all, and stray text inside <head> makes
-		// the parser close the head early — so browsers, crawlers and link
-		// previews never saw the operator's title. Escaped, because it is
-		// free text typed in the settings form landing inside markup.
-		content = bytes.ReplaceAll(content, []byte("<title></title>"),
-			[]byte("<title>"+html.EscapeString(cfg.CustomTitle)+"</title>"))
+	siteName := strings.TrimSpace(cfg.CustomTitle)
+	if siteName == "" {
+		siteName = defaultSiteName
 	}
+	content = injectHeadTags(content, requestOrigin(r, cfg), siteName, r.URL.Path,
+		previewChannel(r.Context(), r.URL.Path))
 
 	if cfg.AnalyticsHead != "" {
 		content = bytes.Replace(content, []byte("</head>"), []byte(cfg.AnalyticsHead+"</head>"), 1)

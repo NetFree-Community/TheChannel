@@ -1,55 +1,117 @@
-<nb-card>
-  <nb-card-header class="d-flex align-items-center gap-2">
-    <nb-icon icon="film-outline"></nb-icon>
-    <span>הגדרות פרסומות iframe גלובליות</span>
-  </nb-card-header>
-
-  <nb-card-body>
-    <div class="d-flex flex-column gap-3">
-      <div>
-        <label class="field-label">כתובת URL של הפרסומת (src)</label>
-        <input nbInput fullWidth type="text" [(ngModel)]="config.src" placeholder="https://example.com/ad.html">
+@if (loading) {
+  <nb-card>
+    <nb-card-body>
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את הגדרות הפרסומת…</p>
       </div>
-
-      <div>
-        <label class="field-label">רוחב הפרסומת (פיקסלים)</label>
-        <input nbInput fullWidth type="number" [(ngModel)]="config.width" placeholder="300">
+    </nb-card-body>
+  </nb-card>
+} @else if (loadFailed) {
+  <nb-card>
+    <nb-card-body>
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">הגדרות הפרסומת לא נטענו</p>
+        <p class="sa-state__text">בלי העותק מהשרת שמירה הייתה דורסת את ההגדרות הקיימות. נסו לטעון שוב.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="load()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
       </div>
-
-      <div>
-        <nb-toggle [(checked)]="config.lockAll">
-          <span>נעל פרסומות על כל הערוצים</span>
-        </nb-toggle>
-        <small class="text-muted d-block mt-1">כאשר מופעל, הגדרות מנהלי הערוצים מתעלמות</small>
-      </div>
-
-      <div>
-        <label class="field-label">ערוצים נעולים (ללא הגדרת פרסומות ידנית)</label>
-        <div class="d-flex gap-2 mb-2">
-          <input nbInput type="text" [(ngModel)]="newLockedChannel" placeholder="slug-of-channel"
-            (keyup.enter)="addLockedChannel()">
-          <button nbButton status="primary" size="small" (click)="addLockedChannel()">
-            <nb-icon icon="plus-outline"></nb-icon>
-            הוסף
-          </button>
-        </div>
-        <div class="d-flex flex-wrap gap-2">
-          @for (slug of config.lockedChannels; track slug) {
-            <span class="badge bg-secondary d-flex align-items-center gap-1 p-2">
-              {{ slug }}
-              <button class="btn-close btn-close-white ms-1" style="font-size: 0.6rem;"
-                (click)="removeLockedChannel(slug)"></button>
-            </span>
+    </nb-card-body>
+  </nb-card>
+} @else {
+  <form class="ads" (ngSubmit)="save()" novalidate>
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
+          <nb-icon icon="film-outline"></nb-icon>
+          הפרסומת של המערכת
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <p class="sa-lead">דף אינטרנט שמוצג במסגרת (iframe) בתוך דף הערוץ. הוא מגיע רק לערוצים שנעולים אליו (למטה).</p>
+        <div class="sa-field">
+          <label class="sa-field__label" for="adsSrc">כתובת הפרסומת</label>
+          <input nbInput fullWidth id="adsSrc" name="adsSrc" type="url" dir="ltr" [(ngModel)]="config.src"
+                 placeholder="https://example.com/ad.html" autocomplete="off" spellcheck="false"
+                 [status]="srcInvalid ? 'danger' : 'basic'">
+          @if (srcInvalid) {
+            <p class="sa-field__error">כתובת מלאה שמתחילה ב-https:// (או http://).</p>
+          } @else {
+            <p class="sa-field__hint">דף אינטרנט שייטען בתוך המסגרת. השאירו ריק כדי לא להציג פרסומת של המערכת.</p>
           }
         </div>
-      </div>
-    </div>
-  </nb-card-body>
+        <div class="sa-field">
+          <label class="sa-field__label" for="adsWidth">רוחב הפרסומת (פיקסלים)</label>
+          <input nbInput id="adsWidth" name="adsWidth" type="number" min="1" step="1" inputmode="numeric" dir="ltr"
+                 class="width-input" [(ngModel)]="config.width" placeholder="300">
+          <p class="sa-field__hint">בטלפון המסגרת מצטמצמת לרוחב המסך בכל מקרה.</p>
+        </div>
+      </nb-card-body>
+    </nb-card>
 
-  <nb-card-footer>
-    <button nbButton status="primary" (click)="save()" [disabled]="saving">
-      <nb-icon icon="save-outline"></nb-icon>
-      {{ saving ? 'שומר...' : 'שמור הגדרות' }}
-    </button>
-  </nb-card-footer>
-</nb-card>
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
+          <nb-icon icon="lock-outline"></nb-icon>
+          על אילו ערוצים זה חל
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        @if (appliesNowhere) {
+          <nb-alert status="warning" class="applies-alert" role="status">
+            כרגע ההגדרות לא חלות על אף ערוץ: כל ערוץ מציג את הפרסומת שמנהליו הגדירו. נעלו את כל הערוצים, או הוסיפו ערוץ לרשימה.
+          </nb-alert>
+        }
+        <div class="sa-toggle">
+          <nb-toggle name="lockAll" [(checked)]="config.lockAll">
+            <span class="toggle-label">נעילת כל הערוצים</span>
+          </nb-toggle>
+          <p class="sa-toggle__hint">כל ערוץ במערכת יציג את הפרסומת הזאת, וההגדרה של מנהלי הערוץ לא תשפיע. הרשימה למטה מיותרת כשזה פעיל.</p>
+        </div>
+        <div class="sa-field locked">
+          <label class="sa-field__label" for="adsLockedChannel">ערוצים נעולים</label>
+          <div class="locked__add">
+            <input nbInput fullWidth id="adsLockedChannel" name="adsLockedChannel" type="text" dir="ltr"
+                   [(ngModel)]="newLockedChannel" placeholder="כתובת הערוץ, למשל my-channel"
+                   autocomplete="off" autocapitalize="none" spellcheck="false"
+                   (keydown.enter)="$event.preventDefault(); addLockedChannel()">
+            <button nbButton status="primary" size="medium" type="button" (click)="addLockedChannel()"
+                    [disabled]="!newLockedChannel.trim()">
+              <nb-icon icon="plus-outline"></nb-icon>
+              הוספה
+            </button>
+          </div>
+          <p class="sa-field__hint">הכתובת של הערוץ כפי שהיא מופיעה ברשימת הערוצים. ערוץ ברשימה מציג את פרסומת המערכת גם כשהנעילה הכללית כבויה.</p>
+          @if (config.lockedChannels.length) {
+            <nb-tag-list class="locked__tags" (tagRemove)="removeLockedChannel($event.text)" aria-label="ערוצים נעולים">
+              @for (slug of config.lockedChannels; track slug) {
+                <nb-tag [text]="slug" removable status="primary" appearance="outline" size="small"></nb-tag>
+              }
+            </nb-tag-list>
+          } @else {
+            <p class="locked__empty">אין ערוצים ברשימה.</p>
+          }
+        </div>
+      </nb-card-body>
+    </nb-card>
+
+    <nb-card class="save-card">
+      <nb-card-body>
+        <div class="sa-save-bar">
+          <button nbButton status="primary" type="submit" [disabled]="saving">
+            <nb-icon icon="save-outline"></nb-icon>
+            {{ saving ? 'שומר…' : 'שמירת ההגדרות' }}
+          </button>
+          @if (dirty) {
+            <span class="sa-save-bar__note sa-save-bar__note--dirty">יש שינויים שעוד לא נשמרו</span>
+          } @else {
+            <span class="sa-save-bar__note">הנעילות מתעדכנות בערוצים תוך רגע לאחר השמירה.</span>
+          }
+        </div>
+      </nb-card-body>
+    </nb-card>
+  </form>
+}

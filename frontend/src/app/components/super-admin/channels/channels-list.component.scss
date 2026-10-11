@@ -1,28 +1,141 @@
-@use '../../../../themes' as *;
+// Shared classes (.sa-*) come from the panel stylesheet; only what is specific
+// to this list lives here.
+:host {
+  display: block;
+}
 
-@include nb-install-component() {
-  .disabled-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    margin-inline-start: 0.4rem;
-    padding: 0.1rem 0.5rem;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    background: nb-theme(color-danger-100);
-    border: 1px solid nb-theme(color-danger-400);
-    color: nb-theme(color-danger-700);
-    white-space: nowrap;
+.create-card {
+  margin-bottom: 1rem;
+  border-color: var(--color-primary-200);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.identity__logo {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: 0.75rem;
+  object-fit: cover;
+  background: var(--color-basic-300);
+}
+
+.identity__logo--initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--color-primary-700);
+  background: var(--color-primary-100);
+}
+
+.identity__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.identity__name {
+  font-weight: 700;
+  color: var(--text-basic-color);
+  overflow-wrap: anywhere;
+}
+
+.identity__slug {
+  font-size: 0.78rem;
+  color: var(--text-hint-color);
+  background: transparent;
+  padding: 0;
+}
+
+.owner {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+// Desktop table: the icon-only actions are one toolbar. The auto table layout
+// wrapped them 4+2 as soon as a long owner e-mail made the columns compete for
+// width (the shared .sa-actions wraps on phones, where the rows are cards).
+.channels-table .sa-actions { flex-wrap: nowrap; }
+.channels-table .sa-actions [nbButton] { padding-inline: 0.25rem; }
+
+.row--disabled .identity,
+.row--disabled .owner {
+  opacity: 0.6;
+}
+
+// Desktop: icon-only actions (each has a tooltip and an aria-label); the
+// text labels are for the phone cards, where there is no hover.
+.act-text {
+  display: none;
+}
+
+.channels-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.channel-card {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-basic-color-3);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.channel-card__meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.6rem 0;
+  font-size: 0.85rem;
+
+  > div {
+    display: contents;
   }
 
-  .disabled-badge nb-icon {
-    font-size: 0.8rem;
-    width: 0.8rem;
-    height: 0.8rem;
+  dt {
+    color: var(--text-hint-color);
+    font-weight: 600;
   }
 
-  .channel-row--disabled td:not(:last-child) {
-    opacity: 0.65;
+  dd {
+    margin: 0;
+    color: var(--text-basic-color);
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 767px) {
+  .channels-table {
+    display: none;
+  }
+
+  .channels-cards {
+    display: block;
+  }
+
+  .act-text {
+    display: inline;
+  }
+
+  // Every action is a labelled, thumb-sized button on a phone.
+  .channel-card .sa-actions [nbButton] {
+    flex: 1 1 30%;
+    justify-content: center;
   }
 }

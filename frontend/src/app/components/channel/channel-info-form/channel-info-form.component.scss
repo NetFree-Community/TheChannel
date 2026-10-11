@@ -1,5 +1,121 @@
-img {
-    cursor: pointer;
-    height: 60px;
-    width: 60px;
+@use '../../admin/admin-shared' as *;
+
+:host {
+  display: block;
+}
+
+.info-page {
+  @include admin-page;
+}
+
+.info-loading {
+  min-height: 10rem;
+}
+
+.logo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border-basic-color-3);
+}
+
+.logo {
+  position: relative;
+  flex-shrink: 0;
+  width: 6rem;
+  height: 6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  color: var(--text-control-color);
+  box-shadow: 0 0 0 3px var(--background-basic-color-1), 0 0 0 5px var(--color-primary-200);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 4px;
+  }
+
+  &[disabled] {
+    cursor: progress;
+  }
+}
+
+.logo__initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 2.25rem;
+  font-weight: 800;
+}
+
+// The pencil sits on the logo at all times, not only on hover: on a phone
+// there is no hover, and a bare picture does not say it can be changed.
+.logo__edit {
+  position: absolute;
+  bottom: 0.2rem;
+  inset-inline-end: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--background-basic-color-1);
+  color: var(--color-primary-600);
+  box-shadow: var(--shadow);
+  font-size: 1rem;
+}
+
+.logo-row__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.logo-row__title {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-basic-color);
+}
+
+.logo-row__hint {
+  @include admin-hint;
+  margin: 0 0 0.6rem;
+}
+
+.logo-row__progress {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary-600);
+}
+
+.field {
+  @include admin-field;
+}
+
+.save-bar {
+  @include admin-save-bar;
+}
+
+@media (max-width: 480px) {
+  .logo-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
 }

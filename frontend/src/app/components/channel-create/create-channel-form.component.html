@@ -1,39 +1,58 @@
 <nb-card class="create-card">
-  <nb-card-header class="create-card__header">
-    <span class="create-card__title">{{ createdSlug ? 'הערוץ שלך באוויר' : title }}</span>
-    @if (createdSlug) {
-      <span class="create-card__subtitle">ארבעה דברים שכדאי לעשות עכשיו</span>
-    } @else if (subtitle) {
-      <span class="create-card__subtitle">{{ subtitle }}</span>
-    }
-  </nb-card-header>
+  @if (createdSlug) {
+    <!-- ===== success: the channel exists, share it, then enter ===== -->
+    <nb-card-body class="created">
+      <div class="created__head">
+        <span class="created__burst" aria-hidden="true">
+          <nb-icon aria-hidden="true" icon="checkmark-outline"></nb-icon>
+        </span>
+        <h2 class="created__title">הערוץ נפתח! <span class="emoji">🎉</span></h2>
+        <p class="created__text">
+          הערוץ "{{ createdName }}" מוכן. זה הקישור שלו — שלחו אותו לכל מי שתרצו שיצטרף:
+        </p>
+      </div>
 
-  <nb-card-body>
-    @if (createdSlug) {
-      <div class="created">
-        <div class="created__head">
-          <nb-icon icon="checkmark-circle-2-outline" class="created__icon"></nb-icon>
-          <p class="created__title">הערוץ נפתח בהצלחה!</p>
-          <p class="created__text">הערוץ שלך מוכן. זו הכתובת שלו:</p>
-        </div>
+      <!-- Selectable as one unit: a tap selects the whole address, and the
+           explicit LTR direction keeps its parts in order on an RTL page. -->
+      <p class="created__url" dir="ltr" tabindex="0" title="לחיצה מסמנת את הקישור כולו">{{ channelUrl }}</p>
 
-        <div class="created__url">
-          <span class="created__url-value" dir="ltr">{{ channelUrl }}</span>
-          <button nbButton status="primary" size="small" type="button"
-                  class="created__copy" (click)="copyUrl()">
-            <nb-icon [icon]="copied ? 'checkmark-outline' : 'copy-outline'"></nb-icon>
-            {{ copied ? 'הועתק!' : 'העתקה' }}
+      <div class="created__share">
+        <button nbButton appearance="outline" status="primary" type="button"
+                class="created__share-btn" (click)="copyUrl()" aria-live="polite">
+          <nb-icon aria-hidden="true" [icon]="copied ? 'checkmark-outline' : 'copy-outline'"></nb-icon>
+          {{ copied ? 'הועתק ✓' : 'העתקת הקישור' }}
+        </button>
+        <a nbButton appearance="outline" status="success" class="created__share-btn"
+           [href]="whatsappHref" target="_blank" rel="noopener">
+          <nb-icon aria-hidden="true" icon="message-circle-outline"></nb-icon>
+          שיתוף בוואטסאפ
+        </a>
+        @if (canShare) {
+          <button nbButton appearance="outline" status="basic" type="button"
+                  class="created__share-btn" (click)="shareSheet()">
+            <nb-icon aria-hidden="true" icon="share-outline"></nb-icon>
+            שיתוף…
           </button>
-        </div>
-
-        @if (copyFailed) {
-          <p class="created__copy-note">ההעתקה האוטומטית נחסמה בדפדפן — אפשר לסמן את הכתובת ולהעתיק ידנית.</p>
         }
+      </div>
 
+      <button nbButton status="primary" size="large" fullWidth type="button"
+              class="created__enter" [disabled]="entering" (click)="enterChannel()">
+        @if (entering) {
+          <nb-icon aria-hidden="true" icon="loader-outline" class="spin"></nb-icon>
+          נכנסים…
+        } @else {
+          <nb-icon aria-hidden="true" icon="arrow-back-outline"></nb-icon>
+          כניסה לערוץ
+        }
+      </button>
+
+      <section class="created__next" aria-labelledby="created-next-title">
+        <h3 class="created__next-title" id="created-next-title">מה עכשיו?</h3>
         <ol class="created__steps">
           @for (step of nextSteps; track step.title) {
             <li class="created__step">
-              <nb-icon [icon]="step.icon" class="created__step-icon"></nb-icon>
+              <nb-icon aria-hidden="true" [icon]="step.icon" class="created__step-icon"></nb-icon>
               <div>
                 <span class="created__step-title">{{ step.title }}</span>
                 <span class="created__step-text">{{ step.text }}</span>
@@ -41,92 +60,186 @@
             </li>
           }
         </ol>
+      </section>
 
-        <button nbButton status="primary" size="large" fullWidth type="button"
-                class="created__enter" [disabled]="entering" (click)="enterChannel()">
-          @if (entering) {
-            <nb-icon icon="loader-outline" class="create-form__spin"></nb-icon>
-          } @else {
-            <nb-icon icon="log-in-outline"></nb-icon>
-          }
-          כניסה לערוץ
-        </button>
+      <button nbButton ghost status="primary" size="small" type="button"
+              class="created__guide" (click)="openGuide()">
+        <nb-icon aria-hidden="true" icon="book-open-outline"></nb-icon>
+        המדריך המלא למנהל הערוץ
+      </button>
+    </nb-card-body>
+  }
 
-        <button nbButton status="basic" size="medium" fullWidth type="button"
-                class="created__guide" (click)="openGuide()">
-          <nb-icon icon="book-open-outline"></nb-icon>
-          מדריך למנהל הערוץ
-        </button>
-        <p class="created__guide-note">
-          כל מה שצריך כדי להפעיל את הערוץ — גם מתוך פאנל הניהול, בטאב "מדריך למנהל הערוץ".
-        </p>
-      </div>
-    } @else {
+  <!-- ===== the form: name → address preview → description → one button =====
+       Two separate blocks (not one @else) so each nb-card slot receives a
+       single root node and is projected where the card expects it. -->
+  @if (!createdSlug) {
+    <nb-card-header class="create-card__header">
+      <h2 class="create-card__title">{{ title }}</h2>
+      @if (subtitle) {
+        <p class="create-card__subtitle">{{ subtitle }}</p>
+      }
+    </nb-card-header>
+  }
+
+  @if (!createdSlug) {
+    <nb-card-body>
       @if (formError) {
-        <nb-alert status="danger" [closable]="false" class="create-card__alert">{{ formError }}</nb-alert>
+        <nb-alert status="danger" [closable]="false" class="create-card__alert" role="alert">
+          <nb-icon aria-hidden="true" icon="alert-triangle-outline" class="create-card__alert-icon"></nb-icon>
+          <span class="create-card__alert-text">{{ formError }}</span>
+          @if (formErrorKind === 'limit') {
+            <button nbButton size="small" status="danger" appearance="outline" type="button"
+                    class="create-card__alert-action" (click)="backToList.emit()">
+              <nb-icon aria-hidden="true" icon="grid-outline"></nb-icon>
+              הערוצים שלי
+            </button>
+          } @else if (formErrorKind === 'auth') {
+            <button nbButton size="small" status="danger" appearance="outline" type="button"
+                    class="create-card__alert-action" (click)="relogin()">
+              <nb-icon aria-hidden="true" icon="log-in-outline"></nb-icon>
+              התחברות מחדש
+            </button>
+          }
+        </nb-alert>
       }
 
       <form class="create-form" (ngSubmit)="submit()" novalidate>
-        <div class="create-form__field">
-          <label class="create-form__label" for="cc-name">שם הערוץ</label>
-          <input nbInput fullWidth id="cc-name" name="name" type="text"
-                 [(ngModel)]="name" (ngModelChange)="onNameChange()"
-                 placeholder="למשל: חדשות הבוקר" maxlength="80">
-          <span class="create-form__hint">כך הערוץ יוצג לקוראים שלך.</span>
-        </div>
-
-        <div class="create-form__field">
-          <label class="create-form__label" for="cc-slug">כתובת הערוץ (slug)</label>
-          <nb-form-field>
-            <input nbInput fullWidth id="cc-slug" name="slug" type="text" dir="ltr"
-                   class="create-form__slug"
-                   [class.create-form__slug--ok]="slugState === 'available'"
-                   [class.create-form__slug--bad]="slugState === 'unavailable'"
-                   [(ngModel)]="slug" (ngModelChange)="onSlugChange()"
-                   placeholder="my-channel" maxlength="50" autocomplete="off">
-            <nb-icon nbSuffix
-                     [class.slug-status--ok]="slugState === 'available'"
-                     [class.slug-status--bad]="slugState === 'unavailable'"
-                     [class.slug-status--idle]="slugState !== 'available' && slugState !== 'unavailable'"
-                     [icon]="slugState === 'available' ? 'checkmark-circle-2-outline'
-                           : slugState === 'unavailable' ? 'close-circle-outline'
-                           : slugState === 'checking' ? 'loader-outline' : 'link-2-outline'">
-            </nb-icon>
-          </nb-form-field>
-
-          <div class="create-form__slugline">
-            <span class="create-form__preview" dir="ltr">{{ host }}/channel/{{ slug || 'my-channel' }}</span>
-            @if (slugState === 'checking') {
-              <span class="create-form__status create-form__status--idle">בודק זמינות…</span>
-            } @else if (slugMessage) {
-              <span class="create-form__status"
-                    [class.create-form__status--ok]="slugState === 'available'"
-                    [class.create-form__status--bad]="slugState === 'unavailable'">{{ slugMessage }}</span>
-            } @else {
-              <span class="create-form__status create-form__status--idle">אותיות אנגליות קטנות, ספרות ומקפים</span>
+        <!-- 1. name -->
+        <div class="field">
+          <div class="field__head">
+            <label class="field__label" for="cc-name">שם הערוץ</label>
+            @if (showNameCounter) {
+              <span class="field__counter" [class.field__counter--full]="name.length >= nameMax">
+                {{ name.length }}/{{ nameMax }}
+              </span>
             }
           </div>
+          <input #nameInput nbInput fullWidth fieldSize="large" id="cc-name" name="name" type="text"
+                 class="field__name" [(ngModel)]="name" (ngModelChange)="onNameChange()"
+                 placeholder="למשל: חדשות הבוקר" [maxlength]="nameMax"
+                 autocomplete="off" enterkeyhint="done">
+          <p class="field__hint">כך הערוץ יוצג לקוראים. אפשר לשנות את השם בכל רגע.</p>
         </div>
 
-        <div class="create-form__field">
-          <label class="create-form__label" for="cc-description">תיאור הערוץ</label>
-          <textarea nbInput fullWidth id="cc-description" name="description" rows="3"
-                    [(ngModel)]="description" maxlength="2000"
-                    placeholder="על מה הערוץ שלך? מספיקות שתי שורות."></textarea>
-        </div>
+        <!-- the address, derived from the name, with its live verdict -->
+        <div class="address"
+             [class.address--ok]="slugState === 'available'"
+             [class.address--bad]="slugState === 'unavailable'">
+          <div class="address__line">
+            <span class="address__label">הכתובת של הערוץ:</span>
+            <code class="address__url" dir="ltr">{{ host }}/channel/<b>{{ slug || '…' }}</b></code>
+          </div>
 
-        <button nbButton status="primary" size="large" fullWidth type="submit"
-                class="create-form__submit" [disabled]="submitting || !canSubmit">
-          @if (submitting) {
-            <nb-icon icon="loader-outline" class="create-form__spin"></nb-icon>
-          } @else {
-            <nb-icon icon="flash-outline"></nb-icon>
+          <div class="address__status">
+            <span [class]="'chip chip--' + slugState" role="status" aria-live="polite">
+              @switch (slugState) {
+                @case ('checking') {
+                  <nb-icon aria-hidden="true" icon="loader-outline" class="spin"></nb-icon> בודקים…
+                }
+                @case ('available') {
+                  <nb-icon aria-hidden="true" icon="checkmark-outline"></nb-icon> פנוי
+                }
+                @case ('unavailable') {
+                  <nb-icon aria-hidden="true" icon="close-outline"></nb-icon> {{ slugInvalid ? 'לא תקין' : 'תפוס' }}
+                }
+                @case ('unknown') {
+                  <nb-icon aria-hidden="true" icon="question-mark-circle-outline"></nb-icon> לא נבדק
+                }
+                @default {
+                  <nb-icon aria-hidden="true" icon="link-2-outline"></nb-icon> נקבעת לפי השם
+                }
+              }
+            </span>
+            @if (!slugEditing) {
+              <button nbButton ghost size="tiny" status="primary" type="button"
+                      class="address__edit" (click)="editSlug()">
+                <nb-icon aria-hidden="true" icon="edit-outline"></nb-icon>
+                לשנות את הכתובת
+              </button>
+            }
+          </div>
+
+          @if (slugMessage) {
+            <p class="address__msg" [class.address__msg--muted]="slugMessageMuted">{{ slugMessage }}</p>
           }
-          פתח את הערוץ עכשיו
+
+          @if (!slugEditing) {
+            <!-- The one thing that cannot be changed later; said once, up front,
+                 so nobody accepts the derived address trusting they can fix it. -->
+            <p class="address__note">אחרי הפתיחה הכתובת נשארת קבועה; שם ותיאור אפשר לשנות בכל רגע.</p>
+          }
+
+          @if (suggesting && !suggestedSlug) {
+            <p class="address__msg address__msg--muted">מחפשים כתובת פנויה דומה…</p>
+          } @else if (suggestedSlug) {
+            <div class="address__suggest">
+              <span>הכתובת <code dir="ltr">{{ suggestedSlug }}</code> פנויה.</span>
+              <button nbButton size="tiny" status="primary" type="button" (click)="useSuggestedSlug()">
+                <nb-icon aria-hidden="true" icon="checkmark-outline"></nb-icon>
+                להשתמש בכתובת הפנויה
+              </button>
+            </div>
+          }
+
+          @if (slugEditing) {
+            <div class="field field--slug">
+              <label class="field__label" for="cc-slug">כתובת הערוץ</label>
+              <nb-form-field>
+                <input #slugInput nbInput fullWidth id="cc-slug" name="slug" type="text" dir="ltr"
+                       class="field__slug"
+                       [(ngModel)]="slug" (ngModelChange)="onSlugChange()"
+                       placeholder="my-channel" [maxlength]="slugMax" autocomplete="off"
+                       autocapitalize="none" spellcheck="false">
+                <nb-icon aria-hidden="true" nbSuffix class="field__slug-icon"
+                         [class.field__slug-icon--ok]="slugState === 'available'"
+                         [class.field__slug-icon--bad]="slugState === 'unavailable'"
+                         [icon]="slugState === 'available' ? 'checkmark-circle-2-outline'
+                               : slugState === 'unavailable' ? 'close-circle-outline'
+                               : 'link-2-outline'">
+                </nb-icon>
+              </nb-form-field>
+              <p class="field__hint">
+                {{ slugMin }}–{{ slugMax }} תווים: אותיות אנגליות קטנות, ספרות ומקפים. זו הכתובת שתשלחו לקוראים, ואי אפשר לשנות אותה אחרי הפתיחה.
+              </p>
+            </div>
+          }
+        </div>
+
+        <!-- 2. description (optional) -->
+        <div class="field">
+          <div class="field__head">
+            <label class="field__label" for="cc-description">
+              תיאור <span class="field__optional">(לא חובה)</span>
+            </label>
+            @if (showDescriptionCounter) {
+              <span class="field__counter" [class.field__counter--full]="description.length >= descriptionMax">
+                {{ description.length }}/{{ descriptionMax }}
+              </span>
+            }
+          </div>
+          <textarea nbInput fullWidth id="cc-description" name="description" rows="3"
+                    [(ngModel)]="description" [maxlength]="descriptionMax"
+                    placeholder="משפט או שניים על מה הערוץ, למשל: עדכונים יומיים על מה שקורה בשכונה"></textarea>
+          <p class="field__hint">מופיע מתחת לשם הערוץ. אפשר למלא אחר כך.</p>
+        </div>
+
+        <!-- 3. the one button -->
+        <button nbButton status="primary" size="large" fullWidth type="submit"
+                class="create-form__submit" [disabled]="submitDisabled">
+          @if (submitting) {
+            <nb-icon aria-hidden="true" icon="loader-outline" class="spin"></nb-icon>
+            פותחים את הערוץ…
+          } @else {
+            <nb-icon aria-hidden="true" icon="flash-outline"></nb-icon>
+            פתיחת הערוץ
+          }
         </button>
 
-        <p class="create-form__foot">הערוץ נפתח מיד — אפשר לשנות שם, לוגו והגדרות בכל רגע.</p>
+        <p class="create-form__foot">
+          הערוץ נפתח מיד, בחינם, ונרשם על שמכם. שם, תיאור ולוגו אפשר לשנות אחר כך.
+        </p>
       </form>
-    }
-  </nb-card-body>
+    </nb-card-body>
+  }
 </nb-card>

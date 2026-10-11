@@ -1,0 +1,139 @@
+<nb-card>
+  <nb-card-header>
+    <div class="sa-card-head">
+      <h2 class="sa-card-title">
+        <nb-icon icon="email-outline"></nb-icon>
+        תיבת הפניות
+        @if (!loading && openCount) {
+          <span class="sa-chip sa-chip--warning">{{ openCount }} ממתינות</span>
+        }
+      </h2>
+      <button nbButton ghost status="basic" size="small" type="button" (click)="reload()" [disabled]="loading">
+        <nb-icon icon="refresh-outline"></nb-icon>
+        רענון
+      </button>
+    </div>
+  </nb-card-header>
+
+  <nb-card-body>
+    @if (loading) {
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את הפניות…</p>
+      </div>
+    } @else if (loadFailed) {
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">הפניות לא נטענו</p>
+        <p class="sa-state__text">נסו לטעון שוב.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="reload()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
+      </div>
+    } @else {
+      <div class="sa-toolbar">
+        <div class="sa-filters" role="group" aria-label="סינון לפי מצב הפנייה">
+          @for (f of filters; track f.value) {
+            <button nbButton size="small" type="button"
+                    [status]="filter === f.value ? 'primary' : 'basic'"
+                    [appearance]="filter === f.value ? 'filled' : 'outline'"
+                    [attr.aria-pressed]="filter === f.value"
+                    (click)="filter = f.value">{{ f.label }} ({{ count(f.value) }})</button>
+          }
+        </div>
+      </div>
+
+      @if (visible().length === 0) {
+        <div class="sa-state">
+          <span class="sa-state__icon"><nb-icon icon="inbox-outline"></nb-icon></span>
+          <p class="sa-state__title">אין פניות להצגה</p>
+          <p class="sa-state__text">{{ emptyText }}</p>
+        </div>
+      } @else {
+        <ul class="tickets">
+          @for (t of visible(); track t.id) {
+            <li class="ticket" [class.ticket--open]="openId === t.id">
+              <button type="button" class="ticket__head" (click)="toggle(t.id)"
+                      [attr.aria-expanded]="openId === t.id" [attr.aria-controls]="'thread-' + t.id">
+                <span class="ticket__main">
+                  <span class="ticket__subject">{{ t.subject }}</span>
+                  <span class="ticket__from">
+                    {{ t.name }} · <span class="sa-ltr">{{ t.email }}</span>
+                  </span>
+                  <span class="ticket__tags">
+                    @if (!t.authenticated) { <span class="sa-chip sa-chip--info">נשלחה ללא כניסה</span> }
+                    @if (t.channelSlug) { <span class="sa-chip">ערוץ: <span class="sa-ltr">{{ t.channelSlug }}</span></span> }
+                    <span class="sa-chip"
+                          [class.sa-chip--warning]="t.status === 'open'"
+                          [class.sa-chip--success]="t.status === 'answered'">{{ statusText(t.status) }}</span>
+                  </span>
+                </span>
+                <span class="ticket__side">
+                  <span class="ticket__date">{{ t.updatedAt | date:'dd/MM/yy HH:mm' }}</span>
+                  <nb-icon [icon]="openId === t.id ? 'chevron-up-outline' : 'chevron-down-outline'" aria-hidden="true"></nb-icon>
+                </span>
+              </button>
+
+              @if (openId === t.id) {
+                <div class="thread" [id]="'thread-' + t.id">
+                  <ol class="thread__list">
+                    @for (m of t.messages; track $index) {
+                      <li class="msg" [class.msg--admin]="m.author === 'admin'">
+                        <div class="msg__meta">
+                          <strong>{{ m.author === 'admin' ? 'ניהול' : m.authorName }}</strong>
+                          · {{ m.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                        </div>
+                        <!-- Plain text via interpolation, never markdown: a ticket
+                             body must not be able to inject markup into this panel. -->
+                        <div class="msg__body">{{ m.body }}</div>
+                      </li>
+                    }
+                  </ol>
+
+                  <form class="reply" (ngSubmit)="reply(t)" novalidate>
+                    <div class="sa-field">
+                      <label class="sa-field__label" [for]="'reply-' + t.id">תשובה לפונה</label>
+                      <textarea nbInput fullWidth [id]="'reply-' + t.id" name="replyBody" rows="4" [(ngModel)]="replyBody"
+                                placeholder="כתבו כאן את התשובה…" maxlength="5000"></textarea>
+                      <p class="sa-field__hint">
+                        התשובה נחתמת כ"ניהול".
+                        @if (t.authenticated) {
+                          הפונה יראה אותה במסך הפניות שלו בכניסה הבאה.
+                        } @else {
+                          הפנייה נשלחה בלי כניסה — התשובה תופיע לפונה בדפדפן שממנו שלח אותה.
+                        }
+                        @if (t.status === 'closed') {
+                          שליחת תשובה פותחת את הפנייה מחדש.
+                        }
+                      </p>
+                    </div>
+                    <div class="sa-save-bar">
+                      <button nbButton size="small" status="primary" type="submit" [disabled]="busy || !replyBody.trim()">
+                        <nb-icon icon="paper-plane-outline"></nb-icon>
+                        שליחת התשובה
+                      </button>
+                      @if (t.status !== 'closed') {
+                        <button nbButton size="small" ghost status="basic" type="button"
+                                [disabled]="busy" (click)="setStatus(t, 'closed')">
+                          <nb-icon icon="checkmark-circle-2-outline"></nb-icon>
+                          סגירת הפנייה
+                        </button>
+                      } @else {
+                        <button nbButton size="small" ghost status="basic" type="button"
+                                [disabled]="busy" (click)="setStatus(t, 'open')">
+                          <nb-icon icon="undo-outline"></nb-icon>
+                          פתיחה מחדש
+                        </button>
+                      }
+                    </div>
+                  </form>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+  </nb-card-body>
+</nb-card>

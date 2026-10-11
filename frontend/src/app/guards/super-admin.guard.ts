@@ -2,7 +2,11 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
-export const SuperAdminGuard: CanActivateFn = async (route, state) => {
+// Returns UrlTrees instead of navigating itself: a visitor whose session ended
+// mid-edit used to be bounced to the marketing page with no word about it.
+// AuthGuard runs first on this route and stores the returnUrl, so /login
+// brings the operator back here after signing in.
+export const SuperAdminGuard: CanActivateFn = async () => {
   const router = inject(Router);
   const authService = inject(AuthService);
 
@@ -11,10 +15,9 @@ export const SuperAdminGuard: CanActivateFn = async (route, state) => {
     if (userInfo?.globalRole === 'super_admin') {
       return true;
     }
-    router.navigate(['/']);
-    return false;
+    // Signed in, but not an operator.
+    return router.createUrlTree(['/']);
   } catch {
-    router.navigate(['/']);
-    return false;
+    return router.createUrlTree(['/login']);
   }
 };

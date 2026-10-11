@@ -1,277 +1,466 @@
-@use '../../../themes' as *;
-
+// Every colour goes through the theme's CSS custom properties, so the card
+// follows whichever Nebular theme is active instead of pinning hex values.
 :host {
   display: block;
   width: 100%;
 }
 
-// Everything colour-bearing goes through nb-install-component + nb-theme() so
-// the card follows whichever Nebular theme is active instead of pinning hex
-// values that would break in dark mode.
-@include nb-install-component() {
-  .create-card {
-    margin: 0;
-    border-radius: nb-theme(border-radius);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+.create-card {
+  margin: 0;
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.create-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-bottom: 0.75rem;
+}
+
+.create-card__title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-basic-color);
+}
+
+.create-card__subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
+
+/* ---------- error alert ---------- */
+
+.create-card__alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.create-card__alert-icon {
+  flex: 0 0 auto;
+  font-size: 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.create-card__alert-text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.create-card__alert-action {
+  flex: 0 0 auto;
+}
+
+/* ---------- form ---------- */
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.field__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.field__label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-basic-color);
+}
+
+.field__optional {
+  font-weight: 400;
+  color: var(--text-hint-color);
+}
+
+.field__counter {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-hint-color);
+
+  &--full {
+    color: var(--color-danger-600);
+    font-weight: 600;
+  }
+}
+
+.field__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
+
+.field__name {
+  font-weight: 600;
+}
+
+/* the live address preview */
+
+.address {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--border-radius);
+  background: var(--background-basic-color-2);
+  border: 1px solid var(--border-basic-color-3);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+
+  &--ok {
+    border-color: var(--color-success-400);
+    background: var(--color-success-100);
   }
 
-  .create-card__header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+  &--bad {
+    border-color: var(--color-danger-300);
+    background: var(--color-danger-100);
+  }
+}
+
+.address__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.88rem;
+}
+
+.address__label {
+  color: var(--text-hint-color);
+}
+
+// The page is RTL; without an explicit LTR direction the URL renders with
+// its parts reordered and is unusable to copy by eye.
+.address__url {
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text-basic-color);
+  overflow-wrap: anywhere;
+  text-align: start;
+
+  b {
+    font-weight: 800;
+    color: var(--color-primary-600);
+  }
+}
+
+.address__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+// Small buttons, but still a thumb-sized target.
+.address__status button,
+.address__suggest button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.4;
+  background: var(--background-basic-color-1);
+  border: 1px solid var(--border-basic-color-4);
+  color: var(--text-hint-color);
+
+  nb-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
   }
 
-  .create-card__title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: nb-theme(text-basic-color);
+  // Light tint with the dark shade of the same hue: white on success-500
+  // was 1.9:1, unreadable for the one verdict the form hinges on.
+  &--available {
+    background: var(--color-success-100);
+    border-color: var(--color-success-400);
+    color: var(--color-success-700);
   }
 
-  .create-card__subtitle {
-    font-size: 0.85rem;
+  &--unavailable {
+    background: var(--color-danger-100);
+    border-color: var(--color-danger-400);
+    color: var(--color-danger-700);
+  }
+
+  &--checking {
+    color: var(--color-primary-600);
+    border-color: var(--color-primary-300);
+  }
+
+  &--unknown {
+    color: var(--color-warning-800);
+    border-color: var(--color-warning-400);
+    background: var(--color-warning-100);
+  }
+}
+
+.address__msg {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--color-danger-700);
+
+  &--muted {
     font-weight: 400;
-    color: nb-theme(text-hint-color);
+    color: var(--text-hint-color);
   }
+}
 
-  .create-card__alert {
-    margin-bottom: 1rem;
+.address__note {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
+
+.address__suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--border-radius);
+  background: var(--background-basic-color-1);
+  border: 1px dashed var(--color-primary-400);
+  font-size: 0.85rem;
+  color: var(--text-basic-color);
+
+  code {
+    font-family: inherit;
+    font-weight: 800;
+    color: var(--color-primary-600);
   }
+}
 
-  /* ---------- success state ---------- */
+.field--slug {
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border-basic-color-4);
+}
 
-  .created {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
+.field__slug {
+  letter-spacing: 0.01em;
+  text-align: start;
+}
+
+.field__slug-icon {
+  color: var(--text-hint-color);
+
+  &--ok { color: var(--color-success-500); }
+  &--bad { color: var(--color-danger-500); }
+}
+
+.create-form__submit {
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.create-form__foot {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
+
+/* ---------- success state ---------- */
+
+.created {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-top: 1.75rem;
+}
+
+.created__head {
+  text-align: center;
+}
+
+.created__burst {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  font-size: 2rem;
+  background: var(--color-success-100);
+  color: var(--color-success-600);
+  box-shadow: 0 0 0 8px var(--color-success-transparent-100);
+
+  nb-icon {
+    font-size: inherit;
+    width: 1em;
+    height: 1em;
   }
+}
 
-  .created__head {
-    text-align: center;
+.created__title {
+  margin: 0.9rem 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-basic-color);
+}
+
+.created__text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-hint-color);
+}
+
+.created__url {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-radius: var(--border-radius);
+  background: var(--background-basic-color-2);
+  border: 1px solid var(--color-primary-300);
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-primary-700);
+  overflow-wrap: anywhere;
+  user-select: all;
+  cursor: text;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
   }
+}
 
-  .created__icon {
-    font-size: 3.25rem;
-    width: 3.25rem;
-    height: 3.25rem;
-    color: nb-theme(color-success-500);
+.created__share {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.created__share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  white-space: nowrap;
+}
+
+.created__enter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.created__next {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-basic-color-3);
+}
+
+.created__next-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-basic-color);
+}
+
+.created__steps {
+  list-style: none;
+  counter-reset: created-step;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.created__step {
+  counter-increment: created-step;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--border-radius);
+  background: var(--background-basic-color-2);
+}
+
+.created__step-icon {
+  flex: 0 0 auto;
+  font-size: 1.3rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin-top: 0.1rem;
+  color: var(--color-primary-500);
+}
+
+.created__step-title {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-basic-color);
+
+  &::before {
+    content: counter(created-step) '. ';
+    color: var(--color-primary-500);
   }
+}
 
-  .created__title {
-    margin: 0.75rem 0 0.25rem;
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: nb-theme(text-basic-color);
-  }
+.created__step-text {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
 
-  .created__text {
-    margin: 0;
-    font-size: 0.9rem;
-    color: nb-theme(text-hint-color);
-  }
+.created__guide {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
 
-  .created__url {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.85rem 1rem;
-    border-radius: nb-theme(border-radius);
-    background: nb-theme(background-basic-color-2);
-    border: 1px solid nb-theme(color-success-500);
-  }
+/* ---------- shared ---------- */
 
-  // The page is RTL; without an explicit LTR direction the URL renders with
-  // its parts reordered and is unusable to copy by eye.
-  .created__url-value {
-    flex: 1 1 12rem;
-    min-width: 0;
-    font-family: nb-theme(font-family-secondary), monospace;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-align: left;
-    color: nb-theme(text-basic-color);
-    overflow-wrap: anywhere;
-    user-select: all;
-  }
-
-  .created__copy {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-
-  .created__copy-note {
-    margin: -0.5rem 0 0;
-    font-size: 0.78rem;
-    color: nb-theme(text-hint-color);
-  }
-
-  .created__steps {
-    list-style: none;
-    counter-reset: created-step;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .created__step {
-    counter-increment: created-step;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    padding: 0.75rem 0.9rem;
-    border-radius: nb-theme(border-radius);
-    background: nb-theme(background-basic-color-2);
-    border: 1px solid nb-theme(border-basic-color-3);
-  }
-
-  .created__step-icon {
-    flex: 0 0 auto;
-    font-size: 1.25rem;
-    width: 1.25rem;
-    height: 1.25rem;
-    margin-top: 0.1rem;
-    color: nb-theme(color-primary-500);
-  }
-
-  .created__step-title {
-    display: block;
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: nb-theme(text-basic-color);
-
-    &::before {
-      content: counter(created-step) '. ';
-      color: nb-theme(color-primary-500);
-    }
-  }
-
-  .created__step-text {
-    display: block;
-    font-size: 0.82rem;
-    line-height: 1.5;
-    color: nb-theme(text-hint-color);
-  }
-
-  .created__enter {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  .created__guide {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 0.6rem;
-  }
-
-  .created__guide-note {
-    margin: 0.4rem 0 0;
-    font-size: 0.8rem;
-    line-height: 1.5;
-    text-align: center;
-    color: var(--text-hint-color, #8f9bb3);
-  }
-
-  .create-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-  }
-
-  .create-form__field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    min-width: 0;
-  }
-
-  .create-form__label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: nb-theme(text-basic-color);
-  }
-
-  .create-form__hint {
-    font-size: 0.75rem;
-    color: nb-theme(text-hint-color);
-  }
-
-  .create-form__slug {
-    font-family: nb-theme(font-family-secondary);
-    letter-spacing: 0.01em;
-  }
-
-  .create-form__slug--ok {
-    border-color: nb-theme(color-success-500) !important;
-  }
-
-  .create-form__slug--bad {
-    border-color: nb-theme(color-danger-500) !important;
-  }
-
-  .slug-status--ok { color: nb-theme(color-success-500); }
-  .slug-status--bad { color: nb-theme(color-danger-500); }
-  .slug-status--idle { color: nb-theme(text-hint-color); }
-
-  .create-form__slugline {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.35rem;
-    font-size: 0.78rem;
-  }
-
-  .create-form__preview {
-    padding: 0.15rem 0.5rem;
-    border-radius: 0.35rem;
-    background: nb-theme(background-basic-color-2);
-    color: nb-theme(text-hint-color);
-    max-width: 100%;
-    overflow-wrap: anywhere;
-  }
-
-  .create-form__status--ok { color: nb-theme(color-success-500); font-weight: 600; }
-  .create-form__status--bad { color: nb-theme(color-danger-500); font-weight: 600; }
-  .create-form__status--idle { color: nb-theme(text-hint-color); }
-
-  .create-form__submit {
-    margin-top: 0.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  .create-form__foot {
-    margin: 0;
-    text-align: center;
-    font-size: 0.78rem;
-    color: nb-theme(text-hint-color);
-  }
-
-  .create-form__spin {
-    animation: create-form-spin 0.9s linear infinite;
-  }
-
-  @media (max-width: 575px) {
-    .created__url {
-      align-items: stretch;
-    }
-
-    .created__copy {
-      width: 100%;
-      justify-content: center;
-    }
-  }
+.spin {
+  animation: create-form-spin 0.9s linear infinite;
 }
 
 @keyframes create-form-spin {

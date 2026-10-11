@@ -2,8 +2,121 @@
 @use '@nebular/theme/styles/theming' as *;
 @use '@nebular/theme/styles/themes/default';
 
-$nb-themes: nb-register-theme((font-family-primary: 'Assistant, sans-serif',
-            font-family-secondary: 'Assistant, sans-serif',
-        ),
-        custom,
-        default);
+// The brand theme. Nebular emits every token below as a CSS custom property
+// (--color-primary-500, --card-border-radius, ...), and component styles read
+// them through nb-theme() / var(), so the look of the whole app is decided here
+// and nowhere else. Only the tokens that differ from Nebular's default theme
+// are listed; everything else is inherited.
+//
+// The font tokens are Sass lists on purpose. The previous value was the quoted
+// string 'Assistant, sans-serif', which CSS reads as ONE family literally named
+// "Assistant, sans-serif" — no such font exists, so body text silently fell
+// back to the browser default and the web font was never actually used.
+$brand-font: (Assistant, 'Segoe UI', system-ui, -apple-system, sans-serif);
+
+$nb-themes: nb-register-theme((
+  // ---------- typography ----------
+  font-family-primary: $brand-font,
+  font-family-secondary: $brand-font,
+  text-heading-1-font-weight: 800,
+  text-heading-2-font-weight: 800,
+  text-heading-1-font-size: 2.25rem,
+  text-heading-2-font-size: 1.75rem,
+  text-heading-3-font-size: 1.375rem,
+  text-heading-4-font-size: 1.15rem,
+  text-paragraph-line-height: 1.6rem,
+
+  // ---------- brand palette (indigo) ----------
+  color-primary-100: #e8e9fe,
+  color-primary-200: #c9cbfd,
+  color-primary-300: #a3a6fb,
+  color-primary-400: #7b7ff8,
+  color-primary-500: #5a5ff5,
+  color-primary-600: #4b50e0,
+  color-primary-700: #3d41c4,
+  color-primary-800: #2f33a3,
+  color-primary-900: #232680,
+  color-primary-transparent-100: rgba(90, 95, 245, 0.08),
+  color-primary-transparent-200: rgba(90, 95, 245, 0.16),
+  color-primary-transparent-300: rgba(90, 95, 245, 0.24),
+  color-primary-transparent-400: rgba(90, 95, 245, 0.32),
+  color-primary-transparent-500: rgba(90, 95, 245, 0.4),
+  color-primary-transparent-600: rgba(90, 95, 245, 0.48),
+
+  // ---------- neutrals: cool greys that sit well under the indigo ----------
+  color-basic-100: #ffffff,
+  color-basic-200: #f6f7fb,
+  color-basic-300: #eef0f6,
+  color-basic-400: #e6e8f0,
+  color-basic-500: #d5d8e3,
+  color-basic-600: #9aa0b4,
+  color-basic-700: #6b7280,
+  color-basic-800: #3b4052,
+  color-basic-900: #262a3a,
+  color-basic-1000: #1b1f2e,
+  color-basic-1100: #12141f,
+  color-basic-transparent-100: rgba(107, 114, 128, 0.08),
+  color-basic-transparent-200: rgba(107, 114, 128, 0.16),
+  color-basic-transparent-300: rgba(107, 114, 128, 0.24),
+  color-basic-transparent-400: rgba(107, 114, 128, 0.32),
+  color-basic-transparent-500: rgba(107, 114, 128, 0.4),
+  color-basic-transparent-600: rgba(107, 114, 128, 0.48),
+
+  // Text: the default maps body text to basic-800 and hints to basic-600, which
+  // with the lighter neutrals above would fail contrast. Pin them one step darker.
+  text-basic-color: color-basic-1000,
+  text-hint-color: color-basic-700,
+  text-disabled-color: color-basic-600,
+  button-ghost-basic-text-color: color-basic-700,
+  button-ghost-basic-focus-text-color: color-basic-700,
+  button-ghost-basic-hover-text-color: color-basic-700,
+  button-ghost-basic-active-text-color: color-basic-700,
+
+  // ---------- shape ----------
+  border-radius: 0.625rem,
+  card-border-radius: 1rem,
+  button-rectangle-border-radius: 0.625rem,
+  input-rectangle-border-radius: 0.625rem,
+  select-rectangle-border-radius: 0.625rem,
+  toastr-border-radius: 0.75rem,
+  popover-border-radius: 0.75rem,
+  context-menu-border-radius: 0.75rem,
+  tooltip-border-radius: 0.5rem,
+  menu-item-border-radius: 0.625rem,
+
+  // ---------- depth ----------
+  shadow: (0 12px 32px -16px rgba(27, 31, 46, 0.28), 0 2px 6px rgba(27, 31, 46, 0.06)),
+  card-shadow: (0 1px 2px rgba(27, 31, 46, 0.04), 0 10px 30px -18px rgba(27, 31, 46, 0.18)),
+  card-border-color: border-basic-color-3,
+  card-padding: 1rem 1.25rem,
+  header-shadow: 0 1px 0 0 rgba(27, 31, 46, 0.06),
+  header-padding: 1rem,
+  divider-color: border-basic-color-3,
+  layout-background-color: background-basic-color-2,
+  user-picture-box-border-color: border-basic-color-4,
+
+  // Latin text in buttons and tabs (WhatsApp, URLs) must not be shouted.
+  button-filled-text-transform: none,
+  button-outline-text-transform: none,
+  button-ghost-text-transform: none,
+  tabset-tab-text-transform: none,
+  route-tabset-tab-text-transform: none,
+  tabset-tab-padding: 0.75rem 1.25rem,
+  route-tabset-tab-padding: 0.75rem 1.25rem,
+
+  // Menu (the manage page's side navigation).
+  menu-item-padding: 0.65rem 0.9rem,
+  menu-item-hover-background-color: color-basic-transparent-100,
+  menu-item-active-background-color: color-primary-transparent-100,
+
+  scrollbar-color: color-basic-500,
+  scrollbar-background-color: transparent,
+  scrollbar-width: 0.375rem,
+), custom, default);
+
+// Only the brand theme is emitted. nb-install() otherwise writes a CSS block
+// for every registered theme, so the `default` parent — which no element ever
+// carries, NbThemeModule is started with `custom` — cost 211 KB of custom
+// properties in every visitor's stylesheet. It stays registered: the brand
+// theme inherits the tokens it does not override from it.
+$nb-enabled-themes: (custom);

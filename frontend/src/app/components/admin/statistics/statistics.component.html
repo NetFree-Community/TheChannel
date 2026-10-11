@@ -1,21 +1,81 @@
-<nb-card>
-    <nb-card-body>
-        סך הכל משתמשים שהזדהו במערכת: <strong>{{statistics?.usersAmount}}</strong>
-        <br />
-        @if (statistics?.peakSSEConnections?.value) {
-        שיא חיבורים למערכת היה ב: <strong>{{statistics?.peakSSEConnections?.timestamp | messageTime }}</strong> ועמד על
-        <strong>{{statistics?.peakSSEConnections?.value}}</strong> משתמשים.
-        } @else {
-        עדיין לא נרשם שיא חיבורים.
+<div class="stats-page">
+  @if (loading) {
+    <nb-card>
+      <nb-card-body class="stats-loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים נתונים…"></nb-card-body>
+    </nb-card>
+  } @else if (loadFailed) {
+    <nb-card>
+      <nb-card-body class="stats-empty">
+        <nb-icon icon="wifi-off-outline"></nb-icon>
+        <strong>לא הצלחנו לטעון את הסטטיסטיקות</strong>
+        <button nbButton status="primary" size="small" type="button" (click)="updateData()">
+          <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+        </button>
+      </nb-card-body>
+    </nb-card>
+  } @else if (statistics; as s) {
+    <div class="kpis">
+      <nb-card class="kpi">
+        <nb-card-body>
+          <nb-icon icon="people-outline" class="kpi__icon"></nb-icon>
+          <span class="kpi__value">{{ s.usersAmount || 0 }}</span>
+          <span class="kpi__label">משתתפים</span>
+          <span class="kpi__hint">קוראים שפתחו את הערוץ כשהם מחוברים לגוגל, אי פעם — המספר שמוצג בכותרת הערוץ. אורחים לא נספרים.</span>
+        </nb-card-body>
+      </nb-card>
+      <nb-card class="kpi">
+        <nb-card-body>
+          <nb-icon icon="activity-outline" class="kpi__icon kpi__icon--live"></nb-icon>
+          <span class="kpi__value">{{ s.connectedUsersAmount || 0 }}</span>
+          <span class="kpi__label">מחוברים עכשיו</span>
+          <span class="kpi__hint">חלונות של הערוץ שפתוחים ברגע זה ומקבלים עדכונים חיים — כולל אורחים.</span>
+        </nb-card-body>
+      </nb-card>
+      <nb-card class="kpi">
+        <nb-card-body>
+          <nb-icon icon="trending-up-outline" class="kpi__icon"></nb-icon>
+          @if (s.peakSSEConnections && s.peakSSEConnections.value) {
+            <span class="kpi__value">{{ s.peakSSEConnections.value }}</span>
+            <span class="kpi__label">שיא מחוברים בו-זמנית</span>
+            <span class="kpi__hint">נרשם ב-{{ s.peakSSEConnections.timestamp | messageTime }}.</span>
+          } @else {
+            <span class="kpi__value">—</span>
+            <span class="kpi__label">שיא מחוברים בו-זמנית</span>
+            <span class="kpi__hint">עדיין לא נרשם שיא — הוא יופיע עם הכניסה הראשונה.</span>
+          }
+        </nb-card-body>
+      </nb-card>
+    </div>
+
+    <nb-card>
+      <nb-card-header class="card-head">
+        <nb-icon icon="bar-chart-outline"></nb-icon>
+        <h2>חיבורים לאורך זמן</h2>
+        @if (hasSeries) {
+          <button nbButton ghost status="basic" size="small" type="button" class="card-head__action" (click)="resetZoom()"
+                  nbTooltip="חזרה לתצוגה המלאה" aria-label="איפוס התקריב של הגרף">
+            <nb-icon icon="expand-outline"></nb-icon>
+            <span>תצוגה מלאה</span>
+          </button>
         }
-        <br />
-        סך הכל משתמשים מחוברים כעת למערכת: <strong>{{statistics?.connectedUsersAmount}}</strong>
-
-        <hr />
-
-        <canvas baseChart [type]="'line'" [data]="lineChartData" [options]="lineChartOptions"></canvas>
-        <div class="d-flex gap-2">
-            <button nbButton size="tiny" (click)="chart?.chart?.resetZoom()">איפוס גרף</button>
-        </div>
-    </nb-card-body>
-</nb-card>
+      </nb-card-header>
+      <nb-card-body>
+        @if (hasSeries) {
+          <p class="lead">
+            כמה חלונות היו מחוברים לערוץ בכל רגע, בחודש האחרון. אפשר להתקרב בגלגלת או בצביטה ולגרור הצידה.
+          </p>
+          <div class="chart" dir="ltr">
+            <canvas baseChart [type]="'line'" [data]="lineChartData" [options]="lineChartOptions"
+                    role="img" aria-label="גרף החיבורים לערוץ לאורך זמן"></canvas>
+          </div>
+        } @else {
+          <div class="stats-empty">
+            <nb-icon icon="bar-chart-outline"></nb-icon>
+            <strong>עדיין אין נתונים</strong>
+            <span>הם מתחילים להיאסף מהרגע שהערוץ נפתח — כל כניסה של קורא מוסיפה נקודה לגרף.</span>
+          </div>
+        }
+      </nb-card-body>
+    </nb-card>
+  }
+</div>

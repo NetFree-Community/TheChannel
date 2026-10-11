@@ -1,0 +1,8 @@
+// Shared classes (.sa-*) come from the panel stylesheet.
+:host {
+  display: block;
+}
+
+.quota__field {
+  max-width: 16rem;
+}

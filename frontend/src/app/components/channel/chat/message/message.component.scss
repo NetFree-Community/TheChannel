@@ -1,73 +1,261 @@
-.message-card {
-  max-width: 80vw;
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
 }
 
-nb-icon {
-  cursor: pointer;
+// The feed marks a message it jumped to by adding this class to the host.
+:host(.mark_message) .msg {
+  box-shadow: 0 0 0 2px var(--color-primary-500), var(--card-shadow);
 }
 
-.icon-button {
-  padding: initial !important;
+.msg {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  border-radius: var(--card-border-radius);
+  border: 1px solid var(--border-basic-color-3);
+  background: var(--background-basic-color-1);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease;
 }
 
-.message-card:hover .option-mask {
-  opacity: 1;
-  transition: opacity ease-in 0.1s;
+.msg--dim {
+  opacity: 0.6;
 }
 
-::ng-deep {
-  .menu-item {
-    .menu-icon {
-      margin: 0 0 0 0.5rem !important;
+.msg--ad {
+  border-color: var(--color-warning-300);
+}
+
+/* ---------- header ---------- */
+
+.msg__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem 0;
+}
+
+.msg__avatar {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  font-weight: 800;
+  font-size: 0.9rem;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.msg__who {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.msg__author {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-basic-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-hint-color);
+}
+
+.msg__tag {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--background-basic-color-3);
+  color: var(--text-hint-color);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.msg__tag--warning {
+  background: var(--color-warning-100);
+  color: var(--color-warning-800);
+}
+
+.msg__tag--danger {
+  background: var(--color-danger-100);
+  color: var(--color-danger-700);
+}
+
+.msg__restore {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.msg__kebab {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-end: -0.5rem;
+
+  nb-icon {
+    font-size: 1.3rem;
+  }
+}
+
+/* ---------- body ---------- */
+
+.msg__body {
+  padding: 0.5rem 1rem 0.25rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+// What the markdown renderer emits; scoped to this host (the old global
+// ::ng-deep reached every menu on the site).
+:host ::ng-deep markdown {
+  display: block;
+  color: var(--text-basic-color);
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+
+  a {
+    color: var(--color-primary-600);
+    overflow-wrap: anywhere;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+  }
+
+  video,
+  audio {
+    max-width: 100%;
+  }
+
+  blockquote {
+    margin: 0.5rem 0;
+    padding: 0.5rem 0.9rem;
+    border-inline-start: 4px solid var(--color-basic-500);
+    border-radius: var(--border-radius);
+    background: var(--background-basic-color-2);
+    color: var(--text-basic-color);
+    font-style: italic;
+
+    p:last-child {
+      margin-bottom: 0;
     }
   }
 
-  markdown img {
-    border-radius: 8px;
+  // A quoted channel message: clickable, jumps to the original.
+  .quote {
+    border-inline-start-color: var(--color-primary-500);
     cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+
+    &:hover {
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
   }
 
-  markdown blockquote {
-    border-right: 4px solid gray;
-    background: rgb(128 128 128 / 9%);
-    border-radius: 8px;
-    font-style: italic;
-    padding: 0.5rem 1rem 0.1rem 0.5rem;
+  :not(pre) > code {
+    padding: 0.1em 0.4em;
+    border-radius: 0.35em;
+    background: var(--background-basic-color-3);
+    color: var(--color-primary-700);
+    direction: ltr;
+    unicode-bidi: embed;
+    overflow-wrap: anywhere;
   }
 
-  markdown .quote {
-    border-color: #6a6fff;
-    cursor: pointer;
-  }
-
-  markdown .quote:hover {
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.12);
-    transform: translateY(-5px);
+  pre {
+    direction: ltr;
+    text-align: left;
+    border-radius: var(--border-radius);
+    overflow-x: auto;
   }
 
   // Sizing of the media embeds the renderers in markdown.config.ts emit. It was
   // inline style on those elements; the feed sanitizer now strips every style
   // attribute (a writer's raw-HTML style could overlay the whole page), so the
   // renderers' own styling has to be classes — the ones on its allow-list.
-  markdown .embed-box {
+  .embed-box {
     max-width: 300px;
     height: auto;
   }
 
-  markdown .embed-video {
+  .embed-video {
     width: 100%;
     height: auto;
   }
 
-  markdown .embed-youtube {
+  .embed-youtube {
     position: relative;
+    display: inline-block;
+    cursor: pointer;
   }
 
-  markdown .embed-youtube-icon {
+  // A YouTube play badge drawn in CSS (red rounded rect, white triangle); the
+  // icon font that used to draw it is no longer loaded.
+  .embed-youtube-icon {
     position: absolute;
-    place-self: anchor-center;
-    color: red;
-    font-size: 70px;
+    inset: 0;
+    margin: auto;
+    width: 68px;
+    height: 48px;
+    cursor: pointer;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      background: #f00;
+      opacity: 0.92;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      transform: translate(-40%, -50%);
+      border-style: solid;
+      border-width: 10px 0 10px 18px;
+      border-color: transparent transparent transparent #fff;
+    }
   }
 
   // Wraps each picture/video an anonymous viewer may not see, under the
@@ -82,95 +270,194 @@ nb-icon {
     min-height: 120px;
   }
 
-  i {
-    cursor: pointer;
-  }
-
-  .mark_message {
-    border: 2px solid #6a6fff;
-  }
-}
-
-.emojis-section {
-  border-top: 1px solid rgba(102, 111, 255, 0.15);
-  padding: 6px 8px 4px 8px;
-  margin-top: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 0 0 10px 10px;
-
-  .emoji-reaction {
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(102, 111, 255, 0.25);
-    border-radius: 12px;
-    padding: 6px 6px;
-    margin: 1px 2px;
-    display: inline-flex;
+  .auth-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
     align-items: center;
-    gap: 3px;
-    cursor: pointer;
-    transition: all 0.15s ease;
+    justify-content: center;
+    border-radius: var(--border-radius);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    color: #fff;
     font-size: 14px;
-    line-height: 1;
+    text-align: center;
+    cursor: pointer;
 
-    &:hover {
-      background: rgba(102, 111, 255, 0.15);
-      border-color: rgba(102, 111, 255, 0.4);
-      transform: translateY(-1px);
-    }
-
-    .emoji {
-      font-size: 16px;
-    }
-
-    .count {
-      color: #555;
-      font-weight: 500;
-      font-size: 11px;
-      min-width: 12px;
-      text-align: center;
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: 2px;
     }
   }
 }
 
-::ng-deep {
-  .emoji-picker-popover {
-    .popover-body {
-      padding: 6px !important;
-    }
-  }
+/* ---------- footer: reactions & views ---------- */
 
-  ngb-popover-window {
-    max-width: 50% !important;
-    //width: 50% !important;
-  }
+.msg__foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem 0.6rem;
 }
 
-.emoji-picker-menu {
+.msg--dim .msg__reactions {
+  pointer-events: none;
+}
+
+.msg__reactions {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
 
-  button.emoji-option {
-    border: none;
-    background: transparent;
-    border-radius: 4px;
-    padding: 4px;
-    transition: background-color 0.1s ease;
-    font-size: 16px;
-    line-height: 1;
-    cursor: pointer;
+.react {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-basic-color-4);
+  background: var(--background-basic-color-2);
+  color: var(--text-basic-color);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 
-    &:hover {
-      background: #f0f0f0;
-    }
+  &:hover {
+    background: var(--color-primary-transparent-100);
+    border-color: var(--color-primary-300);
+  }
 
-    &:active {
-      background: #e0e0e0;
-    }
+  &:active {
+    transform: scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 1px;
   }
 }
 
-.message-card[style*="opacity: 0.5"] .emojis-section {
-  opacity: 0.6;
-  pointer-events: none;
+.react--on {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+}
+
+.react__count {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-primary-700);
+}
+
+.react--add {
+  color: var(--text-hint-color);
+
+  nb-icon {
+    font-size: 1.15rem;
+  }
+}
+
+.react__plus {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.msg__views {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  color: var(--text-hint-color);
+
+  nb-icon {
+    font-size: 1rem;
+  }
+}
+
+.react-picker {
+  position: absolute;
+  bottom: calc(100% - 0.25rem);
+  inset-inline: 0.5rem;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  padding: 0.4rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-basic-color-3);
+  background: var(--background-basic-color-1);
+  box-shadow: var(--shadow);
+}
+
+.react-picker__option {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--color-primary-transparent-100);
+    outline: none;
+  }
+
+  &:active {
+    background: var(--color-primary-transparent-200);
+  }
+}
+
+/* ---------- kebab menu (rendered in a popover) ---------- */
+
+.msg-actions {
+  display: flex;
+  flex-direction: column;
+  min-width: 11rem;
+  margin: -0.25rem -0.5rem;
+}
+
+.msg-actions__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.6rem;
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--text-basic-color);
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: start;
+  cursor: pointer;
+
+  nb-icon {
+    font-size: 1.15rem;
+    color: var(--text-hint-color);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--color-basic-transparent-100);
+    outline: none;
+  }
+}
+
+.msg-actions__item--danger {
+  color: var(--color-danger-600);
+
+  nb-icon {
+    color: inherit;
+  }
 }

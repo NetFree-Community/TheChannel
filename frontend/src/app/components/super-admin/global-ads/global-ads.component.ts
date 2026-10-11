@@ -2,10 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
+  NbAlertModule,
   NbButtonModule,
   NbCardModule,
   NbIconModule,
   NbInputModule,
+  NbTagModule,
   NbToggleModule,
   NbToastrService,
 } from '@nebular/theme';
@@ -22,8 +24,11 @@ import { SuperAdminService, GlobalAdsConfig } from '../../../services/super-admi
     NbInputModule,
     NbIconModule,
     NbToggleModule,
+    NbTagModule,
+    NbAlertModule,
   ],
   templateUrl: './global-ads.component.html',
+  styleUrl: './global-ads.component.scss',
 })
 export class GlobalAdsComponent implements OnInit {
   config: GlobalAdsConfig = {
@@ -33,8 +38,12 @@ export class GlobalAdsComponent implements OnInit {
     lockedChannels: [],
   };
 
+  loading = true;
+  loadFailed = false;
   saving = false;
   newLockedChannel = '';
+  /** JSON of the last server copy, to tell the operator about unsaved edits. */
+  private snapshot = '';
 
   constructor(
     private superAdminService: SuperAdminService,
@@ -42,9 +51,43 @@ export class GlobalAdsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.load();
+  }
+
+  load() {
+    this.loading = true;
+    this.loadFailed = false;
     this.superAdminService.getAdsConfig()
-      .then(cfg => this.config = { ...cfg, lockedChannels: [...(cfg.lockedChannels || [])] })
-      .catch(() => this.toastr.danger('', 'שגיאה בטעינת הגדרות פרסומות'));
+      .then(cfg => {
+        // A server without a stored width answers 0; the field's min is 1,
+        // so keep the component's 300 default rather than show 0.
+        this.config = {
+          ...this.config, ...cfg,
+          width: cfg?.width > 0 ? cfg.width : this.config.width || 300,
+          lockedChannels: [...(cfg?.lockedChannels || [])],
+        };
+        this.snapshot = JSON.stringify(this.config);
+      })
+      .catch(() => {
+        this.loadFailed = true;
+        this.toastr.danger('', 'הגדרות הפרסומת לא נטענו');
+      })
+      .finally(() => this.loading = false);
+  }
+
+  get dirty(): boolean {
+    return !!this.snapshot && JSON.stringify(this.config) !== this.snapshot;
+  }
+
+  /** Same rule the server applies (isFramableURL): http(s) or protocol-relative, or nothing. */
+  get srcInvalid(): boolean {
+    const v = (this.config.src || '').trim();
+    return !!v && !/^(https?:)?\/\/\S+$/i.test(v);
+  }
+
+  /** Whether the saved settings reach any channel at all. */
+  get appliesNowhere(): boolean {
+    return !this.config.lockAll && this.config.lockedChannels.length === 0;
   }
 
   addLockedChannel() {
@@ -61,10 +104,19 @@ export class GlobalAdsComponent implements OnInit {
   }
 
   save() {
+    if (this.srcInvalid) {
+      this.toastr.warning('', 'כתובת הפרסומת חייבת להיות כתובת מלאה שמתחילה ב-http:// או https://');
+      return;
+    }
     this.saving = true;
     this.superAdminService.setAdsConfig(this.config)
-      .then(() => this.toastr.success('', 'הגדרות הפרסומות נשמרו בהצלחה'))
-      .catch(() => this.toastr.danger('', 'שגיאה בשמירת הגדרות הפרסומות'))
+      .then(() => {
+        this.snapshot = JSON.stringify(this.config);
+        this.toastr.success('', 'הגדרות הפרסומת נשמרו');
+      })
+      .catch((err) => this.toastr.danger('', err?.status === 400
+        ? 'כתובת הפרסומת חייבת להיות כתובת מלאה שמתחילה ב-http:// או https://'
+        : 'השמירה לא הצליחה, נסו שוב'))
       .finally(() => this.saving = false);
   }
 }

@@ -220,8 +220,10 @@ const customEmbedExtension = {
           // reserves the right height; the old flat width="300" otherwise.
           return `<div class="embed-box"><img src="${safeUrl(url)}"${LAZY_IMG_ATTRS} class="img-fluid"${sizeAttrs(size) || ' width="300"'}></div>`;
         case 'youtube':
+          // The play badge is drawn in CSS on .embed-youtube-icon (message
+          // component); the icon font that used to render it is gone.
           return `<div class="embed-box embed-youtube"><img youtubeid="${escapeHtml(id)}" src="https://ytimg.googleusercontent.com/vi/${encodeURIComponent(String(id))}/hqdefault.jpg"${LAZY_IMG_ATTRS} class="img-fluid" width="300" height="225"><i
-          class="bi bi-youtube embed-youtube-icon" youtubeid="${escapeHtml(id)}"></i></div>`;
+          class="embed-youtube-icon" youtubeid="${escapeHtml(id)}" role="button" aria-label="הפעלת הסרטון"></i></div>`;
         case 'quote':
           return `<blockquote class="quote" quote-id="${escapeHtml(id)}"><p>${escapeHtml(url)}</p></blockquote>`;
         default:

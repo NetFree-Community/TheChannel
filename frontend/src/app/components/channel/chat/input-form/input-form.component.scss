@@ -1,4 +1,384 @@
-.toolbar-icon {
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Matches the feed's readable column so the composer sits under the messages.
+.composer {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.composer__alert {
+  margin: 0;
+}
+
+// The "editing / quoting / scheduled" strip above the surface.
+.composer__mode {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--border-radius);
+  background: var(--color-primary-100);
+  color: var(--color-primary-800);
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  nb-icon {
+    font-size: 1.1rem;
+  }
+
+  button {
+    margin-inline-start: auto;
+    // Tiny ghost buttons are ~24px high; these are the one way out of a mode.
+    min-height: 2.5rem;
+  }
+}
+
+.composer__mode-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.composer__mode--quote {
+  background: var(--background-basic-color-3);
+  color: var(--text-basic-color);
+}
+
+.composer__mode--schedule {
+  background: var(--color-warning-100);
+  color: var(--color-warning-800);
+
+  button + button {
+    margin-inline-start: 0;
+  }
+}
+
+.composer__mode--ads {
+  background: var(--color-warning-100);
+  color: var(--color-warning-800);
+}
+
+/* ---------- formatting help (popover) ---------- */
+
+.help {
+  // Focused by script when it opens (see onHelpState); the ring belongs on the trigger.
+  outline: none;
+  max-width: min(88vw, 22rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-basic-color);
+}
+
+.help__title {
+  font-size: 0.95rem;
+}
+
+.help__lead {
+  margin: 0;
+  color: var(--text-hint-color);
+}
+
+.help__list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 0.75rem;
+  margin: 0;
+
+  dt,
+  dd {
+    margin: 0;
+  }
+}
+
+.help__code {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.35em;
+  background: var(--background-basic-color-3);
+  color: var(--color-primary-700);
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+
+.help__more {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-inline: 0.5rem !important;
+}
+
+.composer__surface {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--card-border-radius);
+  border: 1px solid var(--border-basic-color-3);
+  background: var(--background-basic-color-1);
+  box-shadow: var(--shadow);
+  padding: 0.35rem 0.5rem 0.5rem;
+}
+
+/* ---------- attachments ---------- */
+
+.composer__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.25rem 0.25rem 0.4rem;
+}
+
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  padding: 0.2rem 0.3rem 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-primary-200);
+  background: var(--color-primary-100);
+  color: var(--color-primary-800);
+  font-size: 0.8rem;
+}
+
+.file-chip__thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.file-chip__icon {
+  font-size: 1.2rem;
+}
+
+.file-chip__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-chip__pct {
+  font-weight: 700;
+}
+
+.file-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--color-primary-200);
+    outline: none;
+  }
+}
+
+.file-chip__spin,
+.composer__spin {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  animation: composer-spin 0.8s linear infinite;
+}
+
+@keyframes composer-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- toolbar ---------- */
+
+// One row that scrolls sideways on a phone instead of wrapping into the feed.
+.composer__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  padding: 0 0.1rem;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tb {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0.4rem !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  color: var(--text-hint-color);
+
+  nb-icon,
+  .toolbar-icon {
     font-size: 1.25rem;
-    color: #333333;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+.tb--on {
+  color: var(--color-primary-600);
+  background: var(--color-primary-transparent-100);
+}
+
+.tb--text {
+  padding-inline: 0.6rem !important;
+}
+
+.tb__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tb-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 1.4rem;
+  margin: 0 0.2rem;
+  background: var(--border-basic-color-3);
+}
+
+.tb-spacer {
+  flex: 1 1 auto;
+}
+
+.tb-toggle {
+  flex: 0 0 auto;
+  padding-inline: 0.4rem;
+  color: var(--text-hint-color);
+}
+
+/* ---------- input row ---------- */
+
+.composer__input {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  padding: 0.15rem 0.25rem 0;
+}
+
+.composer__textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  resize: none;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0.5rem 0.5rem !important;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.composer__preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 40vh;
+  overflow: auto;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius);
+  background: var(--background-basic-color-2);
+  overflow-wrap: anywhere;
+}
+
+.composer__send {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding-bottom: 0.1rem;
+}
+
+.composer__send-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  nb-icon {
+    font-size: 1.3rem;
+  }
+}
+
+// The paper plane points to the reading direction's end.
+.composer__send-icon {
+  transform: scaleX(-1);
+}
+
+.composer__counter {
+  padding: 0.25rem 0.5rem 0;
+  text-align: end;
+  font-size: 0.75rem;
+  color: var(--text-hint-color);
+}
+
+.composer__counter--limit {
+  color: var(--color-danger-600);
+  font-weight: 700;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 575px) {
+  .composer__surface {
+    padding: 0.25rem 0.35rem 0.4rem;
+  }
+
+  // On a phone the row is wider than the screen; a sideways scroll with no
+  // scrollbar hid the preview button behind the edge. Wrap instead: the
+  // formatting buttons on one line, the preview and Enter toggle on the next.
+  .composer__toolbar {
+    flex-wrap: wrap;
+    overflow: visible;
+    row-gap: 0;
+  }
+
+  // Icon only for the preview button (it keeps its aria-label), so the
+  // second line holds preview, the ads tag and the Enter toggle together.
+  .tb--text .tb__label {
+    display: none;
+  }
+  .tb--text {
+    padding-inline: 0.4rem !important;
+  }
+
+  .composer__mode {
+    font-size: 0.8rem;
+  }
 }

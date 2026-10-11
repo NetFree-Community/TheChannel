@@ -6,12 +6,13 @@ import {
   NbCardModule,
   NbDialogRef,
   NbIconModule,
+  NbTooltipModule,
 } from '@nebular/theme';
 
 /**
  * The owner's manual. Pure content — it holds no state and calls no endpoint,
- * so it can be dropped into the admin panel as a tab and opened as a dialog
- * from the post-creation screen without any wiring.
+ * so it can be dropped into the manage page as a section and opened as a
+ * dialog from the post-creation screen without any wiring.
  *
  * Everything documented here was read off the real components; when a screen
  * changes, this file changes with it.
@@ -25,16 +26,17 @@ import {
     NbIconModule,
     NbButtonModule,
     NbAlertModule,
+    NbTooltipModule,
   ],
   templateUrl: './guide.component.html',
   styleUrl: './guide.component.scss',
 })
 export class GuideComponent {
   /**
-   * Set by the caller that opens the guide as its own dialog. It is not derived
-   * from the injected NbDialogRef: the admin panel is itself a dialog, so a
-   * ref is in scope even when the guide is only a tab inside it — and closing
-   * that ref would close the whole panel.
+   * Set by the caller that opens the guide as its own dialog (the create
+   * form). Not derived from the injected NbDialogRef: when the guide is a
+   * section of the manage page there is no dialog to close, and a stray ref
+   * from an enclosing dialog must not be closed by the guide's own button.
    */
   @Input() dialogMode = false;
 

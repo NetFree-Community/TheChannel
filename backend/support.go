@@ -473,9 +473,16 @@ func authoriseTicket(ctx context.Context, r *http.Request, id string) (*SupportT
 			return t, true
 		}
 	}
+	// A signed-in ticket is reachable by its session only. Tickets created
+	// before tokens stopped being issued to signed-in senders still carry one,
+	// and the browser keeps sending it from localStorage after logout — so the
+	// token must not open those either.
+	if t.Authenticated {
+		return nil, false
+	}
 	token := ticketToken(r)
 	// Constant time: this is the only credential guarding an anonymous thread.
-	if token != "" && subtle.ConstantTimeCompare([]byte(token), []byte(t.AccessToken)) == 1 {
+	if token != "" && t.AccessToken != "" && subtle.ConstantTimeCompare([]byte(token), []byte(t.AccessToken)) == 1 {
 		return t, true
 	}
 	return nil, false

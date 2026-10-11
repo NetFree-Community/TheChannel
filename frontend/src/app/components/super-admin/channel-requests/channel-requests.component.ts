@@ -3,9 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   NbCardModule, NbButtonModule, NbInputModule,
-  NbBadgeModule, NbIconModule, NbToastrService, NbAlertModule, NbFormFieldModule
+  NbIconModule, NbToastrService, NbAlertModule, NbTooltipModule,
 } from '@nebular/theme';
 import { SuperAdminService, ChannelRequest } from '../../../services/super-admin.service';
+import { SLUG_PATTERN } from '../../../services/channel.service';
+import { ShareService } from '../../../services/share.service';
+
+type RequestFilter = 'pending' | 'approved' | 'rejected' | 'all';
 
 @Component({
   selector: 'app-channel-requests',
@@ -16,182 +20,44 @@ import { SuperAdminService, ChannelRequest } from '../../../services/super-admin
     NbCardModule,
     NbButtonModule,
     NbInputModule,
-    NbBadgeModule,
     NbIconModule,
     NbAlertModule,
-    NbFormFieldModule,
+    NbTooltipModule,
   ],
-  template: `
-    <nb-card>
-      <nb-card-header>
-        <h5 class="mb-0">בקשות לפתיחת ערוץ</h5>
-      </nb-card-header>
-      <nb-card-body>
-        @if (loading) {
-          <p class="text-center">טוען...</p>
-        } @else if (requests.length === 0) {
-          <p class="text-center text-muted">אין בקשות</p>
-        } @else {
-          <div class="table-responsive" dir="rtl">
-            <table class="table table-bordered align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th>שם</th>
-                  <th>אימייל</th>
-                  <th>Slug מבוקש</th>
-                  <th>תיאור</th>
-                  <th>הערות / שם הערוץ</th>
-                  <th>תאריך</th>
-                  <th>סטטוס</th>
-                  <th>פעולות</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (req of requests; track req.id) {
-                  <tr>
-                    <td>{{ req.name }}</td>
-                    <td>{{ req.email }}</td>
-                    <td><code>{{ req.desiredSlug }}</code></td>
-                    <td>
-                      <span class="text-truncate d-inline-block" style="max-width:200px" [title]="req.description">
-                        {{ req.description }}
-                      </span>
-                    </td>
-                    <td>
-                      @if (req.notes) {
-                        <span class="text-truncate d-inline-block" style="max-width:200px" [title]="req.notes">
-                          {{ notesText(req) }}
-                        </span>
-                      } @else {
-                        <span class="text-muted">—</span>
-                      }
-                    </td>
-                    <td>{{ req.createdAt | date:'dd/MM/yy HH:mm' }}</td>
-                    <td>
-                      @if (req.status === 'pending') {
-                        <span class="badge bg-warning text-dark">ממתין</span>
-                      } @else if (req.status === 'approved') {
-                        <span class="badge bg-success">מאושר</span>
-                        @if (req.approvedSlug) {
-                          <br><small class="text-muted">{{ req.approvedSlug }}</small>
-                        }
-                      } @else if (req.status === 'rejected') {
-                        <span class="badge bg-danger">נדחה</span>
-                      }
-                    </td>
-                    <td>
-                      @if (req.status === 'pending') {
-                        <div class="d-flex gap-2">
-                          <button nbButton status="success" size="small"
-                            (click)="startApprove(req)"
-                            [disabled]="actionId === req.id">
-                            אשר
-                          </button>
-                          <button nbButton status="danger" size="small"
-                            (click)="startReject(req)"
-                            [disabled]="actionId === req.id">
-                            דחה
-                          </button>
-                        </div>
-                      } @else {
-                        <span class="text-muted">—</span>
-                      }
-                    </td>
-                  </tr>
-
-                  <!-- Approve inline form -->
-                  @if (actionId === req.id && approveMode) {
-                    <tr class="table-success">
-                      <td colspan="8">
-                        <div class="p-3" dir="rtl">
-                          <h6 class="mb-3">אישור בקשה — {{ req.name }}</h6>
-
-                          @if (lastApproveResult && lastApproveResult.reqId === req.id) {
-                            <nb-alert status="success" [closable]="false">
-                              <p class="mb-1">✓ הערוץ נוצר בהצלחה!</p>
-                              <p class="mb-1">Slug: <strong>{{ lastApproveResult.channelSlug }}</strong></p>
-                              <p class="mb-1">אימייל הבעלים: <strong>{{ lastApproveResult.ownerEmail }}</strong></p>
-                              <p class="mb-0">שלח לו את הקישור: <code>/channel/{{ lastApproveResult.channelSlug }}</code></p>
-                            </nb-alert>
-                          } @else {
-                            <div class="row g-3">
-                              <div class="col-md-4">
-                                <label class="form-label">Slug סופי</label>
-                                <input nbInput fullWidth
-                                  type="text"
-                                  [(ngModel)]="approveSlug"
-                                  name="approveSlug"
-                                  placeholder="my-channel"
-                                  (input)="approveSlug = approveSlug.toLowerCase()">
-                              </div>
-                              <div class="col-md-8">
-                                <label class="form-label">הערות (אופציונלי)</label>
-                                <textarea nbInput fullWidth
-                                  rows="2"
-                                  [(ngModel)]="approveNotes"
-                                  name="approveNotes"
-                                  placeholder="הערות לבקשה..."></textarea>
-                              </div>
-                            </div>
-                            <div class="d-flex gap-2 mt-3">
-                              <button nbButton status="success"
-                                (click)="confirmApprove()"
-                                [disabled]="!approveSlug">
-                                אשר ויצור ערוץ
-                              </button>
-                              <button nbButton status="basic" (click)="cancel()">ביטול</button>
-                            </div>
-                          }
-                        </div>
-                      </td>
-                    </tr>
-                  }
-
-                  <!-- Reject inline form -->
-                  @if (actionId === req.id && rejectMode) {
-                    <tr class="table-danger">
-                      <td colspan="8">
-                        <div class="p-3" dir="rtl">
-                          <h6 class="mb-3">דחיית בקשה — {{ req.name }}</h6>
-                          <div class="mb-3">
-                            <label class="form-label">הערות דחייה (אופציונלי)</label>
-                            <textarea nbInput fullWidth
-                              rows="2"
-                              [(ngModel)]="rejectNotes"
-                              name="rejectNotes"
-                              placeholder="סיבת הדחייה..."></textarea>
-                          </div>
-                          <div class="d-flex gap-2">
-                            <button nbButton status="danger" (click)="confirmReject()">דחה בקשה</button>
-                            <button nbButton status="basic" (click)="cancel()">ביטול</button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  }
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      </nb-card-body>
-    </nb-card>
-  `,
+  templateUrl: './channel-requests.component.html',
+  styleUrl: './channel-requests.component.scss',
 })
 export class ChannelRequestsComponent implements OnInit {
   requests: ChannelRequest[] = [];
   loading = false;
+  loadFailed = false;
   actionId = '';
   approveSlug = '';
   approveNotes = '';
   rejectNotes = '';
   approveMode = false;
   rejectMode = false;
-  lastApproveResult: { reqId: string; channelSlug: string; ownerEmail: string } | null = null;
+  approving = false;
+  rejecting = false;
+  /**
+   * Shown above the list, not under the request's row: the list reloads after
+   * an approval and the row leaves the default "ממתינות" view, which took the
+   * link the operator is supposed to send with it.
+   */
+  lastApproveResult: { reqId: string; name: string; channelSlug: string; ownerEmail: string } | null = null;
+
+  filter: RequestFilter = 'pending';
+  readonly filters: { value: RequestFilter; label: string }[] = [
+    { value: 'pending', label: 'ממתינות' },
+    { value: 'approved', label: 'אושרו' },
+    { value: 'rejected', label: 'נדחו' },
+    { value: 'all', label: 'הכל' },
+  ];
 
   constructor(
     private superAdminService: SuperAdminService,
     private toastr: NbToastrService,
+    private share: ShareService,
   ) {}
 
   ngOnInit(): void {
@@ -213,11 +79,51 @@ export class ChannelRequestsComponent implements OnInit {
     return req.notes || '';
   }
 
+  visible(): ChannelRequest[] {
+    return this.filter === 'all' ? this.requests : this.requests.filter(r => r.status === this.filter);
+  }
+
+  count(status: RequestFilter): number {
+    return status === 'all' ? this.requests.length : this.requests.filter(r => r.status === status).length;
+  }
+
+  get emptyText(): string {
+    switch (this.filter) {
+      case 'pending': return 'אין בקשות שממתינות להחלטה.';
+      case 'approved': return 'עדיין לא אושרה אף בקשה.';
+      case 'rejected': return 'עדיין לא נדחתה אף בקשה.';
+      default: return 'עדיין לא הגיעו בקשות. בקשה נרשמת כאן כשמישהו פותח ערוץ מהאתר או מבקש שנפתח לו אחד.';
+    }
+  }
+
+  statusText(status: string): string {
+    switch (status) {
+      case 'pending': return 'ממתינה';
+      case 'approved': return 'אושרה';
+      case 'rejected': return 'נדחתה';
+      default: return status;
+    }
+  }
+
+  channelUrl(slug: string): string {
+    return this.share.channelUrl(slug);
+  }
+
+  async copyLink(slug: string): Promise<void> {
+    if (await this.share.copy(this.channelUrl(slug))) {
+      this.toastr.success('', 'הקישור הועתק');
+    }
+  }
+
   load(): void {
     this.loading = true;
+    this.loadFailed = false;
     this.superAdminService.getChannelRequests()
-      .then(reqs => { this.requests = reqs; })
-      .catch(() => this.toastr.danger('', 'שגיאה בטעינת הבקשות'))
+      .then(reqs => { this.requests = reqs || []; })
+      .catch(() => {
+        this.loadFailed = true;
+        this.toastr.danger('', 'הבקשות לא נטענו');
+      })
       .finally(() => { this.loading = false; });
   }
 
@@ -238,27 +144,73 @@ export class ChannelRequestsComponent implements OnInit {
     this.rejectNotes = '';
   }
 
+  /** Live check of the final address, so the operator sees the problem before sending. */
+  get approveSlugInvalid(): boolean {
+    return !!this.approveSlug && !SLUG_PATTERN.test(this.approveSlug);
+  }
+
   confirmApprove(): void {
-    if (!this.approveSlug) return;
+    if (!this.approveSlug || this.approveSlugInvalid || this.approving) return;
     const id = this.actionId;
+    const name = this.requests.find(r => r.id === id)?.name || '';
+    this.approving = true;
     this.superAdminService.approveChannelRequest(id, this.approveSlug, this.approveNotes)
       .then(result => {
-        this.lastApproveResult = { reqId: id, channelSlug: result.channelSlug, ownerEmail: result.ownerEmail };
-        this.toastr.success('', 'הערוץ נוצר בהצלחה');
+        this.lastApproveResult = { reqId: id, name, channelSlug: result.channelSlug, ownerEmail: result.ownerEmail };
+        this.toastr.success('', 'הערוץ נוצר והבעלים מונה');
+        // The inline form closes; the result card above the list carries the link.
+        this.cancel();
         this.load();
       })
-      .catch((err) => this.toastr.danger(err?.error || '', 'שגיאה באישור הבקשה'));
+      .catch((err) => this.toastr.danger('', this.approveErrorText(err)))
+      .finally(() => this.approving = false);
+  }
+
+  /**
+   * The server answers failures as plain English text: "invalid slug format",
+   * "slug is reserved", "slug already taken", "request already processed",
+   * "Channel name is required/too long", "request not found". Never shown as-is.
+   */
+  private approveErrorText(err: any): string {
+    const text = (typeof err?.error === 'string' ? err.error : '').toLowerCase();
+    switch (err?.status) {
+      case 409:
+        return text.includes('processed')
+          ? 'הבקשה כבר טופלה — רעננו את הרשימה'
+          : 'כתובת הערוץ כבר תפוסה, בחרו כתובת אחרת';
+      case 404:
+        return 'הבקשה כבר לא קיימת — רעננו את הרשימה';
+      case 400:
+        if (text.includes('reserved')) return 'כתובת הערוץ שמורה למערכת, בחרו כתובת אחרת';
+        if (text.includes('slug')) return 'כתובת הערוץ לא תקינה — 3 עד 50 תווים, אותיות אנגליות קטנות, ספרות ומקפים';
+        if (text.includes('too long')) return 'שם הערוץ שבבקשה ארוך מדי (עד 80 תווים)';
+        if (text.includes('name')) return 'בבקשה אין שם לערוץ, ולכן אי אפשר לאשר אותה';
+        return 'הפרטים אינם תקינים';
+      default:
+        return 'אישור הבקשה לא הצליח, נסו שוב';
+    }
   }
 
   confirmReject(): void {
+    if (this.rejecting) return;
     const id = this.actionId;
+    this.rejecting = true;
     this.superAdminService.rejectChannelRequest(id, this.rejectNotes)
       .then(() => {
         this.toastr.success('', 'הבקשה נדחתה');
         this.cancel();
         this.load();
       })
-      .catch(() => this.toastr.danger('', 'שגיאה בדחיית הבקשה'));
+      .catch((err) => this.toastr.danger('', err?.status === 409
+        ? 'הבקשה כבר טופלה — רעננו את הרשימה'
+        : err?.status === 404
+          ? 'הבקשה כבר לא קיימת — רעננו את הרשימה'
+          : 'דחיית הבקשה לא הצליחה, נסו שוב'))
+      .finally(() => this.rejecting = false);
+  }
+
+  dismissResult(): void {
+    this.lastApproveResult = null;
   }
 
   cancel(): void {

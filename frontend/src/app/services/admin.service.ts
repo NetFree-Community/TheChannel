@@ -15,6 +15,13 @@ export type EditMsg = {
   new?: boolean;
   isScheduling?: boolean;
   message: ChatMessage;
+  /**
+   * Text to put in front of what is typed in the open editor, leaving
+   * `message` untouched. A quote used to be written into the edit target's
+   * own text, and a scheduled entry is found again on the server by that
+   * text — so the save failed once it carried the quote.
+   */
+  prepend?: string;
 }
 
 @Injectable({

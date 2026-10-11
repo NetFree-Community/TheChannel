@@ -1,57 +1,99 @@
 @if (isOffline) {
-  <div class="offline-banner">
+  <div class="feed-banner feed-banner--warning" role="status">
     <nb-icon icon="wifi-off-outline"></nb-icon>
-    אין חיבור לאינטרנט — ההודעות יתעדכנו אוטומטית עם חזרת החיבור
+    <span>אין חיבור לאינטרנט — ההודעות יתעדכנו מעצמן ברגע שהחיבור יחזור</span>
   </div>
 }
 
 @if (initialLoadFailed) {
-  <div class="load-failed-banner">
+  <div class="feed-banner feed-banner--danger" role="alert">
     <nb-icon icon="alert-triangle-outline"></nb-icon>
-    <span>שגיאה בטעינת ההודעות.</span>
-    <button nbButton size="tiny" status="control" (click)="retryInitialLoad()">נסה שוב</button>
+    <span>לא הצלחנו לטעון את ההודעות. בדקו את החיבור ונסו שוב.</span>
+    <button nbButton size="small" status="danger" type="button" (click)="retryInitialLoad()">
+      <nb-icon icon="refresh-outline"></nb-icon>
+      ניסיון נוסף
+    </button>
   </div>
 }
 
-<div nbInfiniteList (scroll)="onListScroll()" [threshold]="300" [throttleTime]="1000" (topThreshold)="loadMessages()"
+<!-- Shown while the first page loads and the feed positions itself (it stays
+     visibility:hidden until then, so a reader never sees a jump). Fixed over
+     the column so it never changes the page height the scroll logic measures. -->
+@if (!isVisible && !initialLoadFailed) {
+  <div class="feed-skeleton" aria-live="polite" aria-busy="true">
+    <div class="feed-skeleton__inner">
+      <span class="visually-hidden">טוען את ההודעות…</span>
+      @for (i of [1, 2, 3]; track i) {
+        <div class="feed-skeleton__card" aria-hidden="true">
+          <div class="feed-skeleton__head">
+            <span class="feed-skeleton__avatar shimmer"></span>
+            <span class="feed-skeleton__line feed-skeleton__line--short shimmer"></span>
+          </div>
+          <span class="feed-skeleton__line shimmer"></span>
+          <span class="feed-skeleton__line feed-skeleton__line--mid shimmer"></span>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<div nbInfiniteList [threshold]="300" [throttleTime]="1000" (topThreshold)="loadMessages()"
   (bottomThreshold)="loadMessages({ scrollDown: true })" [listenWindowScroll]="true"
-  [class.chat-hidden]="!isVisible">
-  <nb-list class="flex-column-reverse" [class.hide-scheduled-messages]="hideScheduledMessages">
+  class="feed" [class.chat-hidden]="!isVisible">
+  <nb-list class="flex-column-reverse feed__list" [class.hide-scheduled-messages]="hideScheduledMessages">
 
     @for (msg of scheduledMessages; track $index) {
-    <nb-list-item class="d-flex flex-column align-items-start scheduled-message-item">
+    <nb-list-item class="feed__item scheduled-message-item">
       <!-- Own id namespace: a bare index collided with real message ids, so
            /channel/<slug>#3 and quotes of message 3 could land on scheduled item 3. -->
-      <app-message class="overflow-auto" [message]="msg" [id]="'scheduled-' + $index" [isSchedulingMessage]="true"
+      <app-message [message]="msg" [id]="'scheduled-' + $index" [isSchedulingMessage]="true"
         [indexId]="$index"></app-message>
     </nb-list-item>
     }
 
-    <nb-list-item>
+    <nb-list-item class="feed__item">
       @if (scheduledMessages && scheduledMessages.length) {
-      <div class="last-read-indicator">
-        <div class="line"></div>
-        <div class="last-read-indicator-text">הודעות מתוזמנות</div>
-        <div class="toggle-scheduled-messages">
-          <nb-icon [icon]="hideScheduledMessages ? 'arrow-ios-forward-outline' : 'arrow-ios-downward-outline'"
-            (click)="hideScheduledMessages = !hideScheduledMessages"></nb-icon>
+      <div class="feed-section">
+        <div class="feed-section__line"></div>
+        <div class="feed-section__body">
+          <div class="feed-section__title">
+            <nb-icon icon="clock-outline"></nb-icon>
+            הודעות מתוזמנות ({{ scheduledMessages.length }})
+          </div>
+          <div class="feed-section__hint">רק כותבי הערוץ רואים אותן. כל אחת תתפרסם לקוראים מעצמה בשעה שנקבעה לה.</div>
         </div>
-        <div class="line"></div>
+        <button nbButton ghost size="small" status="basic" type="button" class="feed-section__toggle"
+          (click)="hideScheduledMessages = !hideScheduledMessages"
+          [attr.aria-expanded]="!hideScheduledMessages"
+          [attr.aria-label]="hideScheduledMessages ? 'הצגת ההודעות המתוזמנות' : 'הסתרת ההודעות המתוזמנות'"
+          [nbTooltip]="hideScheduledMessages ? 'הצגה' : 'הסתרה'">
+          <nb-icon [icon]="hideScheduledMessages ? 'chevron-up-outline' : 'chevron-down-outline'"></nb-icon>
+        </button>
+        <div class="feed-section__line"></div>
       </div>
       }
     </nb-list-item>
 
     @for (message of messages; track message) {
-    <nb-list-item class="d-flex flex-column align-items-start">
-      <!-- last read indicator -->
-      @if (message.id === lastReadMessageId + 1) {
-      <div class="last-read-indicator">
-        <div class="line"></div>
-        <div class="last-read-indicator-text">לא נקראו</div>
-        <div class="line"></div>
+    <nb-list-item class="feed__item">
+      @if (message.id !== undefined && dayLabels.has(message.id)) {
+      <div class="day-separator" role="separator" [attr.aria-label]="dayLabels.get(message.id)">
+        <span class="day-separator__pill">{{ dayLabels.get(message.id) }}</span>
       </div>
       }
-      <app-message class="overflow-auto" [message]="message" [id]="message.id"></app-message>
+      <!-- last read indicator -->
+      <!-- 0 is "nothing stored / everything read", never a real position. -->
+      @if (lastReadMessageId > 0 && message.id === lastReadMessageId + 1) {
+      <div class="last-read-indicator">
+        <div class="last-read-indicator__line"></div>
+        <div class="last-read-indicator__text">
+          <nb-icon icon="arrow-downward-outline"></nb-icon>
+          הודעות שעוד לא קראתם
+        </div>
+        <div class="last-read-indicator__line"></div>
+      </div>
+      }
+      <app-message [message]="message" [id]="message.id"></app-message>
       @if (adSlotsAfter.has(message.id!)) {
       <div class="magnet-ad-item">
         <app-magnet-ad-slot [slotKey]="'ad-after-' + message.id"></app-magnet-ad-slot>
@@ -61,10 +103,31 @@
     }
 
     @if (messages.length === 0) {
-    <nb-list-item class="flex-fill align-self-center">
+    <nb-list-item class="feed__item feed__item--center">
       @if (!isLoading) {
-      <div class="align-self-center flex-grow-1">
-        <span>אין הודעות</span>
+      <div class="feed-empty">
+        @if (canWrite) {
+          <nb-icon icon="paper-plane-outline" class="feed-empty__icon"></nb-icon>
+          <h2 class="feed-empty__title">הערוץ מוכן!</h2>
+          <p class="feed-empty__text">כתבו את ההודעה הראשונה בתיבה למטה — כל מי שפתח את הקישור לערוץ יראה אותה מיד.</p>
+          <div class="feed-empty__actions">
+            <button nbButton appearance="outline" status="primary" size="small" type="button" (click)="copyChannelLink()">
+              <nb-icon icon="copy-outline"></nb-icon>
+              העתקת הקישור לערוץ
+            </button>
+            @if (canManage) {
+              <button nbButton ghost status="primary" size="small" type="button" (click)="openChannelInfo()">
+                <nb-icon icon="image-outline"></nb-icon>
+                לוגו ותיאור
+              </button>
+            }
+          </div>
+          <nb-icon icon="arrow-downward-outline" class="feed-empty__arrow" aria-hidden="true"></nb-icon>
+        } @else {
+          <nb-icon icon="message-circle-outline" class="feed-empty__icon"></nb-icon>
+          <h2 class="feed-empty__title">עוד אין הודעות בערוץ</h2>
+          <p class="feed-empty__text">ברגע שיתפרסם משהו, הוא יופיע כאן מעצמו — אין צורך לרענן.</p>
+        }
       </div>
       }
     </nb-list-item>
@@ -72,9 +135,9 @@
 
     <!-- Loading indicator -->
     @if (isLoading) {
-    <nb-list-item class="align-self-center loading-indicator">
-      <div class="align-self-center flex-grow-1">
-        <div class="spinner-border text-primary"></div>
+    <nb-list-item class="feed__item feed__item--center loading-indicator">
+      <div class="feed-loading" role="status" aria-label="טוען הודעות">
+        <span class="feed-loading__spinner"></span>
       </div>
     </nb-list-item>
     }
@@ -83,11 +146,20 @@
   <!-- Scroll to bottom -->
   @if (showScrollToBottom) {
   <div class="scroll-to-bottom-btn">
-    <button nbButton status="primary" shape="round" class="shadow" (click)="scrollToBottom()">
+    @if (thereNewMessages) {
+    <button nbButton status="primary" shape="round" size="small" type="button" class="scroll-pill"
+      (click)="scrollToBottom()" aria-label="מעבר להודעות החדשות">
+      <nb-icon icon="arrow-downward-outline"></nb-icon>
+      הודעות חדשות
+      @if (newMessagesCount > 0) {
+      <span class="scroll-pill__count">{{ newMessagesCount > 99 ? '99+' : newMessagesCount }}</span>
+      }
+    </button>
+    } @else {
+    <button nbButton status="basic" shape="round" type="button" class="scroll-fab"
+      (click)="scrollToBottom()" aria-label="לתחתית השיחה" nbTooltip="לתחתית השיחה">
       <nb-icon icon="arrow-downward-outline"></nb-icon>
     </button>
-    @if (thereNewMessages) {
-    <nb-badge [dotMode]="true" status="danger"></nb-badge>
     }
   </div>
   }

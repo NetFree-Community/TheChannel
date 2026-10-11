@@ -1,222 +1,249 @@
 <div class="magnet-page">
 
-  @if (locked) {
-    <nb-alert status="warning" class="mb-3">
-      ההגדרות בתחום זה נעולות על ידי הנהלת המערכת — השינויים כאן לא ישפיעו על הערוץ
-    </nb-alert>
-  }
+  @if (loading) {
+    <nb-card>
+      <nb-card-body class="magnet-loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים את ההגדרות…"></nb-card-body>
+    </nb-card>
+  } @else if (loadFailed) {
+    <nb-card>
+      <nb-card-body class="magnet-empty">
+        <nb-icon icon="wifi-off-outline"></nb-icon>
+        <strong>לא הצלחנו לטעון את ההגדרות</strong>
+        <span>בלי העותק השמור אי אפשר לשמור — אחרת הגדרות אחרות של הערוץ היו נמחקות. נסו שוב.</span>
+        <button nbButton status="primary" size="small" type="button" (click)="loadSettings()">
+          <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+        </button>
+      </nb-card-body>
+    </nb-card>
+  } @else {
 
-  <nb-card>
-    <nb-card-header class="card-header">
-      <nb-icon icon="pricetags-outline"></nb-icon>
-      <span>שילוב פרסומות ממגנט</span>
-    </nb-card-header>
-
-    <nb-card-body>
-      <p class="intro">
-        מגנט היא פלטפורמת פרסומות חיצונית. ניתן להדביק כאן את קוד ההטמעה (HTML/JS) שקיבלתם
-        ממגנט, והוא יוצג בין ההודעות בערוץ. ההטמעה היא בצד הגולש בלבד - הפרסומת תיטען רק
-        כשהגולש גולל ומגיע אליה, וכל פעם נקראת מחדש כך שהתוכן עשוי להשתנות בכל גלילה.
-        אם אין תשובת שרת מהפרסום - לא יוצג כלום.
-      </p>
-
-      <div class="setting-block">
-        <nb-toggle [(checked)]="enabled">
-          <span class="bold">הפעלת שילוב פרסומות מגנט</span>
-        </nb-toggle>
-        <p class="hint">כיבוי יסיר לחלוטין את הצגת הפרסומות בערוץ.</p>
-      </div>
-
-      <div class="setting-block">
-        <label class="bold" for="snippet">קוד הטמעה ממגנט (HTML/JavaScript)</label>
-        <p class="hint">
-          הדביקו את קוד ההטמעה שקיבלתם ממגנט. הקוד יוטמע כפי שהוא בכל מיקום פרסומת בערוץ
-          (תגיות &lt;script&gt; ירוצו בכל הצגה).
-        </p>
-        <textarea
-          nbInput
-          fullWidth
-          id="snippet"
-          rows="8"
-          dir="ltr"
-          [(ngModel)]="snippet"
-          placeholder='<div id="magnet-ad"></div>&#10;<script src="https://magnet.example/embed.js"></script>'>
-        </textarea>
-      </div>
-    </nb-card-body>
-  </nb-card>
-
-  <nb-card>
-    <nb-card-header class="card-header">
-      <nb-icon icon="clock-outline"></nb-icon>
-      <span>תדירות הצגה</span>
-    </nb-card-header>
-
-    <nb-card-body>
-      <p class="intro">בחרו את שיטת התזמון להצגת פרסומות בין ההודעות.</p>
-
-      <div class="mode-options">
-        <nb-radio
-          name="magnet-mode"
-          value="by_messages"
-          [checked]="mode === 'by_messages'"
-          (valueChange)="mode = $any($event)">
-          הצגה לפי כמות הודעות
-        </nb-radio>
-        <nb-radio
-          name="magnet-mode"
-          value="by_time"
-          [checked]="mode === 'by_time'"
-          (valueChange)="mode = $any($event)">
-          הצגה לפי זמן
-        </nb-radio>
-      </div>
-
-      @if (mode === 'by_messages') {
-        <div class="mode-section">
-          <div class="setting-block">
-            <label class="bold" for="per-messages">הצגת פרסומת כל X הודעות</label>
-            <p class="hint">בכל X הודעות תוצג פרסומת אחת. לדוגמא: ערך 5 = פרסומת אחרי כל 5 הודעות.</p>
-            <input nbInput type="number" min="1" id="per-messages" [(ngModel)]="perMessages">
-          </div>
-
-          <div class="setting-block">
-            <label class="bold" for="min-time">החרגה: זמן מינימום בין פרסומות (שניות)</label>
-            <p class="hint">
-              גם אם עברו X הודעות, אם הפרסומת הקודמת הוצגה לפני פחות מהזמן הזה - לא תוצג שוב.
-              הזינו 0 (או השאירו ריק) כדי לבטל את ההחרגה.
-            </p>
-            <input nbInput type="number" min="0" id="min-time" [(ngModel)]="minTimeSeconds">
-          </div>
-        </div>
-      }
-
-      @if (mode === 'by_time') {
-        <div class="mode-section">
-          <div class="setting-block">
-            <label class="bold" for="per-seconds">הצגת פרסומת כל X שניות</label>
-            <p class="hint">פרסומת תוצג בערוץ אחת לכל פרק זמן. לדוגמא: ערך 60 = פרסומת בכל דקה.</p>
-            <input nbInput type="number" min="1" id="per-seconds" [(ngModel)]="perSeconds">
-          </div>
-
-          <div class="setting-block">
-            <label class="bold" for="min-msgs">החרגה: מספר מינימום הודעות חדשות מהפרסומת הקודמת</label>
-            <p class="hint">
-              גם אם עבר הזמן, אם לא נוספו לפחות X הודעות חדשות מאז הפרסומת הקודמת - לא תוצג שוב.
-              הזינו 0 (או השאירו ריק) כדי לבטל את ההחרגה.
-            </p>
-            <input nbInput type="number" min="0" id="min-msgs" [(ngModel)]="minMessagesSince">
-          </div>
-        </div>
-      }
-    </nb-card-body>
-  </nb-card>
-
-  <!-- נתוני מגנט מגיעים מנקודת קצה של מנהל-על בלבד (לפי המפתח הגלובלי), ולכן
-       מוצגים רק למנהל-על. -->
-  @if (isSuperAdmin) {
-  <nb-card>
-    <nb-card-header class="card-header">
-      <nb-icon icon="bar-chart-2-outline"></nb-icon>
-      <span>נתוני הקלקות ותגמולים</span>
-    </nb-card-header>
-
-    <nb-card-body>
-      <p class="intro">
-        נתונים אלו מתקבלים ישירות ממגנט בזמן אמת לפי מפתח ה-API הגלובלי שמוגדר בפאנל מנהל-על ← פרסומות מגנט.
-        רק הקלקות מאושרות לתשלום נספרות. הסכומים נטו, ללא מע"מ, בש"ח.
-        "היום" מתחיל מ-00:00 שעון ישראל. "שבוע"/"חודש" = 7/30 ימים אחורה.
-        מגנט שומר תוצאות במטמון לכ-30 שניות.
-      </p>
-
-      <div class="stats-actions">
-        @if (!stats && !statsError) {
-          <button nbButton status="primary" (click)="loadStats()" [disabled]="statsLoading">
-            <nb-icon icon="bar-chart-2-outline"></nb-icon>
-            {{ statsLoading ? 'טוען...' : 'הצג נתוני הקלקות ותגמולים' }}
-          </button>
-        } @else {
-          <button nbButton status="basic" (click)="loadStats()" [disabled]="statsLoading">
-            <nb-icon icon="refresh-outline"></nb-icon>
-            {{ statsLoading ? 'מרענן...' : 'רענן' }}
-          </button>
-          @if (statsLoadedAt) {
-            <span class="stats-meta">עודכן: {{ statsLoadedAt | date:'HH:mm:ss' }}</span>
-          }
-        }
-      </div>
-
-      @if (statsError) {
-        <div class="stats-error">
-          <nb-icon icon="alert-circle-outline"></nb-icon>
-          <span>{{ statsError }}</span>
-        </div>
-      }
-
-      @if (stats && !statsError) {
-        @if (stats.site?.domain) {
-          <div class="stats-site">
-            <span class="bold">אתר:</span>
-            <a [href]="siteUrl(stats.site?.domain)" target="_blank" rel="noopener">{{ stats.site?.domain }}</a>
-          </div>
-        }
-
-        <div class="stats-grid">
-          <div class="stats-section">
-            <div class="stats-title">
-              <nb-icon icon="navigation-2-outline"></nb-icon>
-              הקלקות
-            </div>
-            <div class="stats-row">
-              <span class="stats-label">היום</span>
-              <span class="stats-value">{{ formatNumber(stats.clicks?.today) }}</span>
-            </div>
-            <div class="stats-row">
-              <span class="stats-label">שבוע אחרון</span>
-              <span class="stats-value">{{ formatNumber(stats.clicks?.week) }}</span>
-            </div>
-            <div class="stats-row">
-              <span class="stats-label">חודש אחרון</span>
-              <span class="stats-value">{{ formatNumber(stats.clicks?.month) }}</span>
-            </div>
-          </div>
-
-          <div class="stats-section">
-            <div class="stats-title">
-              <nb-icon icon="credit-card-outline"></nb-icon>
-              תגמולים <span class="stats-currency">({{ stats.currency || 'ILS' }} - ללא מע"מ)</span>
-            </div>
-            <div class="stats-row">
-              <span class="stats-label">היום</span>
-              <span class="stats-value">{{ formatMoney(stats.earnings?.today, stats.currency) }}</span>
-            </div>
-            <div class="stats-row">
-              <span class="stats-label">שבוע אחרון</span>
-              <span class="stats-value">{{ formatMoney(stats.earnings?.week, stats.currency) }}</span>
-            </div>
-            <div class="stats-row">
-              <span class="stats-label">חודש אחרון</span>
-              <span class="stats-value">{{ formatMoney(stats.earnings?.month, stats.currency) }}</span>
-            </div>
-          </div>
-        </div>
-      }
-    </nb-card-body>
-  </nb-card>
-  }
-
-  <div class="save-bar align-items-center gap-2 flex-wrap">
-    <button nbButton status="primary" (click)="save()" [disabled]="inProgress || locked || !loaded">
-      <nb-icon icon="save-outline"></nb-icon>
-      {{ inProgress ? 'שומר...' : 'שמור הגדרות מגנט' }}
-    </button>
-    @if (loadFailed) {
-      <span class="text-muted">טעינת ההגדרות נכשלה, לא ניתן לשמור</span>
-      <button nbButton status="basic" size="small" ghost (click)="loadSettings()">
-        <nb-icon icon="refresh-outline"></nb-icon>
-        נסו שוב
-      </button>
+    @if (locked) {
+      <nb-alert status="warning" class="magnet-alert">
+        הנהלת המערכת קבעה הגדרות פרסומת אחידות לכל הערוצים, ולכן ההגדרות כאן נעולות ואי אפשר לשמור אותן כל עוד הנעילה פעילה.
+      </nb-alert>
     }
-  </div>
+
+    <nb-card>
+      <nb-card-header class="card-head">
+        <nb-icon icon="pricetags-outline"></nb-icon>
+        <h2>מה זה מגנט ADS ואיך מחברים</h2>
+        <span class="pill" [class.pill--on]="enabled && !enabledWithoutSnippet" [class.pill--warn]="enabledWithoutSnippet">
+          <nb-icon [icon]="enabled ? 'checkmark-circle-2-outline' : 'close-circle-outline'"></nb-icon>
+          {{ enabled ? (enabledWithoutSnippet ? 'דלוק, חסר קוד' : 'פעיל') : 'כבוי' }}
+        </span>
+      </nb-card-header>
+
+      <nb-card-body>
+        <p class="lead">
+          מגנט ADS היא רשת פרסום חיצונית שמשלמת לבעלי אתרים על הקלקות. כדי להשתמש בה צריך חשבון במערכת מגנט
+          וקוד הטמעה שמקבלים שם — מדביקים אותו כאן, והפרסומת מופיעה בין ההודעות בערוץ, נטענת אצל הקורא רק
+          כשהוא מגיע אליה. אם למגנט אין פרסומת להציג, פשוט לא מופיע כלום.
+        </p>
+
+        <div class="field is-toggle">
+          <div class="toggle-row">
+            <nb-toggle [(checked)]="enabled" labelPosition="end">
+              <span class="field__label field__label--inline">הצגת פרסומות ממגנט בערוץ</span>
+            </nb-toggle>
+          </div>
+          <p class="field__hint field__hint--toggle">
+            כבוי — אין פרסומות בכלל, גם אם יש קוד. דלוק — הפרסומות מופיעות לפי התדירות שבוחרים למטה.
+          </p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="snippet">קוד ההטמעה ממגנט</label>
+          <p class="field__hint">
+            מעתיקים מהמערכת של מגנט ומדביקים כאן כמו שהוא (HTML/JavaScript). הקוד מוטמע בכל מקום שבו מופיעה
+            פרסומת. בלי קוד — גם כשהמתג דלוק לא יוצג כלום.
+          </p>
+          <textarea
+            nbInput
+            fullWidth
+            id="snippet"
+            rows="7"
+            dir="ltr"
+            spellcheck="false"
+            [(ngModel)]="snippet"
+            placeholder='<div id="magnet-ad"></div>&#10;<script src="https://magnet.example/embed.js"></script>'>
+          </textarea>
+          @if (enabledWithoutSnippet) {
+            <p class="field__warn" role="status">
+              <nb-icon icon="alert-triangle-outline"></nb-icon>
+              המתג דלוק אבל אין קוד הטמעה — הקוראים לא יראו פרסומות.
+            </p>
+          }
+        </div>
+      </nb-card-body>
+    </nb-card>
+
+    <nb-card>
+      <nb-card-header class="card-head">
+        <nb-icon icon="clock-outline"></nb-icon>
+        <h2>כל כמה זמן מופיעה פרסומת</h2>
+      </nb-card-header>
+
+      <nb-card-body>
+        <p class="lead">בוחרים לפי מה לספור: לפי מספר ההודעות שהקורא גלל, או לפי הזמן שעבר.</p>
+
+        <div class="mode-options" role="radiogroup" aria-label="שיטת התזמון">
+          <nb-radio
+            name="magnet-mode"
+            value="by_messages"
+            [checked]="mode === 'by_messages'"
+            (valueChange)="mode = $any($event)">
+            לפי מספר הודעות
+          </nb-radio>
+          <nb-radio
+            name="magnet-mode"
+            value="by_time"
+            [checked]="mode === 'by_time'"
+            (valueChange)="mode = $any($event)">
+            לפי זמן
+          </nb-radio>
+        </div>
+
+        @if (mode === 'by_messages') {
+          <div class="field">
+            <label class="field__label" for="per-messages">פרסומת אחת כל כמה הודעות</label>
+            <p class="field__hint">למשל 5 — פרסומת אחרי כל חמש הודעות.</p>
+            <input nbInput type="number" inputmode="numeric" min="1" id="per-messages" class="input--short" [(ngModel)]="perMessages">
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="min-time">ולא יותר מפעם בכל… (שניות)</label>
+            <p class="field__hint">
+              גם אם עברו מספיק הודעות, פרסומת לא תופיע אם הקודמת הוצגה לפני פחות מזה. 0 או ריק — בלי הגבלה.
+            </p>
+            <input nbInput type="number" inputmode="numeric" min="0" id="min-time" class="input--short" [(ngModel)]="minTimeSeconds">
+          </div>
+        }
+
+        @if (mode === 'by_time') {
+          <div class="field">
+            <label class="field__label" for="per-seconds">פרסומת אחת כל כמה שניות</label>
+            <p class="field__hint">למשל 60 — פרסומת פעם בדקה.</p>
+            <input nbInput type="number" inputmode="numeric" min="1" id="per-seconds" class="input--short" [(ngModel)]="perSeconds">
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="min-msgs">ורק אחרי לפחות… הודעות חדשות</label>
+            <p class="field__hint">
+              גם אם עבר הזמן, פרסומת לא תופיע אם לא נוספו מאז הקודמת לפחות כך וכך הודעות. 0 או ריק — בלי הגבלה.
+            </p>
+            <input nbInput type="number" inputmode="numeric" min="0" id="min-msgs" class="input--short" [(ngModel)]="minMessagesSince">
+          </div>
+        }
+      </nb-card-body>
+    </nb-card>
+
+    <!-- Magnet's own numbers come from a super-admin-only endpoint (the global
+         key), so this card is for the super admin alone. -->
+    @if (isSuperAdmin) {
+    <nb-card>
+      <nb-card-header class="card-head">
+        <nb-icon icon="bar-chart-2-outline"></nb-icon>
+        <h2>הקלקות ותגמולים</h2>
+        <span class="pill">מנהל-על</span>
+      </nb-card-header>
+
+      <nb-card-body>
+        <p class="lead">
+          נתונים ישירות ממגנט, לפי המפתח הגלובלי שמוגדר בפאנל מנהל-על ← פרסומות מגנט. נספרות רק הקלקות
+          שאושרו לתשלום; הסכומים נטו, בלי מע"מ. "היום" מתחיל ב-00:00 שעון ישראל, "שבוע" ו"חודש" הם 7 ו-30 ימים
+          אחורה. מגנט שומר תוצאות כחצי דקה, אז רענון מיידי לא תמיד ישנה משהו.
+        </p>
+
+        <div class="stats-actions">
+          @if (!stats && !statsError) {
+            <button nbButton status="primary" size="small" type="button" (click)="loadStats()" [disabled]="statsLoading">
+              <nb-icon icon="bar-chart-2-outline"></nb-icon>
+              {{ statsLoading ? 'טוענים…' : 'הצגת הנתונים' }}
+            </button>
+          } @else {
+            <button nbButton status="basic" size="small" type="button" (click)="loadStats()" [disabled]="statsLoading">
+              <nb-icon icon="refresh-outline"></nb-icon>
+              {{ statsLoading ? 'מרעננים…' : 'רענון' }}
+            </button>
+            @if (statsLoadedAt) {
+              <span class="stats-meta">עודכן ב-{{ statsLoadedAt | date:'HH:mm:ss' }}</span>
+            }
+          }
+        </div>
+
+        @if (statsError) {
+          <div class="stats-error" role="alert">
+            <nb-icon icon="alert-circle-outline"></nb-icon>
+            <span>{{ statsError }}</span>
+          </div>
+        }
+
+        @if (stats && !statsError) {
+          @if (stats.site?.domain) {
+            <div class="stats-site">
+              <span class="stats-site__label">אתר:</span>
+              <a [href]="siteUrl(stats.site?.domain)" target="_blank" rel="noopener">{{ stats.site?.domain }}</a>
+            </div>
+          }
+
+          <div class="stats-grid">
+            <div class="stats-section">
+              <div class="stats-title">
+                <nb-icon icon="navigation-2-outline"></nb-icon>
+                הקלקות
+              </div>
+              <div class="stats-row">
+                <span class="stats-label">היום</span>
+                <span class="stats-value">{{ formatNumber(stats.clicks?.today) }}</span>
+              </div>
+              <div class="stats-row">
+                <span class="stats-label">שבוע אחרון</span>
+                <span class="stats-value">{{ formatNumber(stats.clicks?.week) }}</span>
+              </div>
+              <div class="stats-row">
+                <span class="stats-label">חודש אחרון</span>
+                <span class="stats-value">{{ formatNumber(stats.clicks?.month) }}</span>
+              </div>
+            </div>
+
+            <div class="stats-section">
+              <div class="stats-title">
+                <nb-icon icon="credit-card-outline"></nb-icon>
+                תגמולים <span class="stats-currency">({{ stats.currency || 'ILS' }}, בלי מע"מ)</span>
+              </div>
+              <div class="stats-row">
+                <span class="stats-label">היום</span>
+                <span class="stats-value">{{ formatMoney(stats.earnings?.today, stats.currency) }}</span>
+              </div>
+              <div class="stats-row">
+                <span class="stats-label">שבוע אחרון</span>
+                <span class="stats-value">{{ formatMoney(stats.earnings?.week, stats.currency) }}</span>
+              </div>
+              <div class="stats-row">
+                <span class="stats-label">חודש אחרון</span>
+                <span class="stats-value">{{ formatMoney(stats.earnings?.month, stats.currency) }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </nb-card-body>
+    </nb-card>
+    }
+
+    <div class="save-bar">
+      <button nbButton status="primary" type="button" (click)="save()" [disabled]="inProgress || locked || !loaded"
+              [nbSpinner]="inProgress" nbSpinnerStatus="control" nbSpinnerSize="small">
+        <nb-icon icon="save-outline"></nb-icon>
+        {{ inProgress ? 'שומרים…' : 'שמירת שינויים' }}
+      </button>
+      @if (dirty && !inProgress) {
+        <button nbButton ghost status="basic" size="small" type="button" (click)="resetChanges()">ביטול שינויים</button>
+      }
+      <span class="save-bar__spacer"></span>
+      <span class="save-bar__state" [class.is-dirty]="dirty" aria-live="polite">
+        {{ locked ? 'נעול על ידי הנהלת המערכת' : dirty ? 'יש שינויים שלא נשמרו' : 'הכול שמור' }}
+      </span>
+    </div>
+  }
 
 </div>

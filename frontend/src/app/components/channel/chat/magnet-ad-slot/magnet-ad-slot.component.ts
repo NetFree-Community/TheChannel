@@ -7,7 +7,6 @@ import {
   OnDestroy,
   ViewChild,
 } from '@angular/core';
-import { NbUserModule } from '@nebular/theme';
 import { MagnetAdsService } from '../../../../services/magnet-ads.service';
 import { ChatService } from '../../../../services/chat.service';
 
@@ -52,7 +51,7 @@ const STORAGE_SHIM = `(function(){` +
 @Component({
   selector: 'app-magnet-ad-slot',
   standalone: true,
-  imports: [NbUserModule],
+  imports: [],
   templateUrl: './magnet-ad-slot.component.html',
   styleUrl: './magnet-ad-slot.component.scss',
 })
@@ -68,6 +67,8 @@ export class MagnetAdSlotComponent implements AfterViewInit, OnDestroy {
   private reportedHeight: number | null = null;
   private readonly onMessage = (event: MessageEvent) => this.handleMessage(event);
   collapsed = false;
+  /** The super admin's global snippet is shown instead of the channel's own. */
+  locked = false;
 
   constructor(
     private magnet: MagnetAdsService,
@@ -107,6 +108,7 @@ export class MagnetAdSlotComponent implements AfterViewInit, OnDestroy {
     this.rendered = true;
 
     const settings = this.magnet.getSettings();
+    this.locked = !!settings?.locked;
     const snippet = settings?.snippet?.trim();
     if (!snippet) {
       this.collapse();

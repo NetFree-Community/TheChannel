@@ -7,6 +7,7 @@ import {
   NbToastrService,
 } from '@nebular/theme';
 import { SuperAdminService } from '../../../services/super-admin.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-super-admin-statistics',
@@ -18,6 +19,7 @@ import { SuperAdminService } from '../../../services/super-admin.service';
     NbIconModule,
   ],
   templateUrl: './super-admin-statistics.component.html',
+  styleUrl: './super-admin-statistics.component.scss',
 })
 export class SuperAdminStatisticsComponent implements OnInit {
   magnetStats: any = null;
@@ -25,10 +27,13 @@ export class SuperAdminStatisticsComponent implements OnInit {
   resetting = false;
   /** Shown in the magnet card instead of the generic "no data" line. */
   magnetError = '';
+  /** True when the key is simply not set up — a setup hint, not a failure. */
+  magnetNotConfigured = false;
 
   constructor(
     private superAdminService: SuperAdminService,
     private toastr: NbToastrService,
+    private confirm: ConfirmService,
   ) {}
 
   ngOnInit(): void {
@@ -38,6 +43,7 @@ export class SuperAdminStatisticsComponent implements OnInit {
   loadMagnetStats() {
     this.loadingStats = true;
     this.magnetError = '';
+    this.magnetNotConfigured = false;
     this.superAdminService.getMagnetStats()
       .then(stats => this.magnetStats = stats)
       .catch(err => {
@@ -48,23 +54,35 @@ export class SuperAdminStatisticsComponent implements OnInit {
         const body = err?.error;
         const code = typeof body === 'string' ? body : (body?.error ?? '');
         if (err?.status === 400 && String(code).includes('missing_api_key')) {
-          this.magnetError = 'מפתח ה-API של מגנט לא הוגדר';
+          this.magnetNotConfigured = true;
+          this.magnetError = 'מפתח ה-API של מגנט עדיין לא הוגדר';
           return;
         }
-        this.toastr.warning('', 'לא ניתן לטעון סטטיסטיקות מגנט');
+        this.magnetError = err?.status === 502
+          ? 'מגנט לא ענה. נסו שוב בעוד רגע.'
+          : 'הנתונים ממגנט לא נטענו. נסו שוב בעוד רגע.';
+        this.toastr.warning('', 'הנתונים ממגנט לא נטענו');
       })
       .finally(() => this.loadingStats = false);
   }
 
-  resetStatistics() {
+  async resetStatistics() {
     // The reset clears the recorded peak AND every channel's monthly
     // connection-history series (the graphs on the owners' statistics
     // screens). The prompt used to name only the peak.
-    if (!confirm('האם אתה בטוח שברצונך לאפס את הסטטיסטיקות? פעולה זו מוחקת את שיא החיבורים ואת היסטוריית החיבורים של כל הערוצים (הגרפים במסכי הסטטיסטיקה), ולא ניתן לשחזר אותה.')) return;
+    const ok = await this.confirm.ask({
+      title: 'לאפס את מוני החיבורים של כל הערוצים?',
+      message: 'שיא החיבורים והיסטוריית החיבורים של כל הערוצים (הגרפים במסכי הסטטיסטיקה של מנהלי הערוצים) יימחקו. אי אפשר לשחזר אותם.',
+      status: 'danger',
+      confirmLabel: 'איפוס',
+    });
+    if (!ok) return;
     this.resetting = true;
     this.superAdminService.resetStatistics()
-      .then(() => this.toastr.success('', 'סטטיסטיקות החיבורים אופסו בהצלחה'))
-      .catch(() => this.toastr.danger('', 'שגיאה באיפוס הסטטיסטיקות'))
+      .then(() => this.toastr.success('', 'מוני החיבורים של כל הערוצים אופסו'))
+      .catch((err) => this.toastr.danger('', err?.status === 504
+        ? 'האיפוס לא הסתיים בזמן — חלק מהערוצים אופסו. הריצו שוב כדי להשלים.'
+        : 'האיפוס לא הצליח, נסו שוב'))
       .finally(() => this.resetting = false);
   }
 

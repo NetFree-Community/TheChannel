@@ -1,34 +1,82 @@
-<nb-card>
+<div class="info-page">
+  <nb-card class="info-card">
     <nb-card-body>
-        <div style="position: relative;">
-            <img [src]="channel.logoUrl" class="rounded-circle" (click)="fileInput.click()"
-                nbPopover="לחצו כאן להעלאת תמונה חדשה" nbPopoverTrigger="hover">
-            <button nbButton (click)="fileInput.click()" shape="round"
-                style="position: absolute; bottom: 0; right: 0; padding: 4px;" class="shadow">
-                <i class="bi bi-pencil-fill"></i>
+      @if (loading) {
+        <div class="info-loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים את פרטי הערוץ…"></div>
+      } @else {
+        <div class="logo-row">
+          <button type="button" class="logo" (click)="fileInput.click()" [disabled]="uploading"
+                  aria-label="החלפת הלוגו של הערוץ" nbTooltip="לחיצה להעלאת לוגו חדש"
+                  [nbSpinner]="uploading" nbSpinnerStatus="primary" nbSpinnerSize="medium">
+            @if (channel.logoUrl) {
+              <img [src]="channel.logoUrl" alt="" width="96" height="96">
+            } @else {
+              <span class="logo__initial" aria-hidden="true">{{ initial }}</span>
+            }
+            <span class="logo__edit" aria-hidden="true"><nb-icon icon="edit-outline"></nb-icon></span>
+          </button>
+          <div class="logo-row__text">
+            <h2 class="logo-row__title">לוגו הערוץ</h2>
+            <p class="logo-row__hint">
+              מוצג ליד שם הערוץ בכותרת וברשימת הערוצים. קובץ תמונה רגיל (JPG, PNG או WebP); תמונה ריבועית נראית הכי טוב.
+              הקובץ עולה מיד, אבל הלוגו מתחלף לקוראים רק אחרי לחיצה על "שמירה".
+            </p>
+            @if (uploading) {
+              <p class="logo-row__progress" role="status">מעלים… {{ attachment?.uploadProgress || 0 }}%</p>
+            }
+            <button nbButton ghost status="primary" size="small" type="button" (click)="fileInput.click()" [disabled]="uploading">
+              <nb-icon icon="image-outline"></nb-icon>
+              {{ channel.logoUrl ? 'החלפת תמונה' : 'בחירת תמונה' }}
             </button>
+          </div>
         </div>
         <input type="file" #fileInput accept="image/*" (change)="onFileSelected($event)" hidden>
-        <div class="m-2"></div>
-        <div>
-            <h6>כותרת:</h6>
-            <input type="text" nbInput fullWidth [(ngModel)]="channel.name" maxlength="80">
-            <div class="m-2"></div>
-            <h6>תיאור:</h6>
-            <input type="text" nbInput fullWidth [(ngModel)]="channel.description" maxlength="2000">
-            <div class="m-2"></div>
-            <h6>קישור צור קשר (לא חובה):</h6>
-            <input type="text" nbInput fullWidth dir="ltr" [(ngModel)]="channel.contact_us"
-                placeholder="https://wa.me/972... או mailto:me@example.com">
-            <small class="text-muted">כשמוגדר, מוצג בכותרת הערוץ כפתור "צור קשר" שמוביל לקישור. השאירו ריק כדי להסתיר את הכפתור.</small>
+
+        <div class="field">
+          <label class="field__label" for="channel-name">שם הערוץ</label>
+          <p class="field__hint">מה שהקוראים רואים בראש הערוץ ובכותרת הלשונית בדפדפן.</p>
+          <input id="channel-name" type="text" nbInput fullWidth [(ngModel)]="channel.name" [maxlength]="nameMax"
+                 placeholder="למשל: חדשות השכונה" autocomplete="off" required>
+          <span class="field__counter" aria-live="polite">{{ (channel.name || '').length }} / {{ nameMax }}</span>
         </div>
+
+        <div class="field">
+          <label class="field__label" for="channel-description">תיאור</label>
+          <p class="field__hint">מוצג מתחת לשם, בכותרת הערוץ — במה הערוץ עוסק ולמי הוא מיועד. לא חובה.</p>
+          <textarea id="channel-description" nbInput fullWidth rows="3" [(ngModel)]="channel.description" [maxlength]="descriptionMax"
+                    placeholder="למשל: עדכונים, אירועים והודעות חשובות לתושבים" autocomplete="off"></textarea>
+          <span class="field__counter" aria-live="polite">{{ (channel.description || '').length }} / {{ descriptionMax }}</span>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="channel-contact">קישור ליצירת קשר</label>
+          <p class="field__hint">
+            כשיש קישור, בכותרת הערוץ מופיע כפתור "צור קשר" שמוביל אליו. אפשר כתובת אתר (https://…), קישור לוואטסאפ
+            (https://wa.me/972…) או כתובת מייל בצורה mailto:name&#64;example.com. השאירו ריק כדי להסתיר את הכפתור.
+          </p>
+          <input id="channel-contact" type="text" nbInput fullWidth dir="ltr" [(ngModel)]="channel.contact_us"
+                 placeholder="https://wa.me/972… או mailto:me@example.com" autocomplete="off" inputmode="url">
+        </div>
+      }
     </nb-card-body>
-    <nb-card-footer>
-        <div class="d-flex flex-row-reverse">
-            <div class="m-2"></div>
-            <button nbButton status="primary" shape="round" outline [nbSpinner]="isSending" [disabled]="isSending"
-                nbSpinnerStatus="primary" (click)="editChannelInfo()">עדכן
-            </button>
-        </div>
-    </nb-card-footer>
-</nb-card>
+  </nb-card>
+
+  @if (!loading) {
+    <div class="save-bar">
+      <button nbButton status="primary" type="button" (click)="editChannelInfo()"
+              [disabled]="isSending || uploading" [nbSpinner]="isSending" nbSpinnerStatus="control" nbSpinnerSize="small">
+        <nb-icon icon="save-outline"></nb-icon>
+        {{ isSending ? 'שומרים…' : 'שמירה' }}
+      </button>
+      @if (dirty && !isSending) {
+        <button nbButton ghost status="basic" size="small" type="button" (click)="resetChanges()" [disabled]="uploading">
+          ביטול שינויים
+        </button>
+      }
+      <span class="save-bar__spacer"></span>
+      <span class="save-bar__state" [class.is-dirty]="dirty" aria-live="polite">
+        {{ uploading ? 'הלוגו בהעלאה…' : dirty ? 'יש שינויים שלא נשמרו' : 'הכול שמור' }}
+      </span>
+    </div>
+  }
+</div>

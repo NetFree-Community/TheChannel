@@ -1,29 +1,27 @@
 
 import { Component, OnInit, NgZone, OnDestroy, HostListener } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
 import {
-  NbBadgeModule,
   NbButtonModule,
-  NbCardModule,
-  NbChatModule,
   NbIconModule,
-  NbLayoutModule,
   NbListModule,
-  NbToastrService
+  NbToastrService,
+  NbTooltipModule
 } from "@nebular/theme";
 import { MessageComponent } from "./message/message.component";
 import { MagnetAdSlotComponent } from "./magnet-ad-slot/magnet-ad-slot.component";
 import { firstValueFrom, interval, Subscription } from 'rxjs';
 import { ChatMessage, ChatService } from '../../../services/chat.service';
 import { AuthService } from '../../../services/auth.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NotificationsService } from '../../../services/notifications.service';
 import { User } from '../../../models/user.model';
 import { AdminService } from '../../../services/admin.service';
 import { MagnetAdsService } from '../../../services/magnet-ads.service';
 import { SlugService } from '../../../services/slug.service';
 import { ChannelStatusService } from '../../../services/channel-status.service';
+import { ShareService } from '../../../services/share.service';
+import { calendarDayDiff, formatDayMonthYear, formatWeekday } from '../../../pipes/message-time.pipe';
 
 type LoadMsgOpt = {
   scrollDown?: boolean;
@@ -45,14 +43,10 @@ type ScrollOpt = {
   selector: 'app-chat',
   standalone: true,
   imports: [
-    FormsModule,
-    NbLayoutModule,
-    NbChatModule,
-    NbCardModule,
     NbIconModule,
     NbButtonModule,
     NbListModule,
-    NbBadgeModule,
+    NbTooltipModule,
     MessageComponent,
     MagnetAdSlotComponent
   ],
@@ -68,6 +62,12 @@ export class ChatComponent implements OnInit, OnDestroy {
   private lastEventId = '';
   messages: ChatMessage[] = [];
   adSlotsAfter: Set<number> = new Set();
+  /**
+   * Message id → the day heading shown above it ("היום", "אתמול", or
+   * "יום שלישי, 3.3.2026"): the first loaded message of each calendar day.
+   * Recomputed with the ad slots whenever the list changes.
+   */
+  dayLabels: Map<number, string> = new Map();
   scheduledMessages!: ChatMessage[];
   hideScheduledMessages: boolean = false;
   userInfo?: User;
@@ -81,6 +81,8 @@ export class ChatComponent implements OnInit, OnDestroy {
   hasOldMessages: boolean = true;
   hasNewMessages: boolean = false;
   thereNewMessages: boolean = false;
+  /** How many messages arrived while the reader was scrolled up; shown on the pill. */
+  newMessagesCount: number = 0;
   showScrollToBottom: boolean = false;
   private lastHeartbeat: number = Date.now();
   private subLastHeartbeat?: Subscription;
@@ -100,7 +102,33 @@ export class ChatComponent implements OnInit, OnDestroy {
     private channelStatus: ChannelStatusService,
     private zone: NgZone,
     private router: ActivatedRoute,
+    private share: ShareService,
+    private nav: Router,
   ) { }
+
+  /** Whether the viewer can post here; decides which empty-state text to show. */
+  get canWrite(): boolean {
+    return this.hasWriteRole();
+  }
+
+  /** Moderator level and above: may open the manage page from the empty state. */
+  get canManage(): boolean {
+    const user = this.userInfo;
+    if (!user) return false;
+    if (user.globalRole === 'super_admin') return true;
+    const role = user.channelRoles?.[this.slugService.slug];
+    return role === 'owner' || role === 'moderator';
+  }
+
+  /** Empty state, writers: the first thing an owner wants is readers. */
+  async copyChannelLink() {
+    const ok = await this.share.copy(this.share.channelUrl(this.slugService.slug));
+    if (ok) this.toastrService.success('', 'הקישור לערוץ הועתק — אפשר להדביק ולשלוח');
+  }
+
+  openChannelInfo() {
+    this.nav.navigate(['/channel', this.slugService.slug, 'manage', 'info']);
+  }
 
   // A role on some other channel grants nothing here — the scheduled-messages
   // routes are gated per channel, so only the role on the current slug counts.
@@ -127,9 +155,34 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.zone.run(() => { this.isOffline = true; });
   }
 
-  @HostListener('window:scroll', [])
-  onWindowScroll() {
-    this.onListScroll();
+  // The window scroll listener lives outside Angular (see ngOnInit): it used
+  // to be a HostListener, which scheduled a change-detection pass over every
+  // message card for each scroll event while flicking through the feed.
+  private scrollRaf = 0;
+  private readonly onWindowScroll = () => {
+    if (this.scrollRaf) return;
+    this.scrollRaf = requestAnimationFrame(() => {
+      this.scrollRaf = 0;
+      const distanceFromBottom = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+      const show = distanceFromBottom > 100;
+      const reached = distanceFromBottom < 10 && (this.thereNewMessages || this.newMessagesCount > 0);
+      if (show === this.showScrollToBottom && !reached) return;
+      this.zone.run(() => {
+        this.showScrollToBottom = show;
+        if (reached) {
+          this.thereNewMessages = false;
+          this.newMessagesCount = 0;
+        }
+      });
+    });
+  };
+
+  /** A tab left open past midnight: "היום" has become "אתמול". */
+  @HostListener('document:visibilitychange')
+  onVisibilityChange() {
+    if (document.visibilityState === 'visible' && this.dayLabelsDay !== this.todayKey()) {
+      this.dayLabels = this.computeDayLabels(this.messages);
+    }
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -190,7 +243,10 @@ export class ChatComponent implements OnInit, OnDestroy {
         if (fragment) {
           const messageId = Number(fragment);
           if (!Number.isInteger(messageId)) return;
-          this.scrollToId({ messageId: messageId, mark: true });
+          // After NavigationEnd: nb-layout's restoreScrollTop scrolls to 0 in
+          // its own NavigationEnd handler, which undid an earlier
+          // scrollIntoView on a same-document #id change.
+          setTimeout(() => this.scrollToId({ messageId, mark: true }), 0);
         }
       });
     }, 800);
@@ -206,6 +262,8 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.magnetAds.loadSettings()
       .catch(() => null)
       .then(() => this.rebuildItems());
+
+    this.zone.runOutsideAngular(() => window.addEventListener('scroll', this.onWindowScroll, { passive: true }));
 
     this.initializeMessageListener();
     this.keepAliveSSE();
@@ -333,7 +391,14 @@ export class ChatComponent implements OnInit, OnDestroy {
             // own, so their own post must not raise the new-messages dot.
             const mine = authorId === this.userInfo?.id
               || (authorId === 'operator' && this.userInfo?.globalRole === 'super_admin');
-            this.thereNewMessages = !this.isAtBottom() && !mine;
+            // Measured before the new card is painted: at the bottom now means
+            // the reader wants to stay there — and the author of a post always
+            // does, or their own message sat hidden under the fixed composer
+            // with no scroll and no "newer messages" button to reach it.
+            const atBottom = this.isAtBottom();
+            this.thereNewMessages = !atBottom && !mine;
+            this.newMessagesCount = this.thereNewMessages ? this.newMessagesCount + 1 : 0;
+            if (atBottom || mine) this.scrollToBottom(false);
             this.setLastReadMessage(message.message.id!.toString());
             if (this.hasWriteRole() && this.scheduledMessages && this.cameFromScheduler(message.message)) {
               this.loadScheduledMessages(true);
@@ -397,6 +462,8 @@ export class ChatComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    window.removeEventListener('scroll', this.onWindowScroll);
+    cancelAnimationFrame(this.scrollRaf);
     this.chatService.sseClose();
     this.subLastHeartbeat?.unsubscribe();
     this.schedulingSub?.unsubscribe();
@@ -438,6 +505,44 @@ export class ChatComponent implements OnInit, OnDestroy {
       console.error('computeAdSlots failed, ads will not be shown:', e);
       this.adSlotsAfter = new Set();
     }
+    this.dayLabels = this.computeDayLabels(this.messages);
+  }
+
+  /**
+   * The list is newest-first and rendered column-reverse, so the message that
+   * sits visually above index i is index i+1. A heading goes on a message whose
+   * upper neighbour is on another calendar day (or does not exist). The oldest
+   * loaded message always gets one; when an older page arrives the heading
+   * simply moves up to that page's first message of the day.
+   */
+  private dayLabelsDay = '';
+
+  private todayKey(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }
+
+  private computeDayLabels(messages: ChatMessage[]): Map<number, string> {
+    const labels = new Map<number, string>();
+    const now = new Date();
+    this.dayLabelsDay = this.todayKey();
+    const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    for (let i = 0; i < messages.length; i++) {
+      const m = messages[i];
+      if (m.id === undefined) continue;
+      const d = new Date(m.timestamp as any);
+      if (isNaN(d.getTime())) continue;
+      const above = messages[i + 1];
+      const aboveDate = above ? new Date(above.timestamp as any) : null;
+      const sameDay = !!aboveDate && !isNaN(aboveDate.getTime()) && dayKey(aboveDate) === dayKey(d);
+      if (sameDay) continue;
+      const diff = calendarDayDiff(d, now);
+      const label = diff === 0 ? 'היום'
+        : diff === -1 ? 'אתמול'
+        : `${formatWeekday(d)}, ${formatDayMonthYear(d)}`;
+      labels.set(m.id, label);
+    }
+    return labels;
   }
 
   async keepAliveSSE() {
@@ -484,9 +589,11 @@ export class ChatComponent implements OnInit, OnDestroy {
         // see the new messages immediately.
         if (this.isAtBottom()) {
           this.thereNewMessages = false;
+          this.newMessagesCount = 0;
           this.scrollToBottom(false);
         } else {
           this.thereNewMessages = true;
+          this.newMessagesCount += fresh.length;
         }
       });
     } catch (error) {
@@ -511,14 +618,6 @@ export class ChatComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  onListScroll() {
-    const distanceFromBottom = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
-    this.showScrollToBottom = distanceFromBottom > 100;
-    if (distanceFromBottom < 10) {
-      this.thereNewMessages = false;
-    }
-  }
-
   async scrollToBottom(smooth: boolean = true) {
     if (this.hasNewMessages) {
       this.hasNewMessages = false;
@@ -528,6 +627,7 @@ export class ChatComponent implements OnInit, OnDestroy {
       window.scrollTo({ top: document.body.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
     }, 200);
     this.thereNewMessages = false;
+    this.newMessagesCount = 0;
   }
 
   // The endpoint answers 403 when the operator switched scheduled messages off,

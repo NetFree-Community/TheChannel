@@ -1,163 +1,35 @@
 import { Component, HostBinding, Input, OnInit, Optional } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  NbAlertModule, NbButtonModule, NbCardModule, NbDialogRef, NbFormFieldModule,
-  NbIconModule, NbInputModule, NbSpinnerModule, NbToastrService,
+  NbAlertModule, NbButtonModule, NbCardModule, NbDialogRef,
+  NbIconModule, NbInputModule, NbSpinnerModule, NbToastrService, NbTooltipModule,
 } from '@nebular/theme';
 import { SupportService, SupportTicket } from '../../services/support.service';
 
 /**
- * "Contact the operator" — the same box on the public landing page and inside
- * a channel's admin panel.
+ * "Contact the operator" — the same box on the public landing page, inside a
+ * channel's manage page and as a dialog from the channel header.
  *
- * The two surfaces differ only in what the sender has to type: signed in, the
+ * The surfaces differ only in what the sender has to type: signed in, the
  * name and email come from the session (the server ignores them in the body
  * either way), so the form is just a subject and a message. Anonymous, the
  * email is required, because it is the only way the operator knows who asked.
  *
  * Existing threads are listed underneath so a reply is read in the same place
  * it was sent from. A signed-in user's threads come from the server by session
- * email; an anonymous sender's come from the tokens this browser kept.
+ * email; an anonymous sender's come from the tokens this browser kept. The
+ * operator's replies are labelled "ניהול" and never carry a name.
  */
 @Component({
   selector: 'app-support-box',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, NbCardModule, NbButtonModule, NbInputModule,
-    NbFormFieldModule, NbIconModule, NbAlertModule, NbSpinnerModule,
+    DatePipe, FormsModule, NbCardModule, NbButtonModule, NbInputModule,
+    NbIconModule, NbAlertModule, NbSpinnerModule, NbTooltipModule,
   ],
-  template: `
-    <nb-card class="support-box">
-      <nb-card-header class="support-head">
-        <div>
-          <h5 class="mb-0">{{ title }}</h5>
-          @if (subtitle) { <p class="support-sub">{{ subtitle }}</p> }
-        </div>
-        @if (dialogMode) {
-          <button nbButton ghost size="small" type="button" title="סגור" (click)="close()">
-            <nb-icon icon="close-outline"></nb-icon>
-          </button>
-        }
-      </nb-card-header>
-
-      <nb-card-body>
-        @if (sent) {
-          <nb-alert status="success" class="mb-3">
-            <strong>הפנייה נשלחה.</strong>
-            @if (signedIn) {
-              נחזור אליך בהקדם. התשובה תופיע כאן, במסך הזה.
-            } @else {
-              נחזור אליך בהקדם. שמור את הדף הזה — התשובה תופיע כאן, באותו דפדפן.
-            }
-          </nb-alert>
-        }
-
-        @if (error) { <nb-alert status="danger" class="mb-3">{{ error }}</nb-alert> }
-
-        <form (ngSubmit)="submit()" #f="ngForm">
-          @if (!signedIn) {
-            <div class="row g-2 mb-2">
-              <div class="col-12 col-md-6">
-                <input nbInput fullWidth type="email" name="email" [(ngModel)]="email"
-                       placeholder="כתובת אימייל (חובה)" required maxlength="254">
-              </div>
-              <div class="col-12 col-md-6">
-                <input nbInput fullWidth type="text" name="name" [(ngModel)]="name"
-                       placeholder="שם (לא חובה)" maxlength="100">
-              </div>
-            </div>
-          }
-
-          <input nbInput fullWidth type="text" name="subject" [(ngModel)]="subject"
-                 placeholder="נושא הפנייה" required maxlength="200" class="mb-2">
-
-          <textarea nbInput fullWidth name="body" [(ngModel)]="body" rows="5"
-                    placeholder="במה נוכל לעזור?" required maxlength="5000"
-                    class="mb-2"></textarea>
-
-          <button nbButton status="primary" type="submit" [disabled]="submitting">
-            @if (submitting) { <nb-icon icon="loader-outline"></nb-icon> שולח... }
-            @else { שליחת פנייה }
-          </button>
-        </form>
-      </nb-card-body>
-    </nb-card>
-
-    @if (tickets.length) {
-      <nb-card class="support-box">
-        <nb-card-header><h5 class="mb-0">הפניות שלי</h5></nb-card-header>
-        <nb-card-body>
-          @for (t of tickets; track t.id) {
-            <div class="ticket">
-              <div class="ticket__head" (click)="toggle(t.id)">
-                <span class="ticket__subject">{{ t.subject }}</span>
-                <span class="ticket__status" [class]="'st-' + t.status">
-                  {{ statusText(t.status) }}
-                </span>
-              </div>
-
-              @if (openId === t.id) {
-                <div class="thread">
-                  @for (m of t.messages; track $index) {
-                    <div class="msg" [class.msg--admin]="m.author === 'admin'">
-                      <div class="msg__meta">
-                        {{ m.author === 'admin' ? 'ניהול' : m.authorName }}
-                        · {{ m.createdAt | date:'dd/MM/yyyy HH:mm' }}
-                      </div>
-                      <div class="msg__body">{{ m.body }}</div>
-                    </div>
-                  }
-
-                  @if (t.status !== 'closed') {
-                    <textarea nbInput fullWidth rows="3" [(ngModel)]="replyBody"
-                              [ngModelOptions]="{standalone: true}"
-                              placeholder="הוספת הודעה לפנייה" maxlength="5000"
-                              class="mt-2"></textarea>
-                    <button nbButton size="small" status="primary" class="mt-2"
-                            [disabled]="replying" (click)="sendReply(t)">שליחה</button>
-                  } @else {
-                    <p class="text-muted mt-2 mb-0">הפנייה נסגרה.</p>
-                  }
-                </div>
-              }
-            </div>
-          }
-        </nb-card-body>
-      </nb-card>
-    }
-  `,
-  styles: [`
-    .support-box { margin-bottom: 1rem; }
-    .support-sub { margin: 0.25rem 0 0; font-size: 0.85rem; color: var(--text-hint-color); }
-    .support-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-    /* Opened as its own dialog (header menu): without a width the overlay
-       sizes the card to its content, and without a height cap a long thread
-       runs past a phone screen with nothing behind it that can scroll. */
-    :host(.support-dialog) { display: block; width: min(640px, 95vw);
-                             max-height: 85vh; max-height: 85dvh; overflow-y: auto; }
-
-    .ticket { border-bottom: 1px solid var(--divider-color); padding: 0.5rem 0; }
-    .ticket:last-child { border-bottom: 0; }
-    .ticket__head { display: flex; justify-content: space-between; align-items: center;
-                    gap: 0.5rem; cursor: pointer; }
-    .ticket__subject { font-weight: 600; }
-    .ticket__status { font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 1rem;
-                      white-space: nowrap; }
-    .st-open { background: var(--color-warning-transparent-200, #fff3cd); color: var(--color-warning-700, #8a6d3b); }
-    .st-answered { background: var(--color-success-transparent-200, #d1e7dd); color: var(--color-success-700, #0a3622); }
-    .st-closed { background: var(--background-basic-color-3, #e9ecef); color: var(--text-hint-color, #6c757d); }
-
-    .thread { margin-top: 0.5rem; }
-    .msg { padding: 0.5rem 0.75rem; border-radius: 0.5rem; margin-bottom: 0.4rem;
-           background: var(--background-basic-color-2, #f7f9fc); }
-    .msg--admin { background: var(--color-primary-transparent-100, #edf3ff);
-                  border-inline-start: 3px solid var(--color-primary-default, #3366ff); }
-    .msg__meta { font-size: 0.72rem; color: var(--text-hint-color, #8f9bb3); margin-bottom: 0.2rem; }
-    /* Bodies are plain text, rendered by interpolation — never markdown, so a
-       ticket cannot inject markup into the operator's inbox. */
-    .msg__body { white-space: pre-wrap; word-break: break-word; }
-  `],
+  templateUrl: './support-box.component.html',
+  styleUrl: './support-box.component.scss',
 })
 export class SupportBoxComponent implements OnInit {
   @Input() title = 'פנייה למערכת';
@@ -168,13 +40,16 @@ export class SupportBoxComponent implements OnInit {
   @Input() signedIn = false;
   /**
    * Set by the caller that opens the box as its own dialog (the header menu).
-   * Not derived from the injected NbDialogRef: the admin panel is itself a
-   * dialog, so a ref is in scope when the box is only a tab inside it — and
-   * closing that ref would close the whole panel.
+   * Not derived from the injected NbDialogRef: as a manage-page section there
+   * is no dialog of its own to close, and a stray ref from an enclosing dialog
+   * must not be closed by this button.
    */
   @Input() dialogMode = false;
 
   @HostBinding('class.support-dialog') get isDialog(): boolean { return this.dialogMode; }
+
+  readonly subjectMax = 200;
+  readonly bodyMax = 5000;
 
   subject = '';
   body = '';
@@ -186,6 +61,7 @@ export class SupportBoxComponent implements OnInit {
   error = '';
 
   tickets: SupportTicket[] = [];
+  ticketsLoading = false;
   openId = '';
   replyBody = '';
   replying = false;
@@ -206,12 +82,22 @@ export class SupportBoxComponent implements OnInit {
 
   async submit(): Promise<void> {
     this.error = '';
+    // A new attempt clears the previous outcome too, or the green "sent"
+    // banner and a red validation error stood on screen together.
+    this.sent = false;
     if (!this.subject.trim() || !this.body.trim()) {
       this.error = 'יש למלא נושא ותוכן.';
       return;
     }
-    if (!this.signedIn && !this.email.trim()) {
-      this.error = 'יש להזין כתובת אימייל כדי שנוכל לחזור אליך.';
+    const email = this.email.trim();
+    if (!this.signedIn && !email) {
+      this.error = 'יש להזין כתובת אימייל כדי שנוכל לחזור אליכם.';
+      return;
+    }
+    // Same shape check as the server's looksLikeEmail, so a typo is caught
+    // here instead of by a 400 round trip.
+    if (!this.signedIn && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.error = 'יש להזין כתובת אימייל תקינה.';
       return;
     }
 
@@ -266,6 +152,15 @@ export class SupportBoxComponent implements OnInit {
     }
   }
 
+  statusIcon(s: string): string {
+    switch (s) {
+      case 'open': return 'clock-outline';
+      case 'answered': return 'message-circle-outline';
+      case 'closed': return 'checkmark-circle-2-outline';
+      default: return 'email-outline';
+    }
+  }
+
   private tokenFor(id: string): string | undefined {
     return this.support.anonTickets().find(t => t.id === id)?.token;
   }
@@ -276,21 +171,26 @@ export class SupportBoxComponent implements OnInit {
    * elsewhere is simply not listed, which is the point of the token.
    */
   private async loadTickets(): Promise<void> {
-    if (this.signedIn) {
-      try {
-        this.tickets = await this.support.myTickets();
-      } catch {
-        this.tickets = [];
+    this.ticketsLoading = true;
+    try {
+      if (this.signedIn) {
+        try {
+          this.tickets = await this.support.myTickets();
+        } catch {
+          this.tickets = [];
+        }
+        return;
       }
-      return;
-    }
 
-    const stored = this.support.anonTickets();
-    const loaded = await Promise.all(
-      stored.map(s => this.support.getTicket(s.id, s.token).catch(() => null)),
-    );
-    // A ticket that has expired server-side drops out rather than erroring.
-    this.tickets = loaded.filter((t): t is SupportTicket => t !== null);
+      const stored = this.support.anonTickets();
+      const loaded = await Promise.all(
+        stored.map(s => this.support.getTicket(s.id, s.token).catch(() => null)),
+      );
+      // A ticket that has expired server-side drops out rather than erroring.
+      this.tickets = loaded.filter((t): t is SupportTicket => t !== null);
+    } finally {
+      this.ticketsLoading = false;
+    }
   }
 
   private errorText(err: any): string {
@@ -298,7 +198,7 @@ export class SupportBoxComponent implements OnInit {
     // only ever matched on here, never shown in the Hebrew form.
     const text = typeof err?.error === 'string' && err.error ? err.error : '';
     switch (err?.status) {
-      case 429: return 'נשלחו יותר מדי פניות בזמן קצר. נסה שוב בעוד מספר דקות.';
+      case 429: return 'נשלחו יותר מדי פניות בזמן קצר. נסו שוב בעוד כמה דקות.';
       case 400:
         // A signed-in box hides the email field, so once the session has lapsed
         // (cookie expired, logged out in another tab) the server's "email
@@ -320,10 +220,10 @@ export class SupportBoxComponent implements OnInit {
         // them apart. A full thread used to read as "closed", which the
         // requester took for the operator closing it.
         return text.includes('message limit')
-          ? 'הפנייה הגיעה למספר ההודעות המרבי. לשאלה נוספת, פתח פנייה חדשה.'
+          ? 'הפנייה הגיעה למספר ההודעות המרבי. לשאלה נוספת, פתחו פנייה חדשה.'
           : 'הפנייה נסגרה ולא ניתן להוסיף לה הודעות.';
       case 404: return 'הפנייה לא נמצאה.';
-      default: return 'שגיאה בשליחה. נסה שוב.';
+      default: return 'שגיאה בשליחה. נסו שוב.';
     }
   }
 }

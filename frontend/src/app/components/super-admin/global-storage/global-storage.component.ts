@@ -15,37 +15,18 @@ import { SuperAdminService } from '../../../services/super-admin.service';
     NbCardModule, NbButtonModule, NbInputModule,
     NbFormFieldModule, NbIconModule
   ],
-  template: `
-    <nb-card>
-      <nb-card-header>הגדרות אחסון גלובליות</nb-card-header>
-      <nb-card-body>
-        <p class="text-muted mb-3">
-          ברירת המחדל הגלובלית לנפח אחסון לכל ערוץ. ניתן לשנות לכל ערוץ בנפרד מרשימת הערוצים.
-        </p>
-        <div class="d-flex align-items-center gap-3">
-          <nb-form-field>
-            <nb-icon nbPrefix icon="hard-drive-outline"></nb-icon>
-            <input nbInput type="number" min="1" step="1"
-                  [(ngModel)]="defaultQuotaGb"
-                  placeholder="נפח ברירת מחדל (GB)">
-          </nb-form-field>
-          <span class="text-muted">GB לכל ערוץ</span>
-          <button nbButton status="primary" (click)="save()" [disabled]="saving || quotaInvalid">
-            {{ saving ? 'שומר...' : 'שמור' }}
-          </button>
-        </div>
-        @if (quotaInvalid) {
-          <p class="text-danger mt-2 mb-0"><small>יש להזין נפח ברירת מחדל של 1 GB לפחות.</small></p>
-        }
-      </nb-card-body>
-    </nb-card>
-  `
+  templateUrl: './global-storage.component.html',
+  styleUrl: './global-storage.component.scss',
 })
 export class GlobalStorageComponent implements OnInit {
   // null when the number input is cleared (ngModel posts null, which the
   // server reads as 0).
   defaultQuotaGb: number | null = 5;
+  loading = true;
+  loadFailed = false;
   saving = false;
+  /** The value on the server, to tell the operator about an unsaved edit. */
+  private savedQuotaGb: number | null = null;
 
   /**
    * A stored 0 is not "use the default": the upload path treats an effective
@@ -58,17 +39,31 @@ export class GlobalStorageComponent implements OnInit {
       || !Number.isFinite(gb) || gb < 1;
   }
 
+  get dirty(): boolean {
+    return this.savedQuotaGb !== null && Number(this.defaultQuotaGb) !== this.savedQuotaGb;
+  }
+
   constructor(
     private superAdminService: SuperAdminService,
     private toastr: NbToastrService
   ) {}
 
-  async ngOnInit() {
+  ngOnInit() {
+    this.load();
+  }
+
+  async load() {
+    this.loading = true;
+    this.loadFailed = false;
     try {
       const cfg = await this.superAdminService.getGlobalStorageConfig();
       this.defaultQuotaGb = cfg.defaultQuotaGb;
+      this.savedQuotaGb = Number(cfg.defaultQuotaGb);
     } catch {
-      this.toastr.danger('שגיאה בטעינת הגדרות אחסון', 'שגיאה');
+      this.loadFailed = true;
+      this.toastr.danger('', 'הגדרות האחסון לא נטענו');
+    } finally {
+      this.loading = false;
     }
   }
 
@@ -77,9 +72,12 @@ export class GlobalStorageComponent implements OnInit {
     this.saving = true;
     try {
       await this.superAdminService.setGlobalStorageConfig(Number(this.defaultQuotaGb));
-      this.toastr.success('הגדרות אחסון נשמרו', 'אחסון');
-    } catch {
-      this.toastr.danger('שגיאה בשמירה', 'שגיאה');
+      this.savedQuotaGb = Number(this.defaultQuotaGb);
+      this.toastr.success('', `ברירת המחדל עודכנה ל-${this.savedQuotaGb} GB לכל ערוץ`);
+    } catch (err: any) {
+      this.toastr.danger('', err?.status === 400
+        ? 'יש להזין נפח חיובי של ג׳יגה-בייט'
+        : 'השמירה לא הצליחה, נסו שוב');
     } finally {
       this.saving = false;
     }

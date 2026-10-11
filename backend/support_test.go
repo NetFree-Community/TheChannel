@@ -404,3 +404,47 @@ func TestSupportTrimTo(t *testing.T) {
 		t.Errorf("empty input with zero cap should stay empty, got %q", got)
 	}
 }
+
+// A signed-in ticket is reachable by its session only. Tickets created before
+// tokens stopped being issued to signed-in senders still carry one, and the
+// browser keeps sending it from localStorage after logout — so the token path
+// must not open those, while it stays the one way into an anonymous thread.
+func TestSupportTokenOnlyAuthorisesAnonymousTickets(t *testing.T) {
+	ctx := supportCtx(t)
+	newTestTicket(t, ctx, "sup-authed-tok", "owner@example.com") // Authenticated, with a legacy token
+
+	anon := &SupportTicket{
+		ID: "sup-anon-tok", Subject: "נושא", Name: "אורח", Email: "guest@example.com",
+		Status: SupportStatusOpen, CreatedAt: time.Now(), UpdatedAt: time.Now(),
+		Messages:    []SupportMessage{{Author: "user", Body: "x", CreatedAt: time.Now()}},
+		AccessToken: "token-sup-anon-tok",
+	}
+	if err := dbSaveSupportTicket(ctx, anon); err != nil {
+		t.Fatalf("save anonymous ticket: %v", err)
+	}
+	t.Cleanup(func() {
+		cctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		rdb.Del(cctx, supportTicketKey("sup-anon-tok"))
+		rdb.ZRem(cctx, supportTicketIndexKey, "sup-anon-tok")
+	})
+
+	withToken := func(id, token string) *http.Request {
+		r := httptest.NewRequest(http.MethodGet, "/api/support/tickets/"+id, nil)
+		r.Header.Set(ticketTokenHeader, token)
+		return r.WithContext(ctx)
+	}
+
+	if _, ok := authoriseTicket(ctx, withToken("sup-authed-tok", "token-sup-authed-tok"), "sup-authed-tok"); ok {
+		t.Fatal("a legacy token opened a signed-in ticket without its session")
+	}
+	if _, ok := authoriseTicket(ctx, withToken("sup-anon-tok", "token-sup-anon-tok"), "sup-anon-tok"); !ok {
+		t.Fatal("the token did not open the anonymous ticket it was issued for")
+	}
+	if _, ok := authoriseTicket(ctx, withToken("sup-anon-tok", "wrong"), "sup-anon-tok"); ok {
+		t.Fatal("a wrong token opened an anonymous ticket")
+	}
+	if _, ok := authoriseTicket(ctx, withToken("sup-anon-tok", ""), "sup-anon-tok"); ok {
+		t.Fatal("an empty token opened an anonymous ticket")
+	}
+}

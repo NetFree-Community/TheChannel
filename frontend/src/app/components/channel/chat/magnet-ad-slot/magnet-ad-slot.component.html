@@ -1,19 +1,9 @@
-<div class="d-flex flex-row align-content-center my-1 mx-4 magnet-ad-message" [class.collapsed]="collapsed">
-  <div class="d-flex flex-column">
-    <nb-user class="pt-4" [shape]="'round'" [color]="'white'" [size]="'large'"
-      [picture]="chatService.channelInfo?.logoUrl || ''"
-      [name]="chatService.channelInfo?.name || ''"
-      onlyPicture></nb-user>
+<div class="ad" [class.collapsed]="collapsed">
+  <div class="ad__head">
+    <span class="ad__badge">פרסומת</span>
+    <span class="ad__hint">{{ locked ? 'תוכן ממומן שמוצג על ידי המערכת' : 'תוכן ממומן שמנהלי הערוץ בחרו להציג' }}</span>
   </div>
-  <div class="d-flex flex-column gap-1 overflow-auto">
-    <div class="d-flex flex-row gap-2 pe-1">
-      <strong class="text-black-50">{{ chatService.channelInfo?.name || '' }}</strong>
-      <small class="text-black-50">פרסומת</small>
-    </div>
-    <div class="d-flex flex-column bg-light rounded-4 border fs-5 lh-base message-card magnet-ad-card">
-      <div class="m-2">
-        <div #host class="magnet-ad-host" [attr.data-slot]="slotKey"></div>
-      </div>
-    </div>
+  <div class="ad__card">
+    <div #host class="magnet-ad-host" [attr.data-slot]="slotKey"></div>
   </div>
 </div>

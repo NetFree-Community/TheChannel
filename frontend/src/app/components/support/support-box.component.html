@@ -1,0 +1,134 @@
+<nb-card class="support-box">
+  <nb-card-header class="support-head">
+    <div class="support-head__text">
+      <h2 class="support-head__title">
+        <nb-icon icon="email-outline"></nb-icon>
+        {{ title }}
+      </h2>
+      @if (subtitle) { <p class="support-sub">{{ subtitle }}</p> }
+    </div>
+    @if (dialogMode) {
+      <button nbButton ghost size="small" type="button" aria-label="סגירה" nbTooltip="סגירה" (click)="close()">
+        <nb-icon icon="close-outline"></nb-icon>
+      </button>
+    }
+  </nb-card-header>
+
+  <nb-card-body>
+    @if (sent) {
+      <nb-alert status="success" class="support-alert">
+        <strong>הפנייה נשלחה.</strong>
+        @if (signedIn) {
+          נחזור אליכם בהקדם. התשובה תופיע כאן, במסך הזה.
+        } @else {
+          נחזור אליכם בהקדם. שמרו את הדף הזה — התשובה תופיע כאן, באותו דפדפן.
+        }
+      </nb-alert>
+    }
+
+    @if (error) { <nb-alert status="danger" class="support-alert" role="alert" id="support-error">{{ error }}</nb-alert> }
+
+    <form (ngSubmit)="submit()" #f="ngForm" class="support-form" novalidate>
+      @if (!signedIn) {
+        <div class="support-form__row">
+          <div class="field">
+            <label class="field__label" for="support-email">כתובת אימייל</label>
+            <input id="support-email" nbInput fullWidth type="email" name="email" dir="ltr" inputmode="email"
+                   [(ngModel)]="email" placeholder="name@example.com" required maxlength="254" autocomplete="email"
+                   [attr.aria-invalid]="error && !email.trim() ? true : null" [attr.aria-describedby]="error ? 'support-error' : null">
+            <p class="field__hint">חובה — לשם נשלחת התשובה.</p>
+          </div>
+          <div class="field">
+            <label class="field__label" for="support-name">שם</label>
+            <input id="support-name" nbInput fullWidth type="text" name="name"
+                   [(ngModel)]="name" placeholder="איך לפנות אליכם" maxlength="100" autocomplete="name">
+            <p class="field__hint">לא חובה.</p>
+          </div>
+        </div>
+      }
+
+      <div class="field">
+        <label class="field__label" for="support-subject">נושא הפנייה</label>
+        <input id="support-subject" nbInput fullWidth type="text" name="subject" [(ngModel)]="subject"
+               placeholder="במילים ספורות — על מה הפנייה" required [maxlength]="subjectMax"
+               [attr.aria-invalid]="error && !subject.trim() ? true : null" [attr.aria-describedby]="error ? 'support-error' : null">
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="support-body">תוכן הפנייה</label>
+        <textarea id="support-body" nbInput fullWidth name="body" [(ngModel)]="body" rows="5"
+                  placeholder="מה קרה, מה ציפיתם שיקרה, ובאיזה ערוץ. ככל שיש יותר פרטים — נוכל לעזור מהר יותר."
+                  required [maxlength]="bodyMax"
+                  [attr.aria-invalid]="error && !body.trim() ? true : null" [attr.aria-describedby]="error ? 'support-error' : null"></textarea>
+        <span class="field__counter">{{ body.length }} / {{ bodyMax }}</span>
+      </div>
+
+      <div class="support-form__actions">
+        <button nbButton status="primary" type="submit" [disabled]="submitting"
+                [nbSpinner]="submitting" nbSpinnerStatus="control" nbSpinnerSize="small">
+          <nb-icon icon="paper-plane-outline"></nb-icon>
+          {{ submitting ? 'שולחים…' : 'שליחת פנייה' }}
+        </button>
+      </div>
+    </form>
+  </nb-card-body>
+</nb-card>
+
+@if (tickets.length || ticketsLoading) {
+  <nb-card class="support-box">
+    <nb-card-header class="support-head">
+      <h2 class="support-head__title">
+        <nb-icon icon="inbox-outline"></nb-icon>
+        הפניות שלי
+      </h2>
+    </nb-card-header>
+    <nb-card-body>
+      @if (ticketsLoading && !tickets.length) {
+        <div class="support-loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים פניות…"></div>
+      }
+      @for (t of tickets; track t.id) {
+        <div class="ticket" [class.is-open]="openId === t.id">
+          <button type="button" class="ticket__head" (click)="toggle(t.id)"
+                  [attr.aria-expanded]="openId === t.id" [attr.aria-controls]="'ticket-' + t.id">
+            <span class="ticket__subject">{{ t.subject }}</span>
+            <span class="ticket__status st-{{ t.status }}">
+              <nb-icon [icon]="statusIcon(t.status)"></nb-icon>
+              {{ statusText(t.status) }}
+            </span>
+            <nb-icon class="ticket__chevron" [icon]="openId === t.id ? 'chevron-up-outline' : 'chevron-down-outline'" aria-hidden="true"></nb-icon>
+          </button>
+
+          @if (openId === t.id) {
+            <div class="thread" [id]="'ticket-' + t.id">
+              @for (m of t.messages; track $index) {
+                <div class="msg" [class.msg--admin]="m.author === 'admin'">
+                  <div class="msg__meta">
+                    <strong>{{ m.author === 'admin' ? 'ניהול' : m.authorName }}</strong>
+                    <span>· {{ m.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                  <div class="msg__body">{{ m.body }}</div>
+                </div>
+              }
+
+              @if (t.status !== 'closed') {
+                <div class="reply">
+                  <label class="field__label" [attr.for]="'reply-' + t.id">הוספת הודעה לפנייה</label>
+                  <textarea [id]="'reply-' + t.id" nbInput fullWidth rows="3" [(ngModel)]="replyBody"
+                            [ngModelOptions]="{standalone: true}"
+                            placeholder="המשך השיחה באותה פנייה" [maxlength]="bodyMax"></textarea>
+                  <button nbButton size="small" status="primary" type="button" class="reply__send"
+                          [disabled]="replying || !replyBody.trim()" (click)="sendReply(t)">
+                    <nb-icon icon="paper-plane-outline"></nb-icon>
+                    {{ replying ? 'שולחים…' : 'שליחה' }}
+                  </button>
+                </div>
+              } @else {
+                <p class="thread__closed">הפנייה נסגרה. לשאלה חדשה — פתחו פנייה חדשה למעלה.</p>
+              }
+            </div>
+          }
+        </div>
+      }
+    </nb-card-body>
+  </nb-card>
+}

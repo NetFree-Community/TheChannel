@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   NbCardModule, NbButtonModule, NbInputModule,
-  NbFormFieldModule, NbProgressBarModule, NbToastrService, NbAlertModule, NbIconModule
+  NbFormFieldModule, NbProgressBarModule, NbToastrService, NbIconModule
 } from '@nebular/theme';
 import { SuperAdminService } from '../../../services/super-admin.service';
 
@@ -25,51 +25,21 @@ interface ChannelStorageConfig {
   imports: [
     CommonModule, FormsModule,
     NbCardModule, NbButtonModule, NbInputModule,
-    NbFormFieldModule, NbProgressBarModule, NbAlertModule, NbIconModule
+    NbFormFieldModule, NbProgressBarModule, NbIconModule
   ],
-  template: `
-    <nb-card>
-      <nb-card-header>אחסון — {{ slug }}</nb-card-header>
-      <nb-card-body>
-        @if (config) {
-          <!-- Usage bar -->
-          <div class="mb-3">
-            <div class="d-flex justify-content-between mb-1">
-              <span>{{ formatBytes(config.storageInfo.usedBytes) }} בשימוש</span>
-              <span>מתוך {{ formatBytes(config.storageInfo.quotaBytes) }}</span>
-            </div>
-            <nb-progress-bar
-              [value]="config.storageInfo.usedPercent"
-              [status]="progressStatus(config.storageInfo.level)"
-              [displayValue]="true">
-            </nb-progress-bar>
-            @if (config.storageInfo.autoCleanup) {
-              <small class="text-muted">ניקוי אוטומטי פעיל</small>
-            }
-          </div>
-
-          <!-- Quota override -->
-          <div class="d-flex align-items-center gap-3">
-            <nb-form-field>
-              <nb-icon nbPrefix icon="hard-drive-outline"></nb-icon>
-              <input nbInput type="number" min="0" step="0.5"
-                    [(ngModel)]="config.quotaGb"
-                    placeholder="GB (0 = ברירת מחדל גלובלית)">
-            </nb-form-field>
-            <span class="text-muted">GB (0 = ברירת מחדל גלובלית)</span>
-            <button nbButton status="primary" size="small" (click)="save()">שמור</button>
-          </div>
-        } @else {
-          <p>טוען...</p>
-        }
-      </nb-card-body>
-    </nb-card>
-  `
+  templateUrl: './super-admin-storage.component.html',
+  styleUrl: './super-admin-storage.component.scss',
 })
 export class SuperAdminStorageComponent implements OnChanges {
   @Input() slug!: string;
 
   config?: ChannelStorageConfig;
+  loading = true;
+  loadFailed = false;
+  saving = false;
+  // Separate from config.quotaGb so a cleared field (ngModel posts null)
+  // can be refused before anything is sent.
+  quotaGb: number | null = 0;
 
   constructor(
     private superAdminService: SuperAdminService,
@@ -79,23 +49,63 @@ export class SuperAdminStorageComponent implements OnChanges {
   // ngOnChanges fires for the initial slug binding too, so no ngOnInit needed.
   ngOnChanges() { this.load(); }
 
+  /** 0 means "use the system default"; anything negative or empty is refused. */
+  get quotaInvalid(): boolean {
+    const gb = Number(this.quotaGb);
+    return this.quotaGb === null || this.quotaGb === undefined || !Number.isFinite(gb) || gb < 0;
+  }
+
+  get usesDefault(): boolean {
+    return Number(this.quotaGb) === 0;
+  }
+
+  /** Percent capped for the bar; the label still shows the true number. */
+  get barValue(): number {
+    const pct = Number(this.config?.storageInfo?.usedPercent) || 0;
+    return Math.max(0, Math.min(100, Math.round(pct)));
+  }
+
   async load() {
-    if (!this.slug) return;
+    if (!this.slug) {
+      // No channel to show: better an honest error card than a spinner forever.
+      this.loading = false;
+      this.loadFailed = true;
+      return;
+    }
+    this.loading = true;
+    this.loadFailed = false;
     try {
       this.config = await this.superAdminService.getChannelStorage(this.slug);
-    } catch {
-      this.toastr.danger('שגיאה בטעינת מידע אחסון', 'שגיאה');
+      this.quotaGb = Number(this.config?.quotaGb) || 0;
+    } catch (err: any) {
+      this.loadFailed = true;
+      this.toastr.danger('', err?.status === 404
+        ? 'הערוץ לא נמצא — ייתכן שנמחק'
+        : 'נתוני האחסון של הערוץ לא נטענו');
+    } finally {
+      this.loading = false;
     }
   }
 
   async save() {
-    if (!this.config) return;
+    if (!this.config || this.quotaInvalid) return;
+    this.saving = true;
     try {
-      await this.superAdminService.setChannelStorage(this.slug, this.config.quotaGb);
-      this.toastr.success('קוטה עודכנה', 'אחסון');
+      await this.superAdminService.setChannelStorage(this.slug, Number(this.quotaGb));
+      this.toastr.success('', this.usesDefault
+        ? 'הערוץ חזר לנפח ברירת המחדל של המערכת'
+        : `הנפח של הערוץ עודכן ל-${Number(this.quotaGb)} GB`);
       this.load();
-    } catch {
-      this.toastr.danger('שגיאה בשמירה', 'שגיאה');
+    } catch (err: any) {
+      if (err?.status === 400) {
+        this.toastr.danger('', 'הנפח חייב להיות מספר 0 ומעלה');
+      } else if (err?.status === 404) {
+        this.toastr.danger('', 'הערוץ לא נמצא — ייתכן שנמחק');
+      } else {
+        this.toastr.danger('', 'השמירה לא הצליחה, נסו שוב');
+      }
+    } finally {
+      this.saving = false;
     }
   }
 

@@ -1,50 +1,87 @@
-<div class="d-flex flex-row gap-2 align-items-center justify-content-between">
-  <div class="bg-light rounded-circle d-flex align-items-center justify-content-center"
-    style="width: 60px; height: 60px">
-    @if (chatService.channelInfo?.logoUrl?.length) {
-      <img [src]="chatService.channelInfo?.logoUrl" class="rounded-circle img-circle"
-        (click)="viewLargeImage($event)">
-    } @else {
-      <div class="bg-light text-black fw-bold rounded-circle img-circle d-flex align-items-center justify-content-center"
-        title="ללא תמונה">
-        {{ chatService.channelInfo?.name?.[0] || '?' }}
-      </div>
-    }
-  </div>
-  <div class="d-flex flex-column flex-grow-1">
-    <span class="fs-4 my-2 fw-bold">{{ chatService.channelInfo?.name }}</span>
-    @if (chatService.channelInfo?.description) {
-      <small>
-        {{ chatService.channelInfo?.description }}
-      </small>
-    }
-    <small>
-      {{ chatService.channelInfo?.views }} משתתפים
-    </small>
-  </div>
-
-  @if (chatService.channelInfo?.contact_us) {
-    <button nbButton shape="round" class="m-2" title="צור קשר" (click)="openContactUs()" status="info">
-      <nb-icon icon="email-outline"></nb-icon>
+<div class="ch">
+  @if (chatService.channelInfo?.logoUrl?.length) {
+    <button type="button" class="ch__logo" (click)="viewLargeImage($event)"
+            aria-label="הצגת הלוגו של הערוץ בגדול" nbTooltip="הלוגו של הערוץ">
+      <img [src]="chatService.channelInfo?.logoUrl" alt="" width="56" height="56" loading="lazy" decoding="async">
     </button>
-  }
-
-  @if (notificationsService.initialized) {
-    <button nbButton shape="round" class="m-2" title="התראות" status="danger"
-      (click)="notificationsService.requestPermission()">
-      <nb-icon icon="bell"></nb-icon>
-    </button>
-  }
-
-  @if (userInfo) {
-    <nb-user [name]="userInfo.username" shape="round" [nbContextMenu]="userMenu" [nbContextMenuTag]="userMenuTag"
-      [picture]="userInfo.picture || ''" [onlyPicture]="isSmallScreen">
-    </nb-user>
   } @else {
-    <button nbButton shape="round" appearance="outline" title="התחבר באמצעות חשבון גוגל"
-      (click)="login()">
-      <nb-icon icon="google"></nb-icon>
-      התחבר
-    </button>
+    <span class="ch__logo ch__logo--plain" aria-hidden="true">{{ channelInitial }}</span>
   }
+
+  <div class="ch__text">
+    <h1 class="ch__name">{{ channelName || 'טוען את הערוץ…' }}</h1>
+    <!-- Its visible text is its accessible name. No nbTooltip next to nbPopover:
+         both directives provide the same overlay handler on their host, and the
+         one built last owns the trigger — a tooltip here left the popover dead. -->
+    <button type="button" class="ch__sub" [nbPopover]="aboutPopover" nbPopoverTrigger="click"
+            nbPopoverPlacement="bottom" aria-haspopup="dialog" #aboutPop="nbPopover"
+            [attr.aria-expanded]="aboutShown" (nbPopoverShowStateChange)="onAboutState($event.isShown)">
+      <span class="ch__meta">
+        <nb-icon icon="people-outline"></nb-icon>
+        {{ chatService.channelInfo?.views || 0 }} משתתפים
+      </span>
+      @if (chatService.channelInfo?.description) {
+        <span class="ch__dot" aria-hidden="true">·</span>
+        <span class="ch__desc">{{ chatService.channelInfo?.description }}</span>
+      }
+    </button>
+  </div>
+
+  <div class="ch__actions">
+    <button nbButton ghost shape="round" status="basic" class="ch__btn ch__share" type="button"
+            [nbContextMenu]="shareMenu" [nbContextMenuTag]="shareMenuTag" [nbContextMenuPlacement]="NbPosition.BOTTOM"
+            aria-label="שיתוף הערוץ" aria-haspopup="menu" [attr.aria-expanded]="openMenu === 'share-menu'"
+            (click)="onMenuTrigger('share-menu')">
+      <nb-icon icon="share-outline"></nb-icon>
+    </button>
+
+    @if (chatService.channelInfo?.contact_us) {
+      <button nbButton ghost shape="round" status="basic" class="ch__btn" type="button"
+              (click)="openContactUs()" aria-label="צור קשר עם מנהלי הערוץ" nbTooltip="צור קשר">
+        <nb-icon icon="email-outline"></nb-icon>
+      </button>
+    }
+
+    @if (notificationsService.initialized) {
+      <button nbButton ghost shape="round" status="basic" class="ch__btn" type="button"
+              (click)="notificationsService.requestPermission()"
+              aria-label="קבלת התראות על הודעות חדשות" nbTooltip="קבלת התראות על הודעות חדשות">
+        <nb-icon icon="bell-outline"></nb-icon>
+      </button>
+    }
+
+    @if (userInfo) {
+      <nb-user class="ch__user" [name]="userInfo.publicName || userInfo.username" shape="round" size="medium"
+               [nbContextMenu]="userMenu" [nbContextMenuTag]="userMenuTag" [nbContextMenuPlacement]="NbPosition.BOTTOM"
+               [picture]="userInfo.picture || ''" [onlyPicture]="isSmallScreen"
+               role="button" tabindex="0" aria-haspopup="menu" aria-label="החשבון שלי ומעבר בין ערוצים"
+               [attr.aria-expanded]="openMenu === 'user-menu'"
+               (click)="loadMyChannels(); onMenuTrigger('user-menu')" (keydown.enter)="$any($event.target).click()"
+               (keydown.space)="$event.preventDefault(); $any($event.target).click()">
+      </nb-user>
+    } @else {
+      <button nbButton status="primary" size="small" shape="round" class="ch__login" type="button"
+              (click)="login()" aria-label="התחברות באמצעות חשבון גוגל" nbTooltip="התחברות באמצעות חשבון גוגל">
+        <nb-icon icon="log-in-outline"></nb-icon>
+        <span class="ch__login-text">התחברות</span>
+      </button>
+    }
+  </div>
 </div>
+
+<!-- The full description: the header is one line high, so the long text
+     opens in a small card below it instead of growing the header. -->
+<ng-template #aboutPopover>
+  <div class="ch-about" role="dialog" aria-label="על הערוץ" tabindex="-1">
+    <strong class="ch-about__name">{{ channelName }}</strong>
+    @if (chatService.channelInfo?.description) {
+      <p class="ch-about__desc">{{ chatService.channelInfo?.description }}</p>
+    } @else {
+      <p class="ch-about__desc ch-about__desc--empty">לערוץ הזה עוד אין תיאור.</p>
+    }
+    <span class="ch-about__hint">
+      <nb-icon icon="people-outline"></nb-icon>
+      {{ chatService.channelInfo?.views || 0 }} משתתפים — קוראים מחוברים שפתחו את הערוץ
+    </span>
+  </div>
+</ng-template>
