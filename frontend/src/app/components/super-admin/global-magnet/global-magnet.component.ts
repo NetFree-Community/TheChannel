@@ -16,6 +16,9 @@ import {
 } from '@nebular/theme';
 import { SuperAdminService, GlobalMagnetConfig } from '../../../services/super-admin.service';
 
+/** The shape Magnet mints: "mgs_" and 48 lowercase hex characters. */
+const STATS_KEY_RE = /^mgs_[0-9a-f]{48}$/;
+
 @Component({
   selector: 'app-global-magnet',
   standalone: true,
@@ -48,13 +51,24 @@ export class GlobalMagnetComponent implements OnInit {
     apiKey: '',
     lockAll: false,
     lockedChannels: [],
+    statsKeySet: false,
   };
+
+  /**
+   * A new stats key typed by the operator. Kept outside `config` and never
+   * pre-filled: the server does not send the stored key back, and an empty
+   * field on save means "keep the stored one".
+   */
+  statsKeyInput = '';
+  /** Set by "מחיקת המפתח"; the key is removed on the next save. */
+  clearStatsKey = false;
+  statsKeyError = '';
 
   loading = true;
   loadFailed = false;
   saving = false;
   newLockedChannel = '';
-  /** The API key is a secret: masked until the operator asks to see it. */
+  /** The embed key is public, but masked by default like any key field. */
   showApiKey = false;
   /** JSON of the last server copy, to tell the operator about unsaved edits. */
   private snapshot = '';
@@ -79,15 +93,7 @@ export class GlobalMagnetComponent implements OnInit {
     this.loading = true;
     this.loadFailed = false;
     this.superAdminService.getMagnetConfig()
-      .then(cfg => {
-        this.config = {
-          ...this.config,
-          ...cfg,
-          mode: this.normalizeMode(cfg?.mode),
-          lockedChannels: [...(cfg?.lockedChannels || [])],
-        };
-        this.snapshot = JSON.stringify(this.config);
-      })
+      .then(cfg => this.applyServerConfig(cfg))
       .catch(() => {
         this.loadFailed = true;
         this.toastr.danger('', 'הגדרות המגנט לא נטענו');
@@ -101,8 +107,40 @@ export class GlobalMagnetComponent implements OnInit {
     return mode === 'by_time' || mode === 'per_seconds' ? 'by_time' : 'by_messages';
   }
 
+  private applyServerConfig(cfg: GlobalMagnetConfig) {
+    this.config = {
+      ...this.config,
+      ...cfg,
+      mode: this.normalizeMode(cfg?.mode),
+      lockedChannels: [...(cfg?.lockedChannels || [])],
+      statsKeySet: !!cfg?.statsKeySet,
+    };
+    this.statsKeyInput = '';
+    this.clearStatsKey = false;
+    this.statsKeyError = '';
+    this.snapshot = JSON.stringify(this.config);
+  }
+
   get dirty(): boolean {
-    return !!this.snapshot && JSON.stringify(this.config) !== this.snapshot;
+    return !!this.snapshot && (
+      JSON.stringify(this.config) !== this.snapshot ||
+      !!this.statsKeyInput.trim() ||
+      this.clearStatsKey
+    );
+  }
+
+  get statsKeyPlaceholder(): string {
+    return this.config.statsKeySet ? 'מוגדר — השאירו ריק כדי לשמור את המפתח הקיים' : 'mgs_…';
+  }
+
+  markStatsKeyForClearing() {
+    this.clearStatsKey = true;
+    this.statsKeyInput = '';
+    this.statsKeyError = '';
+  }
+
+  cancelStatsKeyClearing() {
+    this.clearStatsKey = false;
   }
 
   get byTime(): boolean {
@@ -132,13 +170,31 @@ export class GlobalMagnetComponent implements OnInit {
   }
 
   save() {
+    const statsKey = this.statsKeyInput.trim();
+    // Same rule as the server: catching a mis-paste here keeps the rest of
+    // the form from being saved alongside a key that would only fail later.
+    if (statsKey && !this.clearStatsKey && !STATS_KEY_RE.test(statsKey)) {
+      this.statsKeyError = 'מפתח הסטטיסטיקה אינו תקין — הוא מתחיל ב-mgs_ ואחריו 48 תווים. העתיקו אותו שוב ממגנט.';
+      this.toastr.danger(this.statsKeyError, 'השמירה לא בוצעה');
+      return;
+    }
+    this.statsKeyError = '';
     this.saving = true;
-    this.superAdminService.setMagnetConfig(this.config)
-      .then(() => {
-        this.snapshot = JSON.stringify(this.config);
+    this.superAdminService.setMagnetConfig({
+      ...this.config,
+      statsKey: this.clearStatsKey ? '' : statsKey,
+      clearStatsKey: this.clearStatsKey,
+    })
+      .then(cfg => {
+        this.applyServerConfig(cfg);
         this.toastr.success('', 'הגדרות המגנט נשמרו');
       })
-      .catch(() => this.toastr.danger('', 'השמירה לא הצליחה, נסו שוב'))
+      .catch(err => {
+        // The server's own Hebrew message when it rejected the key.
+        const msg = err?.status === 400 && err?.error?.error === 'invalid_stats_key' ? err.error.message : '';
+        if (msg) this.statsKeyError = msg;
+        this.toastr.danger(msg, 'השמירה לא הצליחה, נסו שוב');
+      })
       .finally(() => this.saving = false);
   }
 }

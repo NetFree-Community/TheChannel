@@ -53,6 +53,17 @@ export interface GlobalMagnetConfig {
   apiKey: string;
   lockAll: boolean;
   lockedChannels: string[];
+  /** Whether a Magnet stats key is stored. The key itself never leaves the server. */
+  statsKeySet?: boolean;
+}
+
+/**
+ * The save body. An empty statsKey keeps the stored key (the screen never
+ * holds it), so removing it takes the explicit clearStatsKey flag.
+ */
+export interface GlobalMagnetConfigSave extends GlobalMagnetConfig {
+  statsKey?: string;
+  clearStatsKey?: boolean;
 }
 
 export interface SuperAdminUser {
@@ -140,8 +151,9 @@ export class SuperAdminService {
     return firstValueFrom(this.http.get<GlobalMagnetConfig>('/api/super-admin/magnet/config'));
   }
 
-  setMagnetConfig(cfg: GlobalMagnetConfig): Promise<void> {
-    return firstValueFrom(this.http.post<void>('/api/super-admin/magnet/config', cfg));
+  /** Answers with the saved config, redacted like getMagnetConfig. */
+  setMagnetConfig(cfg: GlobalMagnetConfigSave): Promise<GlobalMagnetConfig> {
+    return firstValueFrom(this.http.post<GlobalMagnetConfig>('/api/super-admin/magnet/config', cfg));
   }
 
   getMagnetStats(): Promise<any> {

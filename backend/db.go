@@ -1574,6 +1574,10 @@ type GlobalMagnetConfig struct {
 	ApiKey               string   `json:"apiKey"`
 	LockAll              bool     `json:"lockAll"`        // override ALL channels
 	LockedChannels       []string `json:"lockedChannels"` // override specific channels
+	// StatsKey is the Magnet server-to-server stats secret (mgs_…). It is
+	// stored here and sent only to Magnet; no handler may serialize it —
+	// GET/POST /magnet/config answer with magnetConfigView instead.
+	StatsKey string `json:"statsKey"`
 }
 
 func dbGetGlobalMagnetConfig(ctx context.Context) (*GlobalMagnetConfig, error) {
