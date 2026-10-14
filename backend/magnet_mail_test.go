@@ -489,6 +489,41 @@ func TestMagnetMailIdempotencyKeysAreStable(t *testing.T) {
 	}
 }
 
+// Magnet answers 409 while the same key is mid-send elsewhere; that is a
+// "try again", unlike the other 4xx answers.
+func TestMagnetMailInProgressIsRetried(t *testing.T) {
+	f := useFakeMagnet(t, func(n int, w http.ResponseWriter, _ *http.Request) {
+		if n == 1 {
+			http.Error(w, `{"error":"in_progress"}`, http.StatusConflict)
+			return
+		}
+		w.Write([]byte(`{"ok":true}`))
+	})
+	ev, _ := channelCreatedMail(&ChannelData{Slug: "inprogress-slug", Name: "x"}, "o@example.com", "")
+	if err := deliverMagnetMail(context.Background(), ev); err != nil {
+		t.Fatalf("deliver: %v", err)
+	}
+	if n := f.count(); n != 2 {
+		t.Errorf("attempts = %d, want 2", n)
+	}
+}
+
+// Magnet refuses control characters outside reply_text with a 400, which is
+// never retried — so they are flattened here instead of losing the mail.
+func TestMagnetMailFlattensControlCharacters(t *testing.T) {
+	ch := &ChannelData{Slug: "ctl-slug", Name: "שם\nעם\tשורות"}
+	ev, _ := channelCreatedMail(ch, "o@example.com", "בעלים\r\nשני")
+	if ev.Channel.Name != "שם עם שורות" || ev.ToName == nil || *ev.ToName != "בעלים שני" {
+		t.Errorf("name = %q, to_name = %v", ev.Channel.Name, ev.ToName)
+	}
+	tk := &SupportTicket{ID: "ctl", Subject: "נושא\nשבור", Email: "r@example.com",
+		Messages: []SupportMessage{{Author: "admin", Body: "שורה\nשנייה"}}}
+	sr, _ := supportReplyMail(tk, 0, nil)
+	if sr.Ticket.Subject != "נושא שבור" || sr.Ticket.ReplyText != "שורה\nשנייה" {
+		t.Errorf("subject = %q, reply = %q (reply_text keeps its newlines)", sr.Ticket.Subject, sr.Ticket.ReplyText)
+	}
+}
+
 func TestPublicBaseURLPrecedence(t *testing.T) {
 	prevCfg, prevEnv := getGlobalConfig(), publicBaseURLEnv
 	t.Cleanup(func() { setGlobalConfigCache(prevCfg); publicBaseURLEnv = prevEnv })

@@ -143,7 +143,7 @@ func supportTicketURL(base, ticketID string) string {
 }
 
 func mailChannel(base string, ch *ChannelData) *magnetMailChannel {
-	name := strings.TrimSpace(ch.Name)
+	name := oneLine(ch.Name)
 	if name == "" {
 		name = ch.Slug
 	}
@@ -159,11 +159,21 @@ func mailChannel(base string, ch *ChannelData) *magnetMailChannel {
 // mailToName is the greeting name, or null when all we have is the address
 // itself (an anonymous ticket without a name stores the email as its name).
 func mailToName(name, email string) *string {
-	name = strings.TrimSpace(name)
+	name = oneLine(name)
 	if name == "" || strings.EqualFold(name, email) {
 		return nil
 	}
 	return &name
+}
+
+// oneLine makes a free-text field safe for Magnet, which refuses control
+// characters outside reply_text with a 400 (a lost mail, since a 400 is not
+// retried) and caps names at 200 characters.
+func oneLine(s string) string {
+	s = strings.Join(strings.FieldsFunc(s, func(r rune) bool {
+		return r < 0x20 || r == 0x7f || (r >= 0x80 && r < 0xa0)
+	}), " ")
+	return trimTo(s, 200)
 }
 
 func capKey(k string) string {
@@ -212,7 +222,7 @@ func supportReplyMail(t *SupportTicket, replyIndex int, ch *ChannelData) (*magne
 		ContactURL:     supportContactURL(base, ""),
 		Ticket: &magnetMailTicket{
 			ID:      t.ID,
-			Subject: t.Subject,
+			Subject: oneLine(t.Subject),
 			// Exactly what the requester sees in the thread. The signature is
 			// Magnet's template ("ניהול"); nothing here names who answered.
 			ReplyText: reply.Body,
@@ -313,6 +323,10 @@ func deliverMagnetMail(ctx context.Context, ev *magnetMailEvent) error {
 			lastErr = err
 		case status >= 200 && status < 300:
 			return nil
+		case status == http.StatusConflict:
+			// Magnet's "in_progress": the same key is mid-send in another
+			// request. Not a refusal of the body, so it is worth another try.
+			lastErr = fmt.Errorf("status %d", status)
 		case status >= 400 && status < 500:
 			return fmt.Errorf("%w: status %d", errMagnetMailRejected, status)
 		default:
