@@ -1,8 +1,42 @@
-<aside class="attribution" aria-label="מידע על הפלטפורמה">
-  <span class="attribution__text">הוקם ומתופעל ע״י הערוץ · ללא עלות</span>
-  <span class="attribution__sep" aria-hidden="true">·</span>
-  <a class="attribution__link" [routerLink]="['/']">
-    לפתיחת ערוץ משלכם לחצו כאן
-    <nb-icon icon="arrow-back-outline" aria-hidden="true"></nb-icon>
+@if (variant === 'badge') {
+  <!-- Sits on the channel logo's corner when the name's line has no room for
+       a pill. A popover rather than a direct link: a bare 20px mark gives no
+       hint of where it leads; the card says it and carries the link.
+       nbPopover only — no nbTooltip on the same element (they share the
+       overlay trigger and the later one wins). -->
+  <button type="button" class="badge" [nbPopover]="creditCard" nbPopoverTrigger="click"
+          nbPopoverPlacement="bottom" #pop="nbPopover"
+          aria-label="הוקם ומתופעל ע״י הערוץ, ללא עלות. לפתיחת ערוץ משלכם"
+          aria-haspopup="dialog" [attr.aria-expanded]="shown"
+          (nbPopoverShowStateChange)="shown = $event.isShown">
+    <nb-icon icon="radio-outline" aria-hidden="true"></nb-icon>
+  </button>
+
+  <ng-template #creditCard>
+    <div class="credit-card" role="dialog" aria-label="על הפלטפורמה">
+      <span class="credit-card__head">
+        <span class="mark" aria-hidden="true"><nb-icon icon="radio-outline"></nb-icon></span>
+        <span>הוקם ומתופעל ע״י הערוץ · <strong class="free">ללא עלות</strong></span>
+      </span>
+      <a class="credit-card__cta" [routerLink]="['/']" (click)="pop.hide()">
+        לפתיחת ערוץ משלכם לחצו כאן
+        <nb-icon icon="arrow-back-outline" aria-hidden="true"></nb-icon>
+      </a>
+    </div>
+  </ng-template>
+} @else {
+  <!-- The whole pill is one link. The short form keeps the offer and lets the
+       brand mark stand for "הערוץ"; its accessible name is the full sentence. -->
+  <a class="credit" [class.credit--short]="variant === 'short'" [routerLink]="['/']"
+     [attr.aria-label]="variant === 'short' ? 'הוקם ומתופעל ע״י הערוץ, ללא עלות. לפתיחת ערוץ משלכם לחצו כאן' : null">
+    <span class="mark" aria-hidden="true"><nb-icon icon="radio-outline"></nb-icon></span>
+    @if (variant === 'full') {
+      <span class="credit__by">הוקם ומתופעל ע״י הערוץ · <strong class="free">ללא עלות</strong></span>
+      <span class="credit__sep" aria-hidden="true"></span>
+      <span class="credit__cta">לפתיחת ערוץ משלכם לחצו כאן</span>
+    } @else {
+      <span class="credit__cta">פתחו ערוץ · <strong class="free">ללא עלות</strong></span>
+    }
+    <nb-icon class="credit__arrow" icon="arrow-back-outline" aria-hidden="true"></nb-icon>
   </a>
-</aside>
+}
