@@ -15,6 +15,26 @@
   </nb-card-header>
 
   <nb-card-body>
+    @if (ticketNotFound) {
+      <nb-alert status="info" class="support-alert" role="status">
+        <strong>הפנייה שבקישור לא מוצגת כאן.</strong>
+        @if (signedIn) {
+          היא נשלחה מחשבון אחר או בלי התחברות, ולכן מוצגת רק בחשבון או בדפדפן שממנו נשלחה.
+        } @else {
+          פנייה שנשלחה בזמן התחברות מוצגת אחרי התחברות; פנייה שנשלחה בלי התחברות מוצגת רק בדפדפן שממנו נשלחה.
+        }
+        התשובה המלאה נמצאת גם במייל שקיבלתם, ואפשר להשיב ישירות אליו.
+        @if (!signedIn) {
+          <div class="support-alert__action">
+            <button nbButton size="small" status="info" type="button" (click)="signInForTicket()">
+              <nb-icon icon="log-in-outline"></nb-icon>
+              התחברות
+            </button>
+          </div>
+        }
+      </nb-alert>
+    }
+
     @if (sent) {
       <nb-alert status="success" class="support-alert">
         <strong>הפנייה נשלחה.</strong>

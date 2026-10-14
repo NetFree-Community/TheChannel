@@ -274,6 +274,13 @@ func createChannelSelfService(w http.ResponseWriter, r *http.Request) {
 		log.Printf("save self-service channel request record for %s: %v", channel.Slug, err)
 	}
 
+	// The channel is stored; the welcome mail goes out in the background and
+	// cannot hold up or fail this response.
+	created, ownerName := *channel, sessionDisplayName(s)
+	dispatchMagnetMail(func(context.Context) (*magnetMailEvent, bool) {
+		return channelCreatedMail(&created, ownerEmail, ownerName)
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{

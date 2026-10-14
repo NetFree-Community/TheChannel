@@ -626,6 +626,16 @@ func adminReplySupportTicket(w http.ResponseWriter, r *http.Request) {
 		writeTicketUpdateError(w, err)
 		return
 	}
+
+	// Mail the requester the answer, unless the operator is answering a thread
+	// they opened themselves. updated is the committed thread, so its last
+	// message is this reply even if the transaction had to retry.
+	if !answeringOwnTicket(r, updated) {
+		ticket, replyIndex := *updated, len(updated.Messages)-1
+		dispatchMagnetMail(func(mctx context.Context) (*magnetMailEvent, bool) {
+			return supportReplyMail(&ticket, replyIndex, ticketMailChannel(mctx, &ticket))
+		})
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(publicView(updated))
 }
@@ -659,6 +669,17 @@ func adminSetSupportTicketStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(publicView(updated))
+}
+
+// answeringOwnTicket reports whether the operator replying is the person who
+// opened the thread (an operator testing the box, say): mailing them their
+// own answer is noise. Without a session cookie there is nobody to compare.
+func answeringOwnTicket(r *http.Request, t *SupportTicket) bool {
+	if _, err := r.Cookie(cookieName); err != nil {
+		return false
+	}
+	s, ok := sessionEmail(r)
+	return ok && t.Email != "" && normEmail(s.Email) == normEmail(t.Email)
 }
 
 // decodeSupportBody reads and bounds the one field every reply carries.
