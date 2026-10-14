@@ -18,4 +18,4 @@ cd backend && GOFLAGS=-mod=mod GOTOOLCHAIN=auto REDIS_ADDR=127.0.0.1:6379 go tes
 cd frontend && npx ng build --configuration production
 ```
 
-אין CI במאגר, ולכן מריצים את שתיהן לפני כל push.
+ה-workflow `build` ב-GitHub Actions מריץ את שתיהן על כל PR ועל master. סביבה שאין בה גישה ל-npm סומכת עליו; אין למזג PR שהבנייה בו אדומה.
