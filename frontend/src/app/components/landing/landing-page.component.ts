@@ -1,6 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { Title } from '@angular/platform-browser';
-import { RouterLink, Router } from '@angular/router';
+import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import {
   NbCardModule, NbButtonModule, NbIconModule, NbLayoutModule,
 } from '@nebular/theme';
@@ -177,11 +177,17 @@ interface LandingFeature {
     <section class="section section--alt support" id="contact" aria-labelledby="contact-title">
       <div class="wrap wrap--narrow">
         <h2 class="section__title" id="contact-title">יש שאלה?</h2>
-        <app-support-box
-          [signedIn]="signedIn"
-          title="פנייה אלינו"
-          subtitle="שאלה לפני פתיחת ערוץ, תקלה או בקשה — כתבו לנו ונחזור אליכם.">
-        </app-support-box>
+        <!-- From an emailed link the box waits for the session check, so it
+             loads the right threads (session or this browser's) the first time. -->
+        @if (!supportLink || authChecked) {
+          <app-support-box
+            [signedIn]="signedIn"
+            [channelSlug]="supportChannel"
+            [openTicketId]="supportTicket"
+            title="פנייה אלינו"
+            subtitle="שאלה לפני פתיחת ערוץ, תקלה או בקשה — כתבו לנו ונחזור אליכם.">
+          </app-support-box>
+        }
       </div>
     </section>
 
@@ -203,6 +209,17 @@ export class LandingPageComponent implements OnInit {
    *  sender's identity from the session regardless of what is posted. */
   signedIn = false;
   readonly year = new Date().getFullYear();
+
+  /**
+   * Set by `?support=1`, the link the system's emails carry (the channel
+   * welcome mail and a support answer): open the contact box, for a signed-in
+   * visitor too, who would otherwise be sent straight on to their channels.
+   * `channel` tags a new ticket with that channel; `ticket` opens that thread.
+   */
+  supportLink = false;
+  supportChannel = '';
+  supportTicket = '';
+  authChecked = false;
 
   readonly steps: LandingStep[] = [
     { icon: 'log-in-outline', title: 'מתחברים עם גוגל', text: 'לחיצה אחת על חשבון הגוגל שלכם. בלי סיסמה חדשה ובלי טפסים.' },
@@ -230,6 +247,7 @@ export class LandingPageComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
     private titleService: Title,
   ) {}
 
@@ -237,6 +255,27 @@ export class LandingPageComponent implements OnInit {
     // index.html ships an empty <title>; without this the tab and the history
     // entry show the bare URL.
     this.titleService.setTitle('הערוץ — ערוץ שידור משלכם, פתוח תוך רגע');
+
+    const q = this.route.snapshot.queryParamMap;
+    this.supportLink = q.get('support') === '1';
+    if (this.supportLink) {
+      // Both are only labels/lookups (the server authorises every thread), but
+      // they come from a URL, so anything that is not a plain id is dropped.
+      const channel = q.get('channel') ?? '';
+      const ticket = q.get('ticket') ?? '';
+      this.supportChannel = /^[a-z0-9-]{1,64}$/.test(channel) ? channel : '';
+      this.supportTicket = /^[A-Za-z0-9_-]{1,64}$/.test(ticket) ? ticket : '';
+      try {
+        this.signedIn = !!(await this.authService.loadUserInfo());
+      } catch {
+        this.signedIn = false;
+      }
+      this.authChecked = true;
+      // After the box has rendered under the hero.
+      setTimeout(() => document.getElementById('contact')?.scrollIntoView({ block: 'start' }));
+      return;
+    }
+
     try {
       const user = await this.authService.loadUserInfo();
       if (user) {

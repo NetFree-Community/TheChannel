@@ -1,6 +1,7 @@
 import { Component, HostBinding, Input, OnInit, Optional } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   NbAlertModule, NbButtonModule, NbCardModule, NbDialogRef,
   NbIconModule, NbInputModule, NbSpinnerModule, NbToastrService, NbTooltipModule,
@@ -45,6 +46,15 @@ export class SupportBoxComponent implements OnInit {
    * must not be closed by this button.
    */
   @Input() dialogMode = false;
+  /**
+   * A thread to open on arrival — the `ticket` of an emailed support answer.
+   * The link never carries the anonymous access token (the mail goes to an
+   * unverified address), so the thread opens only where it is already
+   * readable: the requester's session, or the browser that sent it.
+   */
+  @Input() openTicketId = '';
+  /** The linked thread is not readable here; says why and what to do instead. */
+  ticketNotFound = false;
 
   @HostBinding('class.support-dialog') get isDialog(): boolean { return this.dialogMode; }
 
@@ -70,14 +80,33 @@ export class SupportBoxComponent implements OnInit {
     private support: SupportService,
     private toastr: NbToastrService,
     @Optional() private dialogRef: NbDialogRef<SupportBoxComponent> | null,
+    private router: Router,
   ) {}
 
   close(): void {
     if (this.dialogMode) this.dialogRef?.close();
   }
 
-  ngOnInit(): void {
-    this.loadTickets();
+  async ngOnInit(): Promise<void> {
+    await this.loadTickets();
+    if (!this.openTicketId) return;
+    if (this.tickets.some(t => t.id === this.openTicketId)) {
+      this.openId = this.openTicketId;
+      setTimeout(() => document.getElementById('ticket-' + this.openTicketId)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    } else {
+      this.ticketNotFound = true;
+    }
+  }
+
+  /** Sign in and come back to this very link, with the thread to open. */
+  signInForTicket(): void {
+    try {
+      localStorage.setItem('returnUrl', window.location.pathname + window.location.search);
+    } catch {
+      // Storage unavailable: the login still works, it just lands elsewhere.
+    }
+    this.router.navigate(['/login']);
   }
 
   async submit(): Promise<void> {

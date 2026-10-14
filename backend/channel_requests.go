@@ -206,6 +206,13 @@ func approveChannelRequest(w http.ResponseWriter, r *http.Request) {
 	req.Notes = body.Notes
 	dbSaveChannelRequest(ctx, req)
 
+	// Same welcome mail as self-service creation. No greeting name: on these
+	// requests Name is what became the channel name, not the person's.
+	created := *channel
+	dispatchMagnetMail(func(context.Context) (*magnetMailEvent, bool) {
+		return channelCreatedMail(&created, ownerEmail, "")
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"status":      "approved",
