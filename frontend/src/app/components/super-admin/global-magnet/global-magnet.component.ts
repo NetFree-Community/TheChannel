@@ -56,6 +56,7 @@ export class GlobalMagnetComponent implements OnInit {
   loading = true;
   loadFailed = false;
   saving = false;
+  newLockedChannel = '';
   /** The API key is a secret: masked until the operator asks to see it. */
   showApiKey = false;
   /** JSON of the last server copy, to tell the operator about unsaved edits. */

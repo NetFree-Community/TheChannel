@@ -29,6 +29,22 @@
   margin-top: 0.5rem;
 }
 
+.locked__add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.locked__add input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.locked__add [nbButton] {
+  flex: none;
+  min-height: 2.5rem;
+}
+
 .locked__tags {
   display: block;
   margin-top: 0.75rem;
