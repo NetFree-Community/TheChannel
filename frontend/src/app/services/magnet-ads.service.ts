@@ -18,6 +18,9 @@ export interface MagnetSettings {
   locked?: boolean;
 }
 
+/** Lifetime of a channel's Magnet viewer id (see viewerId). */
+const VIEWER_ID_TTL_MS = 24 * 60 * 60 * 1000;
+
 @Injectable({ providedIn: 'root' })
 export class MagnetAdsService {
   private settings: MagnetSettings | null = null;
@@ -37,6 +40,7 @@ export class MagnetAdsService {
    */
   private decisions = new Map<number, boolean>();
   private decisionsSlug: string | undefined;
+  private viewerIds = new Map<string, { id: string; t: number }>();
 
   constructor(private slugService: SlugService) {}
 
@@ -69,6 +73,39 @@ export class MagnetAdsService {
 
   getSettings(): MagnetSettings | null {
     return this.settings;
+  }
+
+  /**
+   * A random id for this browser in this channel, handed to every ad frame
+   * as Magnet's viewer id (see storageShim in magnet-ad-slot). The frames
+   * have an opaque origin and no storage of their own, so without it Magnet
+   * saw every slot as a new viewer. Kept per channel so that the snippets of
+   * different channel owners, which can all read it, cannot use it to link
+   * one reader across channels; and renewed every 24 hours, which is as long
+   * as Magnet remembers what a viewer saw, so the owner's snippet gets no
+   * lasting identifier out of it.
+   */
+  viewerId(): string {
+    const key = `magnet_vid:${this.slugService.slug ?? ''}`;
+    const now = Date.now();
+    const fresh = (v: { id: string; t: number } | undefined | null) =>
+      !!v && v.t <= now && now - v.t < VIEWER_ID_TTL_MS;
+    const known = this.viewerIds.get(key);
+    if (fresh(known)) return known!.id;
+    let entry: { id: string; t: number } | null = null;
+    try {
+      const m = /^([0-9a-f]{24})\.(\d{1,15})$/.exec(localStorage.getItem(key) ?? '');
+      const stored = m ? { id: m[1], t: Number(m[2]) } : null;
+      if (fresh(stored)) entry = stored;
+    } catch { /* storage blocked: the in-memory id still covers this visit */ }
+    if (!entry) {
+      const bytes = new Uint8Array(12);
+      crypto.getRandomValues(bytes);
+      entry = { id: Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(''), t: now };
+      try { localStorage.setItem(key, `${entry.id}.${entry.t}`); } catch { /* see above */ }
+    }
+    this.viewerIds.set(key, entry);
+    return entry.id;
   }
 
   /**

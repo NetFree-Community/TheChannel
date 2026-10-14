@@ -63,7 +63,7 @@ export class GlobalMagnetComponent implements OnInit {
   // per-channel form): anything else silently falls back to message spacing.
   modeOptions = [
     { value: 'by_messages', label: 'לפי מספר הודעות', hint: 'פרסומת אחרי כל כמה הודעות שהקורא גלל.' },
-    { value: 'by_time', label: 'לפי זמן', hint: 'פרסומת אחרי כל כמה שניות של קריאה.' },
+    { value: 'by_time', label: 'לפי זמן', hint: 'פרסומת אחרי כל פרק זמן בין שעות הפרסום של ההודעות (לא זמן הקריאה).' },
   ];
 
   constructor(
