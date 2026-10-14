@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { AfterViewChecked, AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import {
@@ -29,6 +29,7 @@ import { ShareService } from '../../../services/share.service';
 import { SupportBoxComponent } from '../../support/support-box.component';
 import { User } from '../../../models/user.model';
 import { MyChannel } from '../../../models/my-channel.model';
+import { CreditVariant, PlatformAttributionComponent } from '../platform-attribution/platform-attribution.component';
 
 /** What a menu entry does; carried in NbMenuItem.data so the icon can change freely. */
 type MenuAction =
@@ -58,11 +59,12 @@ const MENU_ITEMS = '.cdk-overlay-container nb-context-menu .menu-item > a';
     NbContextMenuModule,
     NbTooltipModule,
     NbPopoverModule,
+    PlatformAttributionComponent,
   ],
   templateUrl: './channel-header.component.html',
   styleUrl: './channel-header.component.scss'
 })
-export class ChannelHeaderComponent implements OnInit, OnDestroy {
+export class ChannelHeaderComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
   private menuSub?: Subscription;
 
   @ViewChildren(NbContextMenuDirective) private contextMenus?: QueryList<NbContextMenuDirective>;
@@ -198,6 +200,7 @@ export class ChannelHeaderComponent implements OnInit, OnDestroy {
     private myChannelsService: MyChannelsService,
     private shareService: ShareService,
     private hostRef: ElementRef<HTMLElement>,
+    private zone: NgZone,
   ) {
     this.shareMenu = [
       { title: 'העתקת הקישור', ariaRole: 'menuitem', icon: 'copy-outline', data: { action: 'copy' } as MenuData },
@@ -211,6 +214,76 @@ export class ChannelHeaderComponent implements OnInit, OnDestroy {
   @HostListener('window:resize')
   onResize() {
     this.updateScreenSize();
+  }
+
+  /** Which form of the platform credit the name's line has room for. */
+  creditVariant: CreditVariant = 'badge';
+
+  @ViewChild('titleRow') private titleRow?: ElementRef<HTMLElement>;
+  @ViewChild('nameEl') private nameEl?: ElementRef<HTMLElement>;
+  @ViewChild('creditFull') private creditFull?: PlatformAttributionComponent;
+  @ViewChild('creditShort') private creditShort?: PlatformAttributionComponent;
+  private creditObserver?: ResizeObserver;
+  private creditFrame = 0;
+  private measuredName?: string;
+
+  ngAfterViewInit() {
+    // The row's width changes with the window and with the buttons beside it
+    // (sign-in, the avatar, the bell appearing); the name's with its text.
+    this.creditObserver = new ResizeObserver(() => this.scheduleCreditMeasure());
+    if (this.titleRow) this.creditObserver.observe(this.titleRow.nativeElement);
+    this.scheduleCreditMeasure();
+    // The web font arriving widens the name and the pills without resizing the row.
+    document.fonts?.ready.then(() => this.scheduleCreditMeasure());
+  }
+
+  ngAfterViewChecked() {
+    // A string comparison only: the name loads after the first render, and a
+    // name that is already cut by the row does not change size when its text
+    // changes, so the observer alone would miss it.
+    if (this.channelName !== this.measuredName) this.scheduleCreditMeasure();
+  }
+
+  private scheduleCreditMeasure() {
+    if (this.creditFrame) return;
+    // Next frame: the result changes the template, which is not allowed from
+    // inside the check that noticed the change. Outside the zone, so a
+    // measurement that changes nothing costs no change-detection pass; the
+    // zone is re-entered only when the form actually changes.
+    this.zone.runOutsideAngular(() => {
+      this.creditFrame = requestAnimationFrame(() => {
+        this.creditFrame = 0;
+        const next = this.pickCreditVariant();
+        if (next && next !== this.creditVariant) this.zone.run(() => this.creditVariant = next);
+      });
+    });
+  }
+
+  /**
+   * The widest credit that fits beside the channel name without cutting
+   * the name: the name's full width (scrollWidth ignores the ellipsis), plus
+   * the gap, plus the pill's own width, against the row. When neither pill
+   * fits, the credit becomes the badge on the logo and the name keeps the
+   * whole line. The description is on the next line and never shares it.
+   *
+   * Stable: the row is the flexible part of the header, so its width does not
+   * depend on which credit is in it, and the pills are measured whether or not
+   * they are on show (the unused ones are laid out invisibly).
+   */
+  private pickCreditVariant(): CreditVariant | undefined {
+    this.measuredName = this.channelName;
+    const row = this.titleRow?.nativeElement;
+    const name = this.nameEl?.nativeElement;
+    // Not laid out (teardown, a hidden tab): keep what is there.
+    const room = row?.clientWidth;
+    if (!row || !name || !room) return undefined;
+    const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+    const needs = name.scrollWidth + gap;
+    const full = this.creditFull?.naturalWidth() ?? 0;
+    const short = this.creditShort?.naturalWidth() ?? 0;
+    return full && needs + full <= room ? 'full'
+      : short && needs + short <= room ? 'short'
+        : 'badge';
   }
 
   ngOnInit() {
@@ -228,6 +301,8 @@ export class ChannelHeaderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.menuSub?.unsubscribe();
+    this.creditObserver?.disconnect();
+    if (this.creditFrame) cancelAnimationFrame(this.creditFrame);
     // ViewerJS appends its container to document.body — destroy it with the header.
     this.v?.destroy();
   }

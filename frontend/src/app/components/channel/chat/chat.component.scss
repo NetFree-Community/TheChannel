@@ -14,9 +14,9 @@
   // Fixed under the header: the feed opens scrolled to its newest message, so
   // a banner in the flow at the top of the list would never be seen.
   position: fixed;
-  // Below the attribution strip the shell pins under the header (two lines
-  // high on a phone).
-  top: calc(var(--chrome-height, 0px) + 3rem);
+  // Just under the header. (It used to clear a separate attribution strip
+  // too; that credit now lives inside the header itself.)
+  top: calc(var(--chrome-height, 0px) + 0.75rem);
   inset-inline: 1rem;
   z-index: 12;
   display: flex;
@@ -46,12 +46,6 @@
   }
 }
 
-@media (max-width: 575px) {
-  .feed-banner {
-    top: calc(var(--chrome-height, 0px) + 4.25rem);
-  }
-}
-
 .feed-banner--warning {
   background: var(--color-warning-100);
   border-color: var(--color-warning-300);
@@ -75,7 +69,7 @@
   right: 0;
   z-index: 5;
   overflow: hidden;
-  padding: 3rem 1rem 1rem;
+  padding: 1rem;
   background: var(--layout-background-color);
   pointer-events: none;
 }

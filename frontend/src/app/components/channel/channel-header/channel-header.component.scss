@@ -50,6 +50,21 @@
   cursor: default;
 }
 
+// Holds the logo and, when the name's line has no room for the credit pill,
+// the platform badge on the logo's lower corner (towards the text).
+.ch__brand {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+
+.ch__credit-badge {
+  position: absolute;
+  inset-block-end: -2px;
+  inset-inline-end: -4px;
+  z-index: 1;
+}
+
 .ch__text {
   flex: 1 1 auto;
   min-width: 0;
@@ -58,7 +73,40 @@
   gap: 0.1rem;
 }
 
+// The name's line, shared with the platform credit when it fits there.
+// Its width never depends on what is in it (.ch__text grows to fill the row),
+// which is what keeps the choice of credit from flip-flopping.
+.ch__title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.ch__credit {
+  flex: 0 0 auto;
+}
+
+// The credit forms not in use: out of the flow, invisible, unfocusable — but
+// still laid out at their natural width, so the header can measure whether
+// they would fit (ChannelHeaderComponent.pickCreditVariant).
+// The host is a zero-width clipping box, so the pill inside (nowrap, never
+// shrunk below its content) keeps its natural width for the measurement yet
+// cannot spill past the screen edge and add a sideways scroll on a phone.
+.ch__credit--off {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .ch__name {
+  flex: 0 1 auto;
+  min-width: 0;
   margin: 0;
   font-size: 1.1rem;
   font-weight: 800;
@@ -179,6 +227,10 @@
 
   .ch__actions {
     gap: 0;
+  }
+
+  .ch__title {
+    gap: 0.45rem;
   }
 }
 
