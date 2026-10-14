@@ -8,11 +8,14 @@
  * as 502 (a 401 would sign the super admin out through the session-expired
  * interceptor), so the status alone cannot tell a bad key from an outage.
  */
-export function magnetStatsError(err: any): { message: string; notConfigured: boolean } {
+export function magnetStatsError(err: any): { message: string; notConfigured: boolean; keyProblem: boolean } {
   const status: number = err?.status ?? 0;
   const body = err?.error;
   const code = String(typeof body === 'string' ? body : (body?.error ?? ''));
-  const result = (message: string, notConfigured = false) => ({ message, notConfigured });
+  // keyProblem: the fix is on the "פרסומות מגנט" screen (enter or replace the
+  // key), so a screen can offer a way there instead of "try again".
+  const result = (message: string, notConfigured = false, keyProblem = false) =>
+    ({ message, notConfigured, keyProblem: keyProblem || notConfigured });
 
   if (code === 'missing_stats_key') {
     return result('מפתח הסטטיסטיקה של מגנט עוד לא הוגדר', true);
@@ -20,7 +23,7 @@ export function magnetStatsError(err: any): { message: string; notConfigured: bo
   // No status === 401 check: the backend never forwards a 401 here (see
   // above), so a rejected key is only ever recognisable by its code.
   if (code === 'invalid_key' || code === 'missing_key') {
-    return result('מפתח הסטטיסטיקה שגוי או שבוטל במגנט');
+    return result('מפתח הסטטיסטיקה שגוי או שבוטל במגנט', false, true);
   }
   // A 401 from Magnet's platform gate rather than from site-stats: a setup
   // fault (the function deployed with JWT verification on), not an outage.
@@ -28,7 +31,7 @@ export function magnetStatsError(err: any): { message: string; notConfigured: bo
     return result('מגנט דחה את הבקשה — בדקו את מפתח הסטטיסטיקה ואת פריסת site-stats במגנט');
   }
   if (code === 'invalid_key_format') {
-    return result('מפתח הסטטיסטיקה השמור אינו תקין — הזינו אותו מחדש במסך "פרסומות מגנט"');
+    return result('מפתח הסטטיסטיקה השמור אינו תקין — הזינו אותו מחדש במסך "פרסומות מגנט"', false, true);
   }
   switch (status) {
     // site_not_active, or the function not deployed yet.
