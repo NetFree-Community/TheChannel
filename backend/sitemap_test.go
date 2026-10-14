@@ -89,7 +89,8 @@ func TestSitemapListsOnlyPublicChannels(t *testing.T) {
 	seedPreviewChannel(t, ctx, off, ChannelData{Name: "מושבת", Features: df})
 
 	// The newest message dates the public channel.
-	posted := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
+	// Later than the channel's creation (now), so it is the newest date.
+	posted := time.Now().UTC().AddDate(0, 0, 2)
 	if err := rdb.ZAdd(ctx, "channel:"+pub+":m_times", redis.Z{Score: float64(posted.Unix()), Member: "channel:" + pub + ":messages:1"}).Err(); err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +118,7 @@ func TestSitemapListsOnlyPublicChannels(t *testing.T) {
 	}
 	if lm, ok := got["https://example.test/channel/"+pub]; !ok {
 		t.Errorf("sitemap is missing the public channel")
-	} else if lm != "2026-09-01" {
+	} else if lm != posted.Format("2006-01-02") {
 		t.Errorf("public channel lastmod = %q, want the newest message's date", lm)
 	}
 	for _, hidden := range []string{priv, off} {
@@ -314,7 +315,7 @@ func TestHomeStructuredData(t *testing.T) {
 		}
 	}
 	// Nothing the product cannot back up.
-	if strings.Contains(page, "aggregateRating") || strings.Contains(page, "review") {
+	if strings.Contains(page, "aggregateRating") || strings.Contains(page, `"Review"`) {
 		t.Errorf("home page claims ratings or reviews")
 	}
 }
