@@ -19,4 +19,17 @@ export interface Channel {
   require_auth_for_view_files?: boolean;
   contact_us?: string;
   features?: ChannelFeatureFlags;
+  // Search-engine settings (backend/channel_seo.go). Absent means listed,
+  // with the name and description as the search result's text.
+  require_auth?: boolean;
+  seo_hidden?: boolean;
+  seo_title?: string;
+  seo_description?: string;
+}
+
+/** The search part of a channel edit, as the backend's request names it. */
+export interface ChannelSeoSettings {
+  seoHidden: boolean;
+  seoTitle: string;
+  seoDescription: string;
 }

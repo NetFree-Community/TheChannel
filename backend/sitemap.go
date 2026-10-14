@@ -65,8 +65,9 @@ var sitemapCache struct {
 	channels []sitemapEntry
 }
 
-// publicChannelEntries lists every channel a stranger may read — not
-// private, not disabled — with the time of its newest message (or its
+// publicChannelEntries lists every channel a stranger may read and its
+// managers left in search — not private, not disabled, not switched off
+// (channelSearchListed) — with the time of its newest message (or its
 // creation, for a channel that never posted). Cached, so a crawler hammering
 // the sitemap costs one pass over the channel list per TTL.
 func publicChannelEntries(ctx context.Context) ([]sitemapEntry, error) {
@@ -83,7 +84,7 @@ func publicChannelEntries(ctx context.Context) ([]sitemapEntry, error) {
 	entries := make([]sitemapEntry, 0, len(channels))
 	public := make([]*ChannelData, 0, len(channels))
 	for _, ch := range channels {
-		if ch.Features.Disabled || ch.Features.RequireAuth || !isPlausibleSlug(ch.Slug) {
+		if !channelSearchListed(ch) || !isPlausibleSlug(ch.Slug) {
 			continue
 		}
 		public = append(public, ch)
@@ -121,9 +122,19 @@ func publicChannelEntries(ctx context.Context) ([]sitemapEntry, error) {
 }
 
 type xmlURL struct {
-	Loc     string `xml:"loc"`
-	LastMod string `xml:"lastmod,omitempty"`
+	Loc      string `xml:"loc"`
+	LastMod  string `xml:"lastmod,omitempty"`
+	Priority string `xml:"priority,omitempty"`
 }
+
+// Sitemap priorities: relative weights within this site only. The home page
+// (where channels are opened) is the page the site exists to promote, the
+// guides lead to it, and each channel is one of many.
+const (
+	priorityHome    = "1.0"
+	priorityGuide   = "0.8"
+	priorityChannel = "0.5"
+)
 
 type xmlURLSet struct {
 	XMLName xml.Name `xml:"urlset"`
@@ -167,9 +178,9 @@ func writeXML(w http.ResponseWriter, v any) {
 
 // staticSitemapURLs are the pages that exist regardless of the channels.
 func staticSitemapURLs(origin string) []xmlURL {
-	urls := []xmlURL{{Loc: origin + "/", LastMod: contentRevised}}
+	urls := []xmlURL{{Loc: origin + "/", LastMod: contentRevised, Priority: priorityHome}}
 	for _, p := range contentPages {
-		urls = append(urls, xmlURL{Loc: origin + p.Path, LastMod: contentRevised})
+		urls = append(urls, xmlURL{Loc: origin + p.Path, LastMod: contentRevised, Priority: priorityGuide})
 	}
 	return urls
 }
@@ -177,7 +188,7 @@ func staticSitemapURLs(origin string) []xmlURL {
 func channelURLs(origin string, entries []sitemapEntry) []xmlURL {
 	urls := make([]xmlURL, 0, len(entries))
 	for _, e := range entries {
-		urls = append(urls, xmlURL{Loc: origin + e.Path, LastMod: lastModString(e.LastMod)})
+		urls = append(urls, xmlURL{Loc: origin + e.Path, LastMod: lastModString(e.LastMod), Priority: priorityChannel})
 	}
 	return urls
 }
@@ -239,8 +250,12 @@ func getSitemapChannels(w http.ResponseWriter, r *http.Request) {
 	writeXML(w, xmlURLSet{XMLNS: sitemapNS, URLs: channelURLs(requestOrigin(r, getGlobalConfig()), entries[start:end])})
 }
 
-// resetSitemapCache is for tests, which create and delete channels between
-// requests.
+// resetSitemapCache drops the cached channel list, so the next sitemap
+// request rebuilds it. Called when a channel's search visibility changes
+// (its own search toggle, privacy, the kill switch), and by tests, which
+// create and delete channels between requests. The cache is per process: on
+// a multi-instance deployment another instance still serves its copy until
+// the TTL runs out.
 func resetSitemapCache() {
 	sitemapCache.Lock()
 	sitemapCache.channels = nil

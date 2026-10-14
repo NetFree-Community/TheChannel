@@ -290,7 +290,11 @@ export class ChannelHeaderComponent implements OnInit, AfterViewInit, AfterViewC
 
   ngOnInit() {
     this.chatService.updateChannelInfo()
-      .then(() => this.titleService.setTitle(this.chatService.channelInfo?.name || 'הערוץ'));
+      // The search title its managers wrote, when there is one: the server
+      // sends it as the page's <title>, and Google reads the title after
+      // the app has run, so the tab must not swap it back for the name.
+      .then(() => this.titleService.setTitle(
+        this.chatService.channelInfo?.seo_title?.trim() || this.chatService.channelInfo?.name || 'הערוץ'));
 
     // One subscription for both menus, keyed on the item's data.action — the
     // icon used to be the key, which broke the moment an icon was redesigned.

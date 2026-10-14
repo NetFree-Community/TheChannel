@@ -102,7 +102,7 @@
             <app-global-settings></app-global-settings>
           }
           @case (VIEW_STATISTICS) {
-            <app-super-admin-statistics></app-super-admin-statistics>
+            <app-super-admin-statistics (openMagnet)="select(VIEW_MAGNET)"></app-super-admin-statistics>
           }
         }
       </main>
