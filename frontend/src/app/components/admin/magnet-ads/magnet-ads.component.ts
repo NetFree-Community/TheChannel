@@ -17,6 +17,7 @@ import { AdminService } from '../../../services/admin.service';
 import { AuthService } from '../../../services/auth.service';
 import { MagnetAdsService } from '../../../services/magnet-ads.service';
 import { SuperAdminService } from '../../../services/super-admin.service';
+import { magnetStatsError } from '../../../services/magnet-stats-errors';
 import { Setting } from '../../../models/setting.model';
 import { toBool } from '../settings/settings.schema';
 
@@ -250,26 +251,11 @@ export class MagnetAdsComponent implements OnInit {
       this.stats = await this.superAdminService.getMagnetStats() as MagnetStatsResponse;
       this.statsLoadedAt = new Date();
     } catch (err: any) {
-      const status = err?.status ?? 0;
-      const data = err?.error;
-      if (status === 400) {
-        // The body is English ({"error":"missing_api_key","message":"Magnet
-        // API key is not configured"}), and this tab has no key field, so
-        // the text has to say where the key lives — as the super-admin
-        // statistics card does.
-        const code = typeof data === 'string' ? data : (data?.error ?? '');
-        this.statsError = String(code).includes('missing_api_key')
-          ? 'מפתח ה-API של מגנט לא הוגדר — הגדירו אותו בפאנל מנהל-על ← פרסומות מגנט'
-          : 'מפתח ה-API של מגנט אינו תקין — בדקו אותו בפאנל מנהל-על ← פרסומות מגנט';
-      } else if (status === 404) {
-        this.statsError = 'האתר לא נמצא במערכת מגנט או שאינו מאושר.';
-      } else if (status === 401 || status === 403) {
-        this.statsError = 'אין הרשאה לגשת לנתוני מגנט.';
-      } else if (status === 0) {
-        this.statsError = 'שגיאת רשת בקריאה לשרת מגנט';
-      } else {
-        this.statsError = data?.message || `שגיאה בקבלת נתונים (HTTP ${status})`;
-      }
+      // This tab has no key field, so a missing key says where it is set.
+      const { message, notConfigured } = magnetStatsError(err);
+      this.statsError = notConfigured
+        ? `${message} — הגדירו אותו בפאנל מנהל-על ← פרסומות מגנט`
+        : message;
       this.stats = null;
     } finally {
       this.statsLoading = false;

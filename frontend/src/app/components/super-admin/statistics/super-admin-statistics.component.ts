@@ -8,6 +8,7 @@ import {
 } from '@nebular/theme';
 import { SuperAdminService } from '../../../services/super-admin.service';
 import { ConfirmService } from '../../../services/confirm.service';
+import { magnetStatsError } from '../../../services/magnet-stats-errors';
 
 @Component({
   selector: 'app-super-admin-statistics',
@@ -48,20 +49,11 @@ export class SuperAdminStatisticsComponent implements OnInit {
       .then(stats => this.magnetStats = stats)
       .catch(err => {
         // A missing key is the normal state of a platform that never used
-        // Magnet, not an outage: the backend answers 400 with a precise
-        // {"error":"missing_api_key"} body, which used to be collapsed into the
-        // same warning toast as an upstream failure on every visit.
-        const body = err?.error;
-        const code = typeof body === 'string' ? body : (body?.error ?? '');
-        if (err?.status === 400 && String(code).includes('missing_api_key')) {
-          this.magnetNotConfigured = true;
-          this.magnetError = 'מפתח ה-API של מגנט עדיין לא הוגדר';
-          return;
-        }
-        this.magnetError = err?.status === 502
-          ? 'מגנט לא ענה. נסו שוב בעוד רגע.'
-          : 'הנתונים ממגנט לא נטענו. נסו שוב בעוד רגע.';
-        this.toastr.warning('', 'הנתונים ממגנט לא נטענו');
+        // Magnet, not an outage: a setup hint here, and no warning toast.
+        const { message, notConfigured } = magnetStatsError(err);
+        this.magnetError = message;
+        this.magnetNotConfigured = notConfigured;
+        if (!notConfigured) this.toastr.warning('', 'הנתונים ממגנט לא נטענו');
       })
       .finally(() => this.loadingStats = false);
   }
