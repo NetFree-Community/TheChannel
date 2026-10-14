@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -245,6 +245,62 @@ func getMagnetAdsSettings(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(settings)
 }
 
+// statsKeyRe is the shape of a Magnet stats key (rotate_site_stats_key mints
+// "mgs_" + 24 random bytes as lowercase hex). Checking it on save turns a
+// mis-pasted key into an immediate Hebrew error instead of a 401 later on the
+// statistics screen.
+var statsKeyRe = regexp.MustCompile(`^mgs_[0-9a-f]{48}$`)
+
+// globalMagnetConfigView is what the super-admin screen receives. It lists
+// its fields explicitly, with no StatsKey at all, rather than embedding
+// GlobalMagnetConfig and shadowing the field: a secret must not depend on
+// encoding/json's tie-breaking rules to stay out of a response.
+type globalMagnetConfigView struct {
+	Enabled              bool     `json:"enabled"`
+	Snippet              string   `json:"snippet"`
+	Mode                 string   `json:"mode"`
+	PerMessages          int64    `json:"perMessages"`
+	MinTimeSeconds       int64    `json:"minTimeSeconds"`
+	PerSeconds           int64    `json:"perSeconds"`
+	MinMessagesSinceLast int64    `json:"minMessagesSinceLast"`
+	ApiKey               string   `json:"apiKey"`
+	LockAll              bool     `json:"lockAll"`
+	LockedChannels       []string `json:"lockedChannels"`
+	StatsKeySet          bool     `json:"statsKeySet"`
+}
+
+func magnetConfigView(cfg *GlobalMagnetConfig) globalMagnetConfigView {
+	return globalMagnetConfigView{
+		Enabled:              cfg.Enabled,
+		Snippet:              cfg.Snippet,
+		Mode:                 cfg.Mode,
+		PerMessages:          cfg.PerMessages,
+		MinTimeSeconds:       cfg.MinTimeSeconds,
+		PerSeconds:           cfg.PerSeconds,
+		MinMessagesSinceLast: cfg.MinMessagesSinceLast,
+		ApiKey:               cfg.ApiKey,
+		LockAll:              cfg.LockAll,
+		LockedChannels:       cfg.LockedChannels,
+		StatsKeySet:          cfg.StatsKey != "",
+	}
+}
+
+// globalMagnetConfigInput is the POST body. The browser never holds the
+// stored stats key, so an empty statsKey means "keep what is stored" and
+// removing it needs its own explicit flag.
+type globalMagnetConfigInput struct {
+	GlobalMagnetConfig
+	ClearStatsKey bool `json:"clearStatsKey"`
+}
+
+// writeJSONError answers with {"error":code,"message":message}, the shape the
+// frontend maps to Hebrew text.
+func writeJSONError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{"error": code, "message": message})
+}
+
 // getGlobalMagnetConfig – super admin: read global magnet config
 func getGlobalMagnetConfig(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -252,12 +308,12 @@ func getGlobalMagnetConfig(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := dbGetGlobalMagnetConfig(ctx)
 	if err != nil {
-		http.Error(w, "error", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "config_read_failed", "הגדרות מגנט לא נטענו. נסו שוב בעוד רגע.")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cfg)
+	json.NewEncoder(w).Encode(magnetConfigView(cfg))
 }
 
 // setGlobalMagnetConfig – super admin: save global magnet config + lock rules
@@ -265,12 +321,35 @@ func setGlobalMagnetConfig(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var cfg GlobalMagnetConfig
-	if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil {
+	var in globalMagnetConfigInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
+
+	// The stored key is needed to keep it when the form leaves the field
+	// empty; saving over a config we could not read would silently erase it.
+	current, err := dbGetGlobalMagnetConfig(ctx)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "config_read_failed", "הגדרות מגנט לא נטענו. נסו שוב בעוד רגע.")
+		return
+	}
+
+	cfg := in.GlobalMagnetConfig
+	k := strings.TrimSpace(in.StatsKey)
+	switch {
+	case in.ClearStatsKey:
+		cfg.StatsKey = ""
+	case k == "":
+		cfg.StatsKey = current.StatsKey
+	case statsKeyRe.MatchString(k):
+		cfg.StatsKey = k
+	default:
+		writeJSONError(w, http.StatusBadRequest, "invalid_stats_key",
+			"מפתח הסטטיסטיקה אינו תקין — הוא מתחיל ב-mgs_ ואחריו 48 תווים. העתיקו אותו שוב ממגנט: קוד הטמעה ← מפתח סטטיסטיקה לשרת.")
+		return
+	}
 
 	if err := dbSetGlobalMagnetConfig(ctx, &cfg); err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
@@ -280,8 +359,9 @@ func setGlobalMagnetConfig(w http.ResponseWriter, r *http.Request) {
 	// Sync MagnetLockedByAdmin flag on each affected channel's features
 	go syncMagnetLockFlags(&cfg)
 
+	// The redacted view, so the screen learns statsKeySet without the key.
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Response{Success: true})
+	json.NewEncoder(w).Encode(magnetConfigView(&cfg))
 }
 
 // syncMagnetLockFlags updates MagnetLockedByAdmin on all channels based on the new global config.
@@ -291,7 +371,11 @@ func syncMagnetLockFlags(globalMagnet *GlobalMagnetConfig) {
 		func(f *ChannelFeatures) *bool { return &f.MagnetLockedByAdmin })
 }
 
-const magnetStatsURL = "https://rucltqmtefvlrjhbedqu.supabase.co/functions/v1/publisher-stats"
+// magnetStatsURL is Magnet's server-to-server stats endpoint (F37). It
+// replaced the old stats function, which took the public embed key in the query
+// string — a key printed on every page that shows the widget — and so let
+// anyone read the site's earnings. A var so tests can point it at httptest.
+var magnetStatsURL = "https://rucltqmtefvlrjhbedqu.supabase.co/functions/v1/site-stats"
 
 var magnetStatsClient = &http.Client{Timeout: 15 * time.Second}
 
@@ -300,20 +384,24 @@ func getMagnetStats(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	globalMagnet, err := dbGetGlobalMagnetConfig(ctx)
-	if err != nil || globalMagnet.ApiKey == "" {
-		http.Error(w, `{"error":"missing_api_key","message":"Magnet API key is not configured"}`, http.StatusBadRequest)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "config_read_failed", "הגדרות מגנט לא נטענו. נסו שוב בעוד רגע.")
+		return
+	}
+	if globalMagnet.StatsKey == "" {
+		writeJSONError(w, http.StatusBadRequest, "missing_stats_key", "מפתח הסטטיסטיקה של מגנט לא הוגדר")
 		return
 	}
 
-	q := url.Values{}
-	q.Set("k", globalMagnet.ApiKey)
-	reqURL := magnetStatsURL + "?" + q.Encode()
-
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, reqURL, nil)
+	// The key travels in a header and never in the URL, so it stays out of
+	// access logs on both sides. Errors below never include it.
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, magnetStatsURL, nil)
 	if err != nil {
 		http.Error(w, `{"error":"request_build_failed"}`, http.StatusInternalServerError)
 		return
 	}
+	req.Header.Set("x-magnet-stats-key", globalMagnet.StatsKey)
+	req.Header.Set("Accept", "application/json")
 
 	resp, err := magnetStatsClient.Do(req)
 	if err != nil {
@@ -322,13 +410,38 @@ func getMagnetStats(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		http.Error(w, `{"error":"upstream_read_failed"}`, http.StatusBadGateway)
 		return
 	}
 
+	// Magnet's 401 (invalid_key/missing_key) is about the stored stats key,
+	// not the operator: forwarded as 401 it would hit the frontend's
+	// session-expired interceptor, which signs the super admin out on any 401
+	// under /api/super-admin/. It goes out as 502 with Magnet's body intact,
+	// and the screen tells the cases apart by the body's error code.
+	status := resp.StatusCode
+	if status == http.StatusUnauthorized {
+		status = http.StatusBadGateway
+		// A 401 without an error code did not come from site-stats itself but
+		// from the platform's JWT gate in front of it ({"code":401,...}), which
+		// means site-stats was deployed with verify_jwt on. Passed through, the
+		// screen could only call it an outage and the operator would keep
+		// retrying a permanent setup fault, so it gets a code of its own.
+		var upstream struct {
+			Error any `json:"error"`
+		}
+		if json.Unmarshal(body, &upstream) != nil || upstream.Error == nil || upstream.Error == "" {
+			w.Header().Set("Cache-Control", "no-store")
+			writeJSONError(w, status, "upstream_unauthorized",
+				"מגנט דחה את הבקשה — בדקו את מפתח הסטטיסטיקה ואת פריסת site-stats במגנט.")
+			return
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(status)
 	w.Write(body)
 }

@@ -13,7 +13,7 @@
       </div>
     </nb-card-header>
     <nb-card-body>
-      <p class="sa-lead">הנתונים מגיעים ישירות מחשבון המפרסם במגנט, לפי מפתח ה-API שהוזן במסך "פרסומות מגנט".</p>
+      <p class="sa-lead">הנתונים מגיעים ממגנט לפי מפתח הסטטיסטיקה שהוזן במסך "פרסומות מגנט".</p>
       @if (loadingStats) {
         <div class="sa-state">
           <span class="sa-spinner" role="status" aria-label="טוען"></span>
@@ -26,7 +26,7 @@
           </span>
           <p class="sa-state__title">{{ magnetError }}</p>
           @if (magnetNotConfigured) {
-            <p class="sa-state__text">הזינו את המפתח במסך "פרסומות מגנט" ושמרו; הנתונים יופיעו כאן.</p>
+            <p class="sa-state__text">צרו מפתח במגנט (קוד הטמעה ← מפתח סטטיסטיקה לשרת), הזינו אותו במסך "פרסומות מגנט" ושמרו; הנתונים יופיעו כאן.</p>
           } @else {
             <button nbButton status="primary" size="small" type="button" (click)="loadMagnetStats()">
               <nb-icon icon="refresh-outline"></nb-icon>

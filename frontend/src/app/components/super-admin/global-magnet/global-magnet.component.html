@@ -49,18 +49,59 @@
           <p class="sa-toggle__hint">כשכבוי, שום ערוץ נעול לא מציג פרסומות מגנט, גם אם שאר הפרטים מלאים.</p>
         </div>
         <div class="sa-field">
-          <label class="sa-field__label" for="magnetApiKey">מפתח API של מגנט</label>
+          <label class="sa-field__label" for="magnetApiKey">מפתח ההטמעה של מגנט</label>
           <nb-form-field>
             <input nbInput fullWidth id="magnetApiKey" name="magnetApiKey" dir="ltr"
                    [type]="showApiKey ? 'text' : 'password'" autocomplete="new-password" spellcheck="false"
-                   [(ngModel)]="config.apiKey" placeholder="המפתח מחשבון המפרסם במגנט">
+                   [(ngModel)]="config.apiKey" placeholder="המפתח מקוד ההטמעה של האתר במגנט">
             <button nbSuffix nbButton ghost size="small" type="button" (click)="showApiKey = !showApiKey"
                     [nbTooltip]="showApiKey ? 'הסתרת המפתח' : 'הצגת המפתח'"
                     [attr.aria-label]="showApiKey ? 'הסתרת המפתח' : 'הצגת המפתח'" [attr.aria-pressed]="showApiKey">
               <nb-icon [icon]="showApiKey ? 'eye-off-outline' : 'eye-outline'"></nb-icon>
             </button>
           </nb-form-field>
-          <p class="sa-field__hint">סודי — משמש גם לקריאת הסטטיסטיקות במסך "סטטיסטיקות". לא לשתף.</p>
+          <p class="sa-field__hint">המפתח מקוד ההטמעה של האתר במגנט. הוא ציבורי ואינו נותן גישה לנתונים — לסטטיסטיקה משמש מפתח הסטטיסטיקה.</p>
+        </div>
+        <!-- The stats key is a server secret: the server never sends it back,
+             so the field is always empty and only replaces the stored key
+             when something is typed in it. -->
+        <div class="sa-field">
+          <div class="stats-key__head">
+            <label class="sa-field__label" for="magnetStatsKey">מפתח סטטיסטיקה</label>
+            @if (clearStatsKey) {
+              <span class="stats-key__chip stats-key__chip--warn">יימחק בשמירה</span>
+            } @else if (config.statsKeySet) {
+              <span class="stats-key__chip stats-key__chip--set">מוגדר</span>
+            } @else {
+              <span class="stats-key__chip">לא מוגדר</span>
+            }
+          </div>
+          @if (clearStatsKey) {
+            <div class="stats-key__clearing" role="status">
+              <span>המפתח יימחק בשמירה</span>
+              <button nbButton ghost size="small" type="button" (click)="cancelStatsKeyClearing()">ביטול</button>
+            </div>
+          } @else {
+            <div class="stats-key__row">
+              <input nbInput fullWidth id="magnetStatsKey" name="magnetStatsKey" type="password" dir="ltr"
+                     autocomplete="new-password" spellcheck="false" autocapitalize="none"
+                     [status]="statsKeyError ? 'danger' : 'basic'"
+                     [attr.aria-invalid]="statsKeyError ? true : null"
+                     [attr.aria-describedby]="statsKeyError ? 'magnetStatsKeyError magnetStatsKeyHint' : 'magnetStatsKeyHint'"
+                     [(ngModel)]="statsKeyInput" (ngModelChange)="statsKeyError = ''"
+                     [placeholder]="statsKeyPlaceholder">
+              @if (config.statsKeySet) {
+                <button nbButton status="danger" ghost size="medium" type="button" (click)="markStatsKeyForClearing()">
+                  <nb-icon icon="trash-2-outline"></nb-icon>
+                  מחיקת המפתח
+                </button>
+              }
+            </div>
+          }
+          @if (statsKeyError) {
+            <p class="sa-field__error" id="magnetStatsKeyError" role="alert">{{ statsKeyError }}</p>
+          }
+          <p class="sa-field__hint" id="magnetStatsKeyHint">מאפשר להציג במסך "סטטיסטיקות" את הקליקים והתגמולים של האתר במגנט. יוצרים אותו במגנט: קוד הטמעה ← מפתח סטטיסטיקה לשרת. סודי — אחרי השמירה הוא לא מוצג שוב.</p>
         </div>
         <div class="sa-field">
           <label class="sa-field__label" for="magnetSnippet">קוד ההטמעה</label>
