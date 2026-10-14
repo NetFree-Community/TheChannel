@@ -128,6 +128,18 @@ func main() {
 	r.Get("/favicon.ico", getFavicon)
 	r.Get("/firebase-messaging-sw.js", getFirebaseMessagingSW)
 
+	// Search engines: see seo.go, seo_content.go and sitemap.go.
+	r.Get("/robots.txt", getRobotsTxt)
+	r.Get("/sitemap.xml", getSitemap)
+	r.Get("/sitemap-pages.xml", getSitemapPages)
+	r.Get("/sitemap-channels-{n:[0-9]+}.xml", getSitemapChannels)
+	for _, p := range contentPages {
+		page := p
+		h := func(w http.ResponseWriter, r *http.Request) { serveContentPage(w, r, &page, getGlobalConfig()) }
+		r.Get(page.Path, h)
+		r.Get(page.Path+"/", h)
+	}
+
 	// User info (global, requires login)
 	r.Group(func(r chi.Router) {
 		r.Use(checkLogin)
@@ -320,12 +332,10 @@ func serveSpaFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteName := strings.TrimSpace(cfg.CustomTitle)
-	if siteName == "" {
-		siteName = defaultSiteName
-	}
-	content = injectHeadTags(content, requestOrigin(r, cfg), siteName, r.URL.Path,
-		previewChannel(r.Context(), r.URL.Path))
+	siteName := siteNameOf(cfg)
+	origin := requestOrigin(r, cfg)
+	meta := buildPageMeta(r.Context(), origin, siteName, r.URL.Path)
+	content = injectHeadTags(content, origin, siteName, r.URL.Path, meta, cfg)
 
 	if cfg.AnalyticsHead != "" {
 		content = bytes.Replace(content, []byte("</head>"), []byte(cfg.AnalyticsHead+"</head>"), 1)
@@ -343,6 +353,9 @@ func serveSpaFile(w http.ResponseWriter, r *http.Request) {
 	// cache holding it would serve another operator's markup.
 	w.Header().Set("Cache-Control", "no-cache, must-revalidate")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// The app is served on a 404 too, so a person following a dead link
+	// still lands on something usable; the status is for crawlers.
+	w.WriteHeader(meta.Status)
 	w.Write(content)
 }
 

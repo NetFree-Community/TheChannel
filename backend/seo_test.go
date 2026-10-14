@@ -96,15 +96,32 @@ func TestServeSpaFileInjectsChannelPreview(t *testing.T) {
 		t.Errorf("expected exactly one description meta, got:\n%s", page)
 	}
 
+	mustContain(t, page,
+		`<link rel="canonical" href="https://example.test/channel/`+slug+`">`,
+		`<meta name="robots" content="index, follow, max-image-preview:large">`,
+		`"@type":"CollectionPage"`,
+		`"@type":"BreadcrumbList"`,
+		// The channel is named in the initial HTML, escaped.
+		`<h1>חדשות &lt;השכונה&gt;</h1>`,
+	)
+	if strings.Contains(page, "<השכונה>") {
+		t.Errorf("channel name reached the page unescaped:\n%s", page)
+	}
+
 	landing := spaPage(t, "/")
 	mustContain(t, landing,
-		`<title>הערוץ</title>`,
-		`<meta name="description" content="generic description">`,
+		`<title>`+homeTitle+` · הערוץ</title>`,
+		`<meta name="description" content="`+homeDescription+`">`,
+		`<link rel="canonical" href="https://example.test/">`,
 		`<meta property="og:image" content="https://example.test/assets/og.jpg">`,
+		`<meta property="og:image:width" content="1200">`,
 		`<meta name="twitter:card" content="summary_large_image">`,
+		`<meta name="application-name" content="הערוץ">`,
+		`<h1>`+homeH1+`</h1>`,
+		`<a href="/open-channel">`,
 	)
-	if strings.Contains(landing, "og:description") {
-		t.Errorf("landing must keep the static description only:\n%s", landing)
+	if strings.Count(landing, `name="description"`) != 1 {
+		t.Errorf("expected exactly one description meta on the landing page:\n%s", landing)
 	}
 }
 

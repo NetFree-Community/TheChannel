@@ -124,6 +124,8 @@ export class GlobalSettingsComponent implements OnInit {
     this.values = {
       custom_title: '',
       analytics_head: '',
+      google_site_verification: '',
+      bing_site_verification: '',
       on_notification: false,
       project_domain: '',
       vapid: '',
@@ -151,6 +153,7 @@ export class GlobalSettingsComponent implements OnInit {
     }
     const textKeys = [
       'custom_title', 'analytics_head',
+      'google_site_verification', 'bing_site_verification',
       'project_domain', 'vapid',
       'fcm_api_key', 'fcm_auth_domain', 'fcm_project_id',
       'fcm_storage_bucket', 'fcm_messaging_sender_id', 'fcm_app_id', 'fcm_measurement_id',
