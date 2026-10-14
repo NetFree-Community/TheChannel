@@ -13,6 +13,11 @@ interface LandingStep {
   text: string;
 }
 
+interface LandingFaq {
+  q: string;
+  a: string;
+}
+
 interface LandingFeature {
   icon: string;
   title: string;
@@ -62,9 +67,9 @@ interface LandingFeature {
             <nb-icon aria-hidden="true" icon="flash-outline"></nb-icon>
             בחינם · בלי אפליקציה · בלי המתנה לאישור
           </span>
-          <h1 class="hero__title">ערוץ שידור משלכם, פתוח תוך רגע</h1>
+          <h1 class="hero__title">ערוץ עדכונים משלכם, פתוח תוך רגע</h1>
           <p class="hero__lead">
-            ערוץ הוא דף אחד שבו אתם מפרסמים הודעות, תמונות, סרטונים וקישורים —
+            ערוץ הוא דף אחד שבו אתם מפרסמים הודעות, תמונות, סרטונים וקישורים,
             והם מגיעים לכל מי שיש לו את הקישור. הקוראים לא צריכים להתקין כלום ולא להירשם.
           </p>
           <div class="hero__actions">
@@ -158,6 +163,25 @@ interface LandingFeature {
       </div>
     </section>
 
+    <!-- The questions come from the FAQPage data the server put in the page
+         (backend/seo_content.go), so search results and this list say the
+         same thing. Absent (e.g. under ng serve), the section is skipped. -->
+    @if (faq.length) {
+      <section class="section section--alt" aria-labelledby="faq-title">
+        <div class="wrap wrap--narrow">
+          <h2 class="section__title" id="faq-title">שאלות נפוצות</h2>
+          <div class="faq">
+            @for (item of faq; track item.q) {
+              <details class="faq__item">
+                <summary class="faq__q">{{ item.q }}</summary>
+                <p class="faq__a">{{ item.a }}</p>
+              </details>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
     <!-- Closing CTA — the one and only way in -->
     <section class="section cta" aria-labelledby="cta-title">
       <div class="wrap wrap--narrow cta__inner">
@@ -192,6 +216,11 @@ interface LandingFeature {
       <span class="footer__sep" aria-hidden="true">·</span>
       <a class="footer__link" [routerLink]="['/login']">התחברות</a>
       <span class="footer__sep" aria-hidden="true">·</span>
+      <!-- Server-rendered pages, outside the app: plain links, full load. -->
+      <a class="footer__link" href="/open-channel">מדריך לפתיחת ערוץ</a>
+      <span class="footer__sep" aria-hidden="true">·</span>
+      <a class="footer__link" href="/community-channel">ערוץ הודעות לקהילה</a>
+      <span class="footer__sep" aria-hidden="true">·</span>
       <a class="footer__link" href="#contact" (click)="scrollToContact($event)">יצירת קשר</a>
     </footer>
       </nb-layout-column>
@@ -224,6 +253,8 @@ export class LandingPageComponent implements OnInit {
     'ארגונים ומתנדבים', 'יוצרים והקהל שלהם', 'משפחה וחברים',
   ];
 
+  readonly faq: LandingFaq[] = readServerFaq();
+
   /** True from the CTA click until the browser leaves for Google. */
   starting = false;
 
@@ -234,9 +265,11 @@ export class LandingPageComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
-    // index.html ships an empty <title>; without this the tab and the history
-    // entry show the bare URL.
-    this.titleService.setTitle('הערוץ — ערוץ שידור משלכם, פתוח תוך רגע');
+    // The same title the server sends for "/" (homeTitle in
+    // backend/seo_content.go), so arriving here from inside the app does not
+    // change the tab.
+    const siteName = document.querySelector('meta[name="application-name"]')?.getAttribute('content') || 'הערוץ';
+    this.titleService.setTitle(`פתיחת ערוץ עדכונים בחינם, בלי אפליקציה · ${siteName}`);
     try {
       const user = await this.authService.loadUserInfo();
       if (user) {
@@ -296,4 +329,26 @@ export class LandingPageComponent implements OnInit {
   onPageShow(event: PageTransitionEvent) {
     if (event.persisted) this.starting = false;
   }
+}
+
+/**
+ * The FAQ from the page's FAQPage structured data. Read once, when the
+ * module loads: that is the document the server rendered for the first URL,
+ * which is "/" for nearly everyone who sees this page.
+ */
+function readServerFaq(): LandingFaq[] {
+  try {
+    for (const el of Array.from(document.querySelectorAll('script[type="application/ld+json"]'))) {
+      const data = JSON.parse(el.textContent || '{}');
+      const nodes: any[] = Array.isArray(data?.['@graph']) ? data['@graph'] : [data];
+      const page = nodes.find(n => n?.['@type'] === 'FAQPage');
+      if (!page || !Array.isArray(page.mainEntity)) continue;
+      return page.mainEntity
+        .map((q: any) => ({ q: String(q?.name ?? ''), a: String(q?.acceptedAnswer?.text ?? '') }))
+        .filter((f: LandingFaq) => f.q && f.a);
+    }
+  } catch {
+    // Malformed or missing data: the page simply has no FAQ section.
+  }
+  return [];
 }

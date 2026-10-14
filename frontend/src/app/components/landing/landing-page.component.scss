@@ -239,6 +239,34 @@
   color: var(--text-basic-color);
 }
 
+/* ---------- questions ---------- */
+
+.faq {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.faq__item {
+  border: 1px solid var(--border-basic-color-3);
+  border-radius: 0.75rem;
+  background: var(--background-basic-color-1);
+  padding: 0 1rem;
+}
+
+.faq__q {
+  cursor: pointer;
+  padding: 0.85rem 0;
+  font-weight: 700;
+  color: var(--text-basic-color);
+}
+
+.faq__a {
+  margin: 0 0 0.85rem;
+  line-height: 1.7;
+  color: var(--text-hint-color);
+}
+
 /* ---------- closing call to action ---------- */
 
 .cta__inner {
