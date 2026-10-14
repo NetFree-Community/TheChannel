@@ -21,10 +21,9 @@ import { GlobalSettingsComponent } from './global-settings/global-settings.compo
 import { SuperAdminStatisticsComponent } from './statistics/super-admin-statistics.component';
 import { SuperAdminStorageComponent } from './storage/super-admin-storage.component';
 import { GlobalStorageComponent } from './global-storage/global-storage.component';
-import { ChannelRequestsComponent } from './channel-requests/channel-requests.component';
 import { SupportInboxComponent } from './support/support-inbox.component';
 
-type ViewName = 'channels' | 'channel-features' | 'channel-users' | 'channel-storage' | 'ads' | 'magnet' | 'users' | 'settings' | 'statistics' | 'global-storage' | 'requests' | 'support';
+type ViewName = 'channels' | 'channel-features' | 'channel-users' | 'channel-storage' | 'ads' | 'magnet' | 'users' | 'settings' | 'statistics' | 'global-storage' | 'support';
 
 interface SectionInfo {
   id: ViewName;
@@ -71,7 +70,6 @@ interface SelectedChannel {
     SuperAdminStatisticsComponent,
     SuperAdminStorageComponent,
     GlobalStorageComponent,
-    ChannelRequestsComponent,
     SupportInboxComponent,
   ],
   templateUrl: './super-admin-panel.component.html',
@@ -93,7 +91,6 @@ export class SuperAdminPanelComponent {
   readonly VIEW_SETTINGS: ViewName = 'settings';
   readonly VIEW_STATISTICS: ViewName = 'statistics';
   readonly VIEW_GLOBAL_STORAGE: ViewName = 'global-storage';
-  readonly VIEW_REQUESTS: ViewName = 'requests';
   readonly VIEW_SUPPORT: ViewName = 'support';
 
   /** The menu, in the order it is shown. */
@@ -101,10 +98,6 @@ export class SuperAdminPanelComponent {
     {
       id: 'channels', title: 'ערוצים', icon: 'list-outline',
       description: 'כל הערוצים במערכת. מכאן פותחים ערוץ, משנים את התכונות שלו, מנהלים משתמשים ואחסון, משביתים או מוחקים.',
-    },
-    {
-      id: 'requests', title: 'בקשות לערוצים', icon: 'inbox-outline',
-      description: 'בקשות לפתיחת ערוץ שהגיעו מהאתר. אישור יוצר את הערוץ וממנה את המבקש לבעלים; דחייה נשמרת עם הסבר.',
     },
     {
       id: 'support', title: 'פניות למערכת', icon: 'email-outline',

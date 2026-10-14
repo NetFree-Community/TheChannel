@@ -189,35 +189,5 @@ export class SuperAdminService {
   setChannelStorage(slug: string, quotaGb: number): Promise<void> {
     return firstValueFrom(this.http.put<void>(`/api/super-admin/channels/${slug}/storage`, { quotaGb }));
   }
-
-  getChannelRequests(): Promise<ChannelRequest[]> {
-    return firstValueFrom(this.http.get<ChannelRequest[]>('/api/super-admin/channel-requests'));
-  }
-
-  approveChannelRequest(id: string, slug: string, notes: string): Promise<{ channelSlug: string; ownerEmail: string }> {
-    return firstValueFrom(
-      this.http.post<{ channelSlug: string; ownerEmail: string }>(
-        `/api/super-admin/channel-requests/${id}/approve`,
-        { slug, notes }
-      )
-    );
-  }
-
-  rejectChannelRequest(id: string, notes: string): Promise<void> {
-    return firstValueFrom(
-      this.http.post<void>(`/api/super-admin/channel-requests/${id}/reject`, { notes })
-    );
-  }
 }
 
-export interface ChannelRequest {
-  id: string;
-  name: string;
-  email: string;
-  desiredSlug: string;
-  description: string;
-  status: 'pending' | 'approved' | 'rejected';
-  notes: string;
-  createdAt: string;
-  approvedSlug: string;
-}

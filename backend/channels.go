@@ -64,7 +64,7 @@ func isPlausibleSlug(s string) bool {
 }
 
 // defaultChannelFeatures is the single source of the toggles every new channel
-// starts with. Both creation paths (createChannel, approveChannelRequest) must
+// starts with. Every creation path (createChannel, createChannelSelfService) must
 // use it: requireFeature is only applied to toggles both paths default to true,
 // and a drifted copy of this literal is exactly what backfillChannelFeatures
 // had to repair.

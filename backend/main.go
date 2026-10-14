@@ -183,9 +183,6 @@ func main() {
 		r.Get("/support/tickets", adminListSupportTickets)
 		r.Post("/support/tickets/{id}/reply", adminReplySupportTicket)
 		r.Post("/support/tickets/{id}/status", adminSetSupportTicketStatus)
-		r.Get("/channel-requests", listChannelRequests)
-		r.Post("/channel-requests/{id}/approve", approveChannelRequest)
-		r.Post("/channel-requests/{id}/reject", rejectChannelRequest)
 	})
 
 	// Support tickets. Creation and the thread view are deliberately outside
