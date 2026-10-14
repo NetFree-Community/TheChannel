@@ -11,6 +11,8 @@ import {
   NbToggleModule,
   NbToastrService,
 } from '@nebular/theme';
+import { ChannelPickerComponent } from '../channel-picker/channel-picker.component';
+import { ChannelDirectoryService } from '../channel-picker/channel-directory.service';
 import { SuperAdminService, GlobalAdsConfig } from '../../../services/super-admin.service';
 
 @Component({
@@ -26,6 +28,7 @@ import { SuperAdminService, GlobalAdsConfig } from '../../../services/super-admi
     NbToggleModule,
     NbTagModule,
     NbAlertModule,
+    ChannelPickerComponent,
   ],
   templateUrl: './global-ads.component.html',
   styleUrl: './global-ads.component.scss',
@@ -41,13 +44,14 @@ export class GlobalAdsComponent implements OnInit {
   loading = true;
   loadFailed = false;
   saving = false;
-  newLockedChannel = '';
   /** JSON of the last server copy, to tell the operator about unsaved edits. */
   private snapshot = '';
 
   constructor(
     private superAdminService: SuperAdminService,
     private toastr: NbToastrService,
+    /** Marks saved channels that no longer exist (see ChannelPickerComponent). */
+    public channelDirectory: ChannelDirectoryService,
   ) {}
 
   ngOnInit(): void {
@@ -90,13 +94,11 @@ export class GlobalAdsComponent implements OnInit {
     return !this.config.lockAll && this.config.lockedChannels.length === 0;
   }
 
-  addLockedChannel() {
-    const slug = this.newLockedChannel.trim();
-    if (!slug) return;
-    if (!this.config.lockedChannels.includes(slug)) {
-      this.config.lockedChannels.push(slug);
+  addLockedChannel(slug: string) {
+    slug = slug.trim();
+    if (slug && !this.config.lockedChannels.includes(slug)) {
+      this.config.lockedChannels = [...this.config.lockedChannels, slug];
     }
-    this.newLockedChannel = '';
   }
 
   removeLockedChannel(slug: string) {
