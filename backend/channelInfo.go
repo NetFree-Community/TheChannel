@@ -28,6 +28,11 @@ type Channel struct {
 	RequireAuthForViewFiles bool           `json:"require_auth_for_view_files"`
 	ContactUs               string         `json:"contact_us"`
 	Features                PublicFeatures `json:"features"`
+	// Search settings, for the management screen. Nothing secret: the page
+	// itself publishes all three (robots meta, title, description).
+	SeoHidden      bool   `json:"seo_hidden"`
+	SeoTitle       string `json:"seo_title"`
+	SeoDescription string `json:"seo_description"`
 }
 
 func getChannelInfo(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +57,9 @@ func getChannelInfo(w http.ResponseWriter, r *http.Request) {
 		channel.LogoUrl = ch.LogoUrl
 		channel.RequireAuthForViewFiles = ch.Features.RequireAuthFiles
 		channel.ContactUs = ch.ContactUs
+		channel.SeoHidden = ch.SeoHidden
+		channel.SeoTitle = ch.SeoTitle
+		channel.SeoDescription = ch.SeoDescription
 		channel.Features = PublicFeatures{
 			Reactions:         ch.Features.Reactions,
 			FileUploads:       ch.Features.FileUploads,
@@ -121,6 +129,7 @@ func editChannelInfo(w http.ResponseWriter, r *http.Request) {
 		Description *string `json:"description"`
 		LogoUrl     *string `json:"logoUrl"`
 		ContactUs   *string `json:"contactUs"`
+		channelSeoRequest
 	}
 
 	var req Request
@@ -178,6 +187,12 @@ func editChannelInfo(w http.ResponseWriter, r *http.Request) {
 	if req.ContactUs != nil {
 		args = append(args, "contactUs", *req.ContactUs)
 	}
+	seoArgs, err := req.channelSeoRequest.hashArgs()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	args = append(args, seoArgs...)
 	if len(args) == 0 {
 		// Nothing to change; do not issue an empty HSet.
 		res := Response{Success: true}
@@ -188,6 +203,11 @@ func editChannelInfo(w http.ResponseWriter, r *http.Request) {
 	if _, err := rdb.HSet(ctx, hashKey, args...).Result(); err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
+	}
+	// The sitemap is cached for a quarter of an hour; a channel taken out of
+	// search must leave it now, not when the cache happens to expire.
+	if len(seoArgs) > 0 {
+		resetSitemapCache()
 	}
 
 	res := Response{Success: true}

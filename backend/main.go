@@ -163,6 +163,7 @@ func main() {
 		r.Get("/channels/{slug}", getSuperAdminChannel)
 		r.Delete("/channels/{slug}", deleteChannel)
 		r.Put("/channels/{slug}/features", updateChannelFeatures)
+		r.Put("/channels/{slug}/seo", superAdminSetChannelSeo)
 		r.Get("/channels/{slug}/users", superAdminGetChannelUsers)
 		r.Post("/channels/{slug}/users", superAdminSetChannelUsers)
 		r.Get("/users/list", getPrivilegeUsersList)
@@ -353,6 +354,11 @@ func serveSpaFile(w http.ResponseWriter, r *http.Request) {
 	// cache holding it would serve another operator's markup.
 	w.Header().Set("Cache-Control", "no-cache, must-revalidate")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// The meta tag only works for crawlers that parse the HTML; the header
+	// says the same to every one of them, before the body.
+	if meta.NoIndex {
+		w.Header().Set("X-Robots-Tag", "noindex")
+	}
 	// The app is served on a 404 too, so a person following a dead link
 	// still lands on something usable; the status is for crawlers.
 	w.WriteHeader(meta.Status)

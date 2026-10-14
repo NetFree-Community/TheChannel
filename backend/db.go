@@ -1228,6 +1228,10 @@ func channelFromRecords(slug string, h map[string]string, featuresJSON string, h
 		LogoUrl:     h["logoUrl"],
 		OwnerEmail:  h["ownerEmail"],
 		ContactUs:   h["contactUs"],
+
+		SeoHidden:      h["seoHidden"] == "1",
+		SeoTitle:       h["seoTitle"],
+		SeoDescription: h["seoDescription"],
 	}
 	if h["slug"] == "" {
 		channel.Slug = slug
