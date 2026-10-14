@@ -32,21 +32,39 @@ const EMPTY_SLOT_GRACE_MS = 5000;
 const EMPTY_SLOT_MAX_WAIT_MS = 20000;
 
 /**
+ * Posted by the frame when Magnet's widget announces that it has no ad
+ * ("magnet:empty") and nothing else in the frame is visible, so the host can
+ * hide the slot at once instead of showing an empty card for the grace period.
+ */
+const NO_AD_FLAG = 'noAd';
+
+/**
  * Runs first inside the frame. Without allow-same-origin the frame's origin
  * is opaque, so reading localStorage, sessionStorage or document.cookie
  * throws a SecurityError. An ad script that touches them outside a
  * try/catch would die before rendering, so each one is replaced by an
  * in-memory stand-in that lives as long as the frame.
+ *
+ * The stand-in localStorage starts with `seed`. Magnet's widget keeps its
+ * viewer id there (nc_vid); a fresh one in every frame made each slot look
+ * like a new viewer, so Magnet's rotation never knew what this reader had
+ * already seen, and two slots in a row often showed the same ad.
  */
-const STORAGE_SHIM = `(function(){` +
-  `function mem(){var s={};return {getItem:function(k){return Object.prototype.hasOwnProperty.call(s,k)?s[k]:null},` +
-  `setItem:function(k,v){s[k]=String(v)},removeItem:function(k){delete s[k]},clear:function(){s={}},` +
-  `key:function(i){return Object.keys(s)[i]||null},get length(){return Object.keys(s).length}};}` +
-  `['localStorage','sessionStorage'].forEach(function(n){try{void window[n];}catch(e){` +
-  `try{Object.defineProperty(window,n,{value:mem(),configurable:true});}catch(_){}}});` +
-  `try{void document.cookie;}catch(e){try{Object.defineProperty(document,'cookie',` +
-  `{get:function(){return '';},set:function(){},configurable:true});}catch(_){}}` +
-  `})();`;
+function storageShim(seed: Record<string, string>): string {
+  // JSON inside an inline script: escape "<" so no value can close the tag.
+  const seedJson = JSON.stringify(seed).replace(/</g, '\\u003c');
+  return `(function(){` +
+    `function mem(init){var s={};if(init){for(var k in init){if(Object.prototype.hasOwnProperty.call(init,k))s[k]=String(init[k]);}}` +
+    `return {getItem:function(k){return Object.prototype.hasOwnProperty.call(s,k)?s[k]:null},` +
+    `setItem:function(k,v){s[k]=String(v)},removeItem:function(k){delete s[k]},clear:function(){s={}},` +
+    `key:function(i){return Object.keys(s)[i]||null},get length(){return Object.keys(s).length}};}` +
+    `var seed=${seedJson};` +
+    `['localStorage','sessionStorage'].forEach(function(n){try{void window[n];}catch(e){` +
+    `try{Object.defineProperty(window,n,{value:mem(n==='localStorage'?seed:null),configurable:true});}catch(_){}}});` +
+    `try{void document.cookie;}catch(e){try{Object.defineProperty(document,'cookie',` +
+    `{get:function(){return '';},set:function(){},configurable:true});}catch(_){}}` +
+    `})();`;
+}
 
 @Component({
   selector: 'app-magnet-ad-slot',
@@ -164,7 +182,7 @@ export class MagnetAdSlotComponent implements AfterViewInit, OnDestroy {
     return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">` +
       `<base href="${base}" target="_blank">` +
       `<style>html,body{margin:0;padding:0;background:transparent;overflow:hidden}</style>` +
-      `<script>${STORAGE_SHIM}</script>` +
+      `<script>${storageShim({ nc_vid: this.magnet.viewerId() })}</script>` +
       `</head><body>${snippet}` +
       `<script>(function(){` +
       `var last=-1;` +
@@ -173,6 +191,10 @@ export class MagnetAdSlotComponent implements AfterViewInit, OnDestroy {
       `if(window.ResizeObserver){var ro=new ResizeObserver(report);ro.observe(document.documentElement);if(document.body)ro.observe(document.body);}` +
       `new MutationObserver(report).observe(document.documentElement,{childList:true,subtree:true,attributes:true});` +
       `window.addEventListener('load',report);setInterval(report,1000);report();` +
+      // The widget collapses its slot before it fires the event, so a zero
+      // height here means the frame shows nothing at all.
+      `document.addEventListener('magnet:empty',function(){var v=h();last=v;` +
+      `parent.postMessage({type:${JSON.stringify(AD_SIZE_MESSAGE)},height:v,${NO_AD_FLAG}:v===0},'*');});` +
       `})();</script></body></html>`;
   }
 
@@ -187,6 +209,15 @@ export class MagnetAdSlotComponent implements AfterViewInit, OnDestroy {
 
     const hadContent = !!this.reportedHeight;
     this.reportedHeight = height;
+    if (height === 0 && data[NO_AD_FLAG] === true) {
+      // Magnet said there is no ad and the frame shows nothing else: hide
+      // now rather than after the grace period. The frame stays laid out,
+      // so an ad that arrives on the widget's next poll reopens the slot.
+      if (this.collapseTimer) clearTimeout(this.collapseTimer);
+      this.collapseTimer = undefined;
+      if (!this.collapsed) this.zone.run(() => { this.collapsed = true; });
+      return;
+    }
     if (height > 0) {
       // Cap what an ad may grow to: the slot sits inside the chat, not over it.
       this.frame.style.height = `${Math.min(height, 1200)}px`;

@@ -37,6 +37,7 @@ export class MagnetAdsService {
    */
   private decisions = new Map<number, boolean>();
   private decisionsSlug: string | undefined;
+  private viewerIds = new Map<string, string>();
 
   constructor(private slugService: SlugService) {}
 
@@ -69,6 +70,33 @@ export class MagnetAdsService {
 
   getSettings(): MagnetSettings | null {
     return this.settings;
+  }
+
+  /**
+   * A random id for this browser in this channel, handed to every ad frame
+   * as Magnet's viewer id (see storageShim in magnet-ad-slot). The frames
+   * have an opaque origin and no storage of their own, so without it Magnet
+   * saw every slot as a new viewer. Kept per channel so that the snippets of
+   * different channel owners, which can all read it, cannot use it to link
+   * one reader across channels.
+   */
+  viewerId(): string {
+    const key = `magnet_vid:${this.slugService.slug ?? ''}`;
+    const known = this.viewerIds.get(key);
+    if (known) return known;
+    let id: string | null = null;
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored && /^[0-9a-f]{24}$/.test(stored)) id = stored;
+    } catch { /* storage blocked: the in-memory id still covers this visit */ }
+    if (!id) {
+      const bytes = new Uint8Array(12);
+      crypto.getRandomValues(bytes);
+      id = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      try { localStorage.setItem(key, id); } catch { /* see above */ }
+    }
+    this.viewerIds.set(key, id);
+    return id;
   }
 
   /**
