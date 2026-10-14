@@ -70,7 +70,8 @@ interface LandingFeature {
           <h1 class="hero__title">ערוץ עדכונים משלכם, פתוח תוך רגע</h1>
           <p class="hero__lead">
             ערוץ הוא דף אחד שבו אתם מפרסמים הודעות, תמונות, סרטונים וקישורים,
-            והם מגיעים לכל מי שיש לו את הקישור. הקוראים לא צריכים להתקין כלום ולא להירשם.
+            והם מגיעים לכל מי שיש לו את הקישור. חלופה לערוץ וואטסאפ ולקבוצות צ׳אט במייל:
+            הקוראים לא צריכים להתקין כלום ולא להירשם.
           </p>
           <div class="hero__actions">
             <button nbButton status="primary" size="large" class="hero__cta" type="button" (click)="startCreate()" [disabled]="starting">
@@ -226,6 +227,10 @@ interface LandingFeature {
       <a class="footer__link" href="/open-channel">מדריך לפתיחת ערוץ</a>
       <span class="footer__sep" aria-hidden="true">·</span>
       <a class="footer__link" href="/community-channel">ערוץ הודעות לקהילה</a>
+      <span class="footer__sep" aria-hidden="true">·</span>
+      <a class="footer__link" href="/whatsapp-alternative">חלופה לערוץ וואטסאפ</a>
+      <span class="footer__sep" aria-hidden="true">·</span>
+      <a class="footer__link" href="/netfree-channel">ערוץ בנטפרי</a>
       <span class="footer__sep" aria-hidden="true">·</span>
       <a class="footer__link" href="#contact" (click)="scrollToContact($event)">יצירת קשר</a>
     </footer>

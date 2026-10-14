@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Observable } from 'rxjs';
-import { Channel, ChannelFeatureFlags } from '../models/channel.model';
+import { Channel, ChannelFeatureFlags, ChannelSeoSettings } from '../models/channel.model';
 import { ResponseResult } from '../models/response-result.model';
 import { SlugService } from './slug.service';
 
@@ -106,8 +106,8 @@ export class ChatService {
   get reportsEnabled(): boolean { return this.isFeatureEnabled('reports'); }
   get scheduledMessagesEnabled(): boolean { return this.isFeatureEnabled('scheduledMessages'); }
 
-  editChannelInfo(name: string, description: string, logoUrl: string, contactUs: string): Observable<ResponseResult> {
-    return this.http.post<ResponseResult>(`/api/channel/${this.slug}/admin/edit-channel-info`, { name, description, logoUrl, contactUs });
+  editChannelInfo(name: string, description: string, logoUrl: string, contactUs: string, seo?: ChannelSeoSettings): Observable<ResponseResult> {
+    return this.http.post<ResponseResult>(`/api/channel/${this.slug}/admin/edit-channel-info`, { name, description, logoUrl, contactUs, ...seo });
   }
 
   getMessages(offset: number, limit: number, direction: string): Observable<ChatResponse> {

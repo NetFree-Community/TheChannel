@@ -253,12 +253,10 @@ func buildPageMeta(ctx context.Context, origin, siteName, p string) pageMeta {
 			if name == "" {
 				name = ch.Slug
 			}
-			m.Title = name + " · " + siteName
-			m.Description = previewText(ch.Description)
-			if m.Description == "" {
-				m.Description = previewText("ערוץ העדכונים " + name + ": הודעות, תמונות ועדכונים, ישירות בדפדפן ובלי אפליקציה.")
-			}
-			m.Canonical = "/channel/" + ch.Slug
+			// The managers' own search text when they wrote one (channel_seo.go),
+			// else the name and description, as before.
+			m.Title = channelSearchTitle(ch, name, siteName)
+			m.Description = channelSearchDescription(ch, name)
 			m.ImageAlt = name
 			// A logo behind the files gate is unreachable for a crawler; the
 			// platform card is better than a broken image.
@@ -266,8 +264,20 @@ func buildPageMeta(ctx context.Context, origin, siteName, p string) pageMeta {
 				m.Image = absoluteURL(origin, logo)
 				m.Card = "summary"
 			}
-			m.StructuredData = channelStructuredData(origin, siteName, name, m.Description, m.Canonical, m.Image)
 			m.Body = channelStaticBody(siteName, name, ch.Description)
+			if ch.SeoHidden {
+				// Taken out of search by its managers: the page works as
+				// always, and a forwarded link still unfurls, but nothing
+				// invites a crawler to list it.
+				m.NoIndex = true
+				break
+			}
+			m.Canonical = "/channel/" + ch.Slug
+			pageName := name
+			if t := cleanSeoText(ch.SeoTitle); t != "" {
+				pageName = t
+			}
+			m.StructuredData = channelStructuredData(origin, siteName, name, pageName, m.Description, m.Canonical, m.Image)
 		case channelHidden:
 			m.NoIndex = true
 		case channelMissing:

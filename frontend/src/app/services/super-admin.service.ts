@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ChannelUser } from '../models/channel-user.model';
 import { Setting } from '../models/setting.model';
+import { ChannelSeoSettings } from '../models/channel.model';
 
 export type { ChannelUser, Setting };
 
@@ -33,6 +34,10 @@ export interface ChannelData {
   createdAt: string;
   features: ChannelFeatures;
   contactUs: string;
+  // Search settings; an older backend omits them (listed, default text).
+  seoHidden?: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 export interface GlobalAdsConfig {
@@ -100,6 +105,11 @@ export class SuperAdminService {
 
   updateChannelFeatures(slug: string, features: ChannelFeatures): Promise<void> {
     return firstValueFrom(this.http.put<void>(`/api/super-admin/channels/${slug}/features`, features));
+  }
+
+  /** The channel's search settings (backend/channel_seo.go); works on a disabled channel too. */
+  updateChannelSeo(slug: string, seo: ChannelSeoSettings): Promise<void> {
+    return firstValueFrom(this.http.put<void>(`/api/super-admin/channels/${slug}/seo`, seo));
   }
 
   /**

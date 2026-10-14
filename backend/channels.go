@@ -43,6 +43,12 @@ type ChannelData struct {
 	CreatedAt   time.Time       `json:"createdAt"`
 	Features    ChannelFeatures `json:"features"`
 	ContactUs   string          `json:"contactUs"`
+	// Search-engine settings (channel_seo.go), kept in the channel hash. An
+	// absent field means the defaults: listed, with the channel's name and
+	// description as the search result's text.
+	SeoHidden      bool   `json:"seoHidden"`
+	SeoTitle       string `json:"seoTitle"`
+	SeoDescription string `json:"seoDescription"`
 }
 
 type ctxKey string
@@ -374,6 +380,9 @@ func updateChannelFeatures(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
+	// Disabling a channel or making it private takes it out of the sitemap;
+	// the cached copy would otherwise list it for up to a quarter of an hour.
+	resetSitemapCache()
 
 	// The kill switch used to stop new requests only: every open event
 	// stream — a since-demoted writer's included — kept streaming, unmasked,

@@ -108,6 +108,10 @@
   @include admin-field;
 }
 
+.seo-header {
+  @include admin-card-header;
+}
+
 .save-bar {
   @include admin-save-bar;
 }

@@ -19,7 +19,7 @@ import (
 // in-app navigation back to "/" does not change the tab.
 const homeTitle = "פתיחת ערוץ עדכונים בחינם, בלי אפליקציה"
 
-const homeDescription = "פתחו ערוץ עדכונים משלכם בחינם, תוך דקה: הודעות, תמונות וסרטונים לקהילה, לבית הספר או לעסק. הקוראים נכנסים בקישור מהדפדפן, בלי אפליקציה ובלי הרשמה."
+const homeDescription = "פתחו ערוץ עדכונים בחינם, תוך דקה: חלופה לערוץ וואטסאפ ולקבוצות צ׳אט במייל. הודעות, תמונות וסרטונים לקהילה או לעסק, בקישור מהדפדפן, בלי אפליקציה."
 
 // contentRevised is the lastmod of the server-rendered pages in the sitemap.
 // Bump it when their text changes.
@@ -66,13 +66,33 @@ var homeFAQ = []faqItem{
 		Q: "צריך אפליקציה כדי לנהל את הערוץ?",
 		A: "לא. גם הכתיבה והניהול נעשים מהדפדפן, מהטלפון או מהמחשב.",
 	},
+	// The two below are appended, not inserted: the guide pages pick
+	// questions from this list by position.
+	{
+		Q: "זו חלופה לערוץ וואטסאפ או לקבוצת צ׳אט במייל?",
+		A: "כן, כשצריך להעביר עדכונים לקהל. כמו בערוץ וואטסאפ רק אתם כותבים, אבל הקוראים לא צריכים וואטסאפ, אפליקציה או מספר טלפון, רק דפדפן. ובניגוד לקבוצה במייל אין שרשורי תשובות לכולם: ההודעות מחכות בערוץ לפי הסדר. הן לא נשלחות למייל; הקוראים נכנסים לקישור, ומי שמחובר יכול לבקש התראות לנייד כשהן פעילות בערוץ.",
+	},
+	{
+		Q: "הערוץ פתוח בנטפרי?",
+		A: "האתר עצמו פתוח בנטפרי, אבל כל ערוץ צריך אישור נפרד מנטפרי לפני שגולשי נטפרי יכולים לקרוא אותו. פונים לנטפרי בבקשה לפתוח את הכתובת המלאה של הערוץ, ואפשר לבקש באותה פנייה גם את פתיחת התמונות והקבצים שבו.",
+	},
 }
+
+// faqWhatsApp and faqNetFree name the appended questions for the pages that
+// quote them.
+var (
+	faqWhatsApp = homeFAQ[8]
+	faqNetFree  = homeFAQ[9]
+)
 
 type contentSection struct {
 	Heading    string
 	Paragraphs []string
 	List       []string
 	Ordered    bool
+	// ChannelURLExample adds, after the list, the shape of a channel's full
+	// address on this deployment (its own domain, which the text cannot know).
+	ChannelURLExample bool
 }
 
 // contentPage is a page rendered entirely on the server: an explanation of
@@ -134,7 +154,7 @@ var contentPages = []contentPage{
 		Path:        "/community-channel",
 		Title:       "ערוץ הודעות לקהילה, לבית ספר ולעסק, בלי אפליקציה",
 		H1:          "ערוץ הודעות לקהילה, לבית הספר או לעסק",
-		Description: "ערוץ עדכונים חד-כיווני שעובד בדפדפן: אתם מפרסמים, והקהל קורא מקישור אחד, בלי אפליקציה, בלי הרשמה ובלי מספר טלפון. מתאים לקהילות, למוסדות ולעסקים.",
+		Description: "ערוץ עדכונים חד-כיווני בדפדפן, חלופה לערוץ וואטסאפ ולקבוצות צ׳אט במייל: אתם מפרסמים, והקהל קורא מקישור אחד, בלי אפליקציה ובלי מספר טלפון.",
 		Lead:        "כשצריך להעביר עדכונים לקהל, קבוצה שכולם כותבים בה מהר מאוד מתמלאת. ערוץ הוא הכיוון ההפוך: אתם מפרסמים, והקהל קורא.",
 		Sections: []contentSection{
 			{
@@ -148,6 +168,7 @@ var contentPages = []contentPage{
 				Heading: "גם למי שאין אפליקציה",
 				Paragraphs: []string{
 					"הערוץ הוא אתר: נפתח בכל דפדפן, בטלפון ובמחשב. בערוץ ציבורי הקורא לא צריך חשבון, מספר טלפון או אפליקציה מסוימת, ולכן אפשר להגיע גם למי שאינו משתמש ברשת חברתית או באפליקציית מסרים.",
+					"לכן ערוץ משמש חלופה לערוץ וואטסאפ ולקבוצות צ׳אט במייל: מי שיש לו וואטסאפ, מי שקורא רק במחשב ומי שגולש עם סינון מגיעים כולם לאותו קישור. האתר פתוח בנטפרי, וכל ערוץ נפתח לגולשי נטפרי אחרי אישור נפרד מהם.",
 				},
 			},
 			{
@@ -173,7 +194,91 @@ var contentPages = []contentPage{
 				},
 			},
 		},
-		FAQ: []faqItem{homeFAQ[0], homeFAQ[2], homeFAQ[4], homeFAQ[1]},
+		FAQ: []faqItem{homeFAQ[0], homeFAQ[2], faqWhatsApp, homeFAQ[4], homeFAQ[1]},
+	},
+	{
+		Path:        "/whatsapp-alternative",
+		Title:       "חלופה לערוץ וואטסאפ ולקבוצות צ׳אט במייל",
+		H1:          "חלופה לערוץ וואטסאפ ולקבוצות צ׳אט במייל",
+		Description: "ערוץ עדכונים שנפתח בדפדפן, בלי אפליקציה ובלי מספר טלפון: מה דומה לערוץ וואטסאפ ולקבוצת מייל, מה שונה, ומתי כל אחד מהם מתאים יותר.",
+		Lead:        "ערוץ וואטסאפ וקבוצה במייל הן שתי דרכים מוכרות להעביר עדכונים לקהל. ערוץ כאן עושה את אותה עבודה בדרך אחרת: דף אחד בדפדפן, שכל מי שיש לו את הקישור קורא בו.",
+		Sections: []contentSection{
+			{
+				Heading: "מה דומה לערוץ וואטסאפ",
+				Paragraphs: []string{
+					"כמו בערוץ וואטסאפ, רק אתם ומי שצירפתם לצוות כותבים, והקוראים לא כותבים בערוץ. הודעה שפורסמה מופיעה אצל מי שהערוץ פתוח אצלו באותו רגע, ומי שמחובר יכול להגיב באימוג׳י.",
+				},
+			},
+			{
+				Heading: "מה שונה",
+				List: []string{
+					"בלי אפליקציה: הערוץ הוא אתר, ונפתח בכל דפדפן, בטלפון ובמחשב. כדי לקרוא ערוץ וואטסאפ צריך חשבון וואטסאפ.",
+					"בלי מספר טלפון: בערוץ ציבורי הקוראים לא צריכים חשבון בכלל, רק את הקישור.",
+					"גם במחשב, וגם למי שאין לו סמארטפון או שאינו משתמש באפליקציות מסרים.",
+					"ההודעות נשארות בערוץ: קורא שמצטרף מאוחר רואה גם את מה שפורסם לפניו.",
+				},
+			},
+			{
+				Heading: "ובמקום קבוצת צ׳אט במייל",
+				Paragraphs: []string{
+					"בקבוצה במייל, תשובה של אחד החברים יכולה להגיע לתיבה של כולם, והעדכון החשוב נקבר בין התשובות. בערוץ רק הצוות כותב, וכל ההודעות נמצאות במקום אחד, לפי הסדר.",
+					"ההבדל העיקרי: ערוץ לא שולח את ההודעות למייל. הקוראים נכנסים לקישור כשנוח להם, ומי שמתחבר לחשבון יכול לבקש התראה לנייד על כל פרסום, כשההתראות פעילות בערוץ.",
+				},
+			},
+			{
+				Heading: "מתי עדיף להישאר עם מה שיש",
+				List: []string{
+					"כשכל הקהל שלכם כבר בוואטסאפ ורוצה לקבל את העדכונים דווקא שם.",
+					"כשחשוב שכל הודעה תגיע לתיבת המייל של כל אחד מהקוראים.",
+					"כשאתם רוצים שיחה שבה כולם כותבים: ערוץ הוא כלי לפרסום עדכונים, לא לדיון.",
+				},
+			},
+			{
+				Heading: "למי ערוץ כאן מתאים",
+				List: []string{
+					"קהל מעורב: חלק בוואטסאפ, חלק רק במייל, וחלק בלי סמארטפון. כולם מקבלים אותו קישור.",
+					"גולשים עם סינון אינטרנט: האתר פתוח בנטפרי, וכל ערוץ נפתח לגולשי נטפרי אחרי אישור נפרד מהם.",
+					"קהילות, מוסדות ועסקים שרוצים קישור אחד קבוע לכל העדכונים, שאפשר לשים באתר, בעלון או בחתימת המייל.",
+				},
+			},
+		},
+		FAQ: []faqItem{faqWhatsApp, homeFAQ[2], homeFAQ[3], homeFAQ[1]},
+	},
+	{
+		Path:        "/netfree-channel",
+		Title:       "ערוץ עדכונים בנטפרי: איך פותחים ערוץ לגולשי נטפרי",
+		H1:          "ערוץ עדכונים לגולשי נטפרי",
+		Description: "האתר פתוח בנטפרי, אבל כל ערוץ צריך אישור נפרד מנטפרי לפני שגולשי נטפרי יכולים לקרוא אותו. כך מבקשים לפתוח ערוץ, ומה כדאי לכתוב בבקשה.",
+		Lead:        "האתר עצמו פתוח בנטפרי. ערוץ חדש הוא דף חדש באתר, עם תוכן שבעלי הערוץ כותבים, ולכן גולשי נטפרי יכולים לקרוא אותו רק אחרי שנטפרי אישרו אותו בנפרד. כך מבקשים.",
+		Sections: []contentSection{
+			{
+				Heading: "למה צריך אישור לכל ערוץ",
+				Paragraphs: []string{
+					"האישור של האתר הראשי לא חל אוטומטית על הערוצים שבו. כל ערוץ הוא דף נפרד, והתוכן שלו נכתב בידי מי שפתח אותו, ולכן נטפרי צריכים לאשר אותו בנפרד.",
+					"עד שהערוץ נפתח, גולשי נטפרי לא יכולים לקרוא אותו. מי שגולש בלי סינון, או עם סינון אחר, אינו מושפע מזה.",
+				},
+			},
+			{
+				Heading: "איך מבקשים לפתוח ערוץ",
+				Ordered: true,
+				List: []string{
+					"פותחים את הערוץ ומעתיקים את הכתובת המלאה שלו, כפי שהיא מופיעה בשורת הכתובת של הדפדפן.",
+					"פונים לנטפרי בבקשה לפתוח את הכתובת הזו, בדרך שבה פונים אליהם לבקשת פתיחת אתר.",
+					"כותבים בבקשה במה הערוץ עוסק ולמי הוא מיועד. אם יש בערוץ תמונות או קבצים, מבקשים במפורש שגם הם ייפתחו.",
+					"אחרי האישור, גולשי נטפרי פותחים את אותו קישור וקוראים את הערוץ.",
+				},
+				ChannelURLExample: true,
+			},
+			{
+				Heading: "כדאי לדעת",
+				List: []string{
+					"הבקשה היא לכל ערוץ בנפרד. מי שמנהל כמה ערוצים מבקש לכל אחד מהם.",
+					"לא רק בעלי הערוץ יכולים לבקש: גם קורא שגולש בנטפרי יכול לפנות אליהם בבקשה לפתוח ערוץ שהוא רוצה לקרוא.",
+					"כדאי לבקש את הפתיחה מיד כשהערוץ נפתח, לפני ששולחים את הקישור לקהל.",
+				},
+			},
+		},
+		FAQ: []faqItem{faqNetFree, homeFAQ[2], homeFAQ[1]},
 	},
 }
 
@@ -246,7 +351,9 @@ func homeStructuredData(origin, siteName string) []string {
 	})}
 }
 
-func channelStructuredData(origin, siteName, name, description, canonical, image string) []string {
+// channelStructuredData describes a channel page. pageName is the search
+// title its managers wrote (or the name); the breadcrumb keeps the name.
+func channelStructuredData(origin, siteName, name, pageName, description, canonical, image string) []string {
 	url := origin + canonical
 	return []string{jsonLD(map[string]any{
 		"@context": "https://schema.org",
@@ -254,7 +361,7 @@ func channelStructuredData(origin, siteName, name, description, canonical, image
 			map[string]any{
 				"@type":       "CollectionPage",
 				"@id":         url,
-				"name":        name,
+				"name":        pageName,
 				"description": description,
 				"url":         url,
 				"inLanguage":  "he",
@@ -337,7 +444,7 @@ func homeStaticBody(siteName string) string {
 // same thing.
 const (
 	homeH1   = "ערוץ עדכונים משלכם, פתוח תוך רגע"
-	homeLead = "ערוץ הוא דף אחד שבו אתם מפרסמים הודעות, תמונות, סרטונים וקישורים, והם מגיעים לכל מי שיש לו את הקישור. הקוראים לא צריכים להתקין כלום ולא להירשם."
+	homeLead = "ערוץ הוא דף אחד שבו אתם מפרסמים הודעות, תמונות, סרטונים וקישורים, והם מגיעים לכל מי שיש לו את הקישור. חלופה לערוץ וואטסאפ ולקבוצות צ׳אט במייל: הקוראים לא צריכים להתקין כלום ולא להירשם."
 )
 
 // channelStaticBody names the channel in the initial HTML. The feed itself
@@ -351,6 +458,10 @@ func channelStaticBody(siteName, name, description string) string {
 		b.WriteString("<p>" + html.EscapeString(d) + "</p>")
 	}
 	b.WriteString(`<p>ערוץ עדכונים ב<a href="/">` + html.EscapeString(siteName) + `</a>. ההודעות נטענות…</p>`)
+	// Every public channel is a way in to the site: the link tells a crawler
+	// where channels come from, and is replaced by the app's own header (whose
+	// credit links to "/") once it starts.
+	b.WriteString(`<p><a href="/">פתיחת ערוץ עדכונים משלכם, בחינם</a> · <a href="/open-channel">מדריך לפתיחת ערוץ</a></p>`)
 	b.WriteString("</main>")
 	return b.String()
 }
@@ -389,6 +500,7 @@ ul,ol{padding-inline-start:1.4rem;margin:0 0 1rem}
 li{margin-bottom:.4rem}
 .cta{display:inline-block;margin:.5rem 0 1rem;padding:.8rem 1.6rem;border-radius:.75rem;background:var(--brand);color:#fff;font-weight:700;text-decoration:none}
 .cta:focus-visible,.brand:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.url{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem;background:var(--card);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .75rem;overflow-wrap:anywhere;text-align:left}
 .card{background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:1.25rem 1.5rem;margin:1.5rem 0}
 footer{margin-top:2.5rem;padding:1.5rem 1.25rem;text-align:center;font-size:.9rem;color:var(--muted);border-top:1px solid var(--line);background:var(--card)}
 footer a{margin:0 .5rem}
@@ -405,7 +517,9 @@ footer a{margin:0 .5rem}
 <h2>{{.Heading}}</h2>
 {{range .Paragraphs}}<p>{{.}}</p>
 {{end}}{{if .List}}{{if .Ordered}}<ol>{{else}}<ul>{{end}}{{range .List}}<li>{{.}}</li>{{end}}{{if .Ordered}}</ol>{{else}}</ul>{{end}}{{end}}
-</section>
+{{if .ChannelURLExample}}<p>כתובת של ערוץ נראית כך, ובמקום <span dir="ltr">your-channel</span> מופיעה הכתובת של הערוץ שלכם:</p>
+<p class="url" dir="ltr">{{$.Origin}}/channel/your-channel</p>
+{{end}}</section>
 {{end}}{{if .Page.FAQ}}<section class="card">
 <h2>שאלות נפוצות</h2>
 {{range .Page.FAQ}}<h3>{{.Q}}</h3>
@@ -413,7 +527,7 @@ footer a{margin:0 .5rem}
 {{end}}</section>
 {{end}}<p><a class="cta" href="/login">פתיחת ערוץ בחינם</a></p>
 </main>
-<footer><a href="/">{{.SiteName}}</a>{{range .Others}}<a href="{{.Path}}">{{.H1}}</a>{{end}}<a href="/#contact">יצירת קשר</a></footer>
+<footer><a href="/">{{.SiteName}}: פתיחת ערוץ עדכונים בחינם</a>{{range .Others}}<a href="{{.Path}}">{{.H1}}</a>{{end}}<a href="/#contact">יצירת קשר</a></footer>
 </body>
 </html>
 `))
@@ -459,10 +573,11 @@ func serveContentPage(w http.ResponseWriter, r *http.Request, p *contentPage, cf
 	if err := contentPageTmpl.Execute(&buf, struct {
 		Title    string
 		SiteName string
+		Origin   string
 		Page     *contentPage
 		Others   []contentPage
 		Head     template.HTML
-	}{title, siteName, p, others, template.HTML(head)}); err != nil {
+	}{title, siteName, origin, p, others, template.HTML(head)}); err != nil {
 		log.Printf("content page %s: %v\n", p.Path, err)
 		http.Error(w, "error", http.StatusInternalServerError)
 		return

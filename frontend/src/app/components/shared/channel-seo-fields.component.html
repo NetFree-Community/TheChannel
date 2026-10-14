@@ -1,0 +1,55 @@
+<div class="seo">
+  <div class="seo__toggle">
+    <nb-toggle [checked]="listed" (checkedChange)="listedChange.emit($event)" [disabled]="!!blockedReason">
+      <span class="seo__toggle-label">הצגה במנועי חיפוש (גוגל)</span>
+    </nb-toggle>
+    <p class="seo__hint">
+      @if (blockedReason) {
+        {{ blockedReason }}
+      } @else if (listed) {
+        הערוץ יכול להופיע בתוצאות החיפוש של גוגל, עם הכותרת והתיאור שלמטה.
+      } @else {
+        הערוץ לא יוצג בגוגל. הוא ממשיך לעבוד כרגיל לכל מי שיש לו את הקישור.
+      }
+      השינוי נכנס לתוקף באתר מיד בשמירה; גוגל מעדכן את התוצאות בביקור הבא שלו, וזה יכול לקחת כמה ימים.
+    </p>
+  </div>
+
+  <div class="seo__field">
+    <label class="seo__label" [for]="idPrefix + '-title'">כותרת בגוגל</label>
+    <p class="seo__hint">הכותרת של תוצאת החיפוש, וגם של התצוגה המקדימה כשמשתפים את הקישור. ריק: שם הערוץ.</p>
+    <input [id]="idPrefix + '-title'" type="text" nbInput fullWidth [ngModel]="seoTitle" (ngModelChange)="seoTitleChange.emit($event)"
+           [maxlength]="titleMax" [placeholder]="previewTitle" autocomplete="off">
+    <span class="seo__counter" aria-live="polite">{{ (seoTitle || '').length }} / {{ titleMax }}</span>
+  </div>
+
+  <div class="seo__field">
+    <label class="seo__label" [for]="idPrefix + '-description'">תיאור בגוגל</label>
+    <p class="seo__hint">שתי השורות שמתחת לכותרת: במה הערוץ עוסק ולמי הוא מיועד. ריק: תיאור הערוץ.</p>
+    <textarea [id]="idPrefix + '-description'" nbInput fullWidth rows="2" [ngModel]="seoDescription" (ngModelChange)="seoDescriptionChange.emit($event)"
+              [maxlength]="descriptionMax" autocomplete="off"
+              placeholder="למשל: עדכונים, אירועים והודעות חשובות לתושבי השכונה"></textarea>
+    <span class="seo__counter" aria-live="polite">{{ (seoDescription || '').length }} / {{ descriptionMax }}</span>
+  </div>
+
+  <figure class="serp" [class.serp--off]="!inSearch">
+    <figcaption class="seo__label">
+      <nb-icon icon="search-outline" aria-hidden="true"></nb-icon>
+      {{ inSearch ? 'כך התוצאה עשויה להיראות בגוגל' : 'הערוץ לא יופיע בגוגל' }}
+    </figcaption>
+    <div class="serp__card">
+      <span class="serp__url" dir="ltr">{{ host }} › channel › {{ slug }}</span>
+      <span class="serp__title">{{ previewTitle }}</span>
+      <span class="serp__desc">{{ previewDescription }}</span>
+    </div>
+  </figure>
+
+  <p class="seo__netfree">
+    <nb-icon icon="info-outline" aria-hidden="true"></nb-icon>
+    <span>
+      משתמשי נטפרי? בקשו מנטפרי לפתוח את הערוץ הזה, בכתובת
+      <bdi class="seo__url" dir="ltr">{{ channelUrl }}</bdi>.
+      <a href="/netfree-channel" target="_blank" rel="noopener">איך מבקשים</a>
+    </span>
+  </p>
+</div>
