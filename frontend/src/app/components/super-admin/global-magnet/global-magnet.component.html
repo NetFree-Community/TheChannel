@@ -136,22 +136,15 @@
         </div>
         <div class="sa-field locked">
           <label class="sa-field__label" for="magnetLockedChannel">ערוצים נעולים</label>
-          <div class="locked__add">
-            <input nbInput fullWidth id="magnetLockedChannel" name="magnetLockedChannel" type="text" dir="ltr"
-                   [(ngModel)]="newLockedChannel" placeholder="כתובת הערוץ, למשל my-channel"
-                   autocomplete="off" autocapitalize="none" spellcheck="false"
-                   (keydown.enter)="$event.preventDefault(); addLockedChannel()">
-            <button nbButton status="primary" size="medium" type="button" (click)="addLockedChannel()"
-                    [disabled]="!newLockedChannel.trim()">
-              <nb-icon icon="plus-outline"></nb-icon>
-              הוספה
-            </button>
-          </div>
-          <p class="sa-field__hint">הכתובת של הערוץ כפי שהיא מופיעה ברשימת הערוצים. ערוץ ברשימה נעול גם כשהנעילה הכללית כבויה.</p>
+          <app-channel-picker inputId="magnetLockedChannel" [selected]="config.lockedChannels"
+                              (picked)="addLockedChannel($event)"></app-channel-picker>
+          <p class="sa-field__hint">חפשו לפי שם הערוץ או הכתובת שלו. ערוץ ברשימה נעול גם כשהנעילה הכללית כבויה.</p>
           @if (config.lockedChannels.length) {
             <nb-tag-list class="locked__tags" (tagRemove)="removeLockedChannel($event.text)" aria-label="ערוצים נעולים">
               @for (slug of config.lockedChannels; track slug) {
-                <nb-tag [text]="slug" removable status="primary" appearance="outline" size="small"></nb-tag>
+                <nb-tag [text]="slug" removable [status]="channelDirectory.isMissing(slug) ? 'warning' : 'primary'"
+                        appearance="outline" size="small"
+                        [attr.title]="channelDirectory.isMissing(slug) ? 'הערוץ לא קיים במערכת' : null"></nb-tag>
               }
             </nb-tag-list>
           } @else {

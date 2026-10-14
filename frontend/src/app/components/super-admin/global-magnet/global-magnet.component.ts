@@ -14,6 +14,8 @@ import {
   NbToastrService,
   NbTooltipModule,
 } from '@nebular/theme';
+import { ChannelPickerComponent } from '../channel-picker/channel-picker.component';
+import { ChannelDirectoryService } from '../channel-picker/channel-directory.service';
 import { SuperAdminService, GlobalMagnetConfig } from '../../../services/super-admin.service';
 
 @Component({
@@ -32,6 +34,7 @@ import { SuperAdminService, GlobalMagnetConfig } from '../../../services/super-a
     NbTagModule,
     NbFormFieldModule,
     NbTooltipModule,
+    ChannelPickerComponent,
   ],
   templateUrl: './global-magnet.component.html',
   styleUrl: './global-magnet.component.scss',
@@ -53,7 +56,6 @@ export class GlobalMagnetComponent implements OnInit {
   loading = true;
   loadFailed = false;
   saving = false;
-  newLockedChannel = '';
   /** The API key is a secret: masked until the operator asks to see it. */
   showApiKey = false;
   /** JSON of the last server copy, to tell the operator about unsaved edits. */
@@ -69,6 +71,8 @@ export class GlobalMagnetComponent implements OnInit {
   constructor(
     private superAdminService: SuperAdminService,
     private toastr: NbToastrService,
+    /** Marks saved channels that no longer exist (see ChannelPickerComponent). */
+    public channelDirectory: ChannelDirectoryService,
   ) {}
 
   ngOnInit(): void {
@@ -118,13 +122,11 @@ export class GlobalMagnetComponent implements OnInit {
     return this.config.enabled && !this.config.lockAll && !this.config.lockedChannels.length;
   }
 
-  addLockedChannel() {
-    const slug = this.newLockedChannel.trim();
-    if (!slug) return;
-    if (!this.config.lockedChannels.includes(slug)) {
-      this.config.lockedChannels.push(slug);
+  addLockedChannel(slug: string) {
+    slug = slug.trim();
+    if (slug && !this.config.lockedChannels.includes(slug)) {
+      this.config.lockedChannels = [...this.config.lockedChannels, slug];
     }
-    this.newLockedChannel = '';
   }
 
   removeLockedChannel(slug: string) {
