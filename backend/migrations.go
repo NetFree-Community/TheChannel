@@ -169,7 +169,7 @@ func settingBool(settings Settings, key string) bool {
 // backfillChannelFeatures turns on the ChannelFeatures toggles that were never
 // enforced before the flags shipped.
 //
-// Why this is needed: createChannel and approveChannelRequest only ever set
+// Why this is needed: createChannel and the since-removed request approval only ever set
 // Reactions, FileUploads, Reports and ScheduledMessages, so Ads, Notifications
 // and Webhook are false on every channel that exists today. Those three were
 // never enforced, so channels have been happily using them with the flag off.

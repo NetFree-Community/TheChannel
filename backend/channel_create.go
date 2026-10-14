@@ -128,9 +128,9 @@ func sessionDisplayName(s Session) string {
 
 // POST /api/channels/create (authenticated)
 //
-// The only channel creation path: a logged-in user gets their channel
-// instantly. The super admin's channel-requests screen still serves the records
-// written below (plus any request left over from the removed public form).
+// The only self-service channel creation path: a logged-in user gets their
+// channel instantly. There is no approval queue; the super admin sees every
+// channel, with its owner and creation date, on the channels screen.
 func createChannelSelfService(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -252,26 +252,6 @@ func createChannelSelfService(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := initializePrivilegeUsers(); err != nil {
 		log.Printf("initializePrivilegeUsers after createChannelSelfService(%s): %v", channel.Slug, err)
-	}
-
-	// Recorded as an already-approved request so the super admin's channel
-	// requests screen becomes an audit log of self-service creations instead of
-	// going empty now that this is the primary path.
-	req := &ChannelRequest{
-		ID:           generatedRandomID(12),
-		Name:         sessionDisplayName(s),
-		Email:        ownerEmail,
-		DesiredSlug:  channel.Slug,
-		Description:  channel.Description,
-		Status:       RequestStatusApproved,
-		Notes:        "self-service creation: " + channel.Name,
-		ApprovedSlug: channel.Slug,
-		CreatedAt:    channel.CreatedAt,
-	}
-	if err := dbSaveChannelRequest(ctx, req); err != nil {
-		// The channel exists and is usable; losing the audit record must not fail
-		// the creation the user already paid for.
-		log.Printf("save self-service channel request record for %s: %v", channel.Slug, err)
 	}
 
 	// The channel is stored; the welcome mail goes out in the background and

@@ -185,42 +185,6 @@ func TestMagnetMailChannelCreatedSelfService(t *testing.T) {
 	}
 }
 
-func TestMagnetMailChannelCreatedOnApproval(t *testing.T) {
-	ctx := testCtx(t)
-	useTestSessionStore(t)
-	f := useFakeMagnet(t, nil)
-
-	const email, slug, id = "mail-approved@example.com", "mail-approved-b", "mailreq-approve-1"
-	cleanupOwnedChannel(t, slug, email)
-	req := &ChannelRequest{ID: id, Name: "ערוץ מאושר", Email: email, DesiredSlug: slug,
-		Status: RequestStatusPending, CreatedAt: time.Now()}
-	if err := dbSaveChannelRequest(ctx, req); err != nil {
-		t.Fatalf("save request: %v", err)
-	}
-	t.Cleanup(func() {
-		rdb.Del(context.Background(), "channel_request:"+id)
-		rdb.ZRem(context.Background(), "channel_requests:list", id)
-	})
-
-	r := requestAs(t, Session{ID: "op", Email: "operator@example.com"}, "", http.MethodPost,
-		"/api/super-admin/channel-requests/"+id+"/approve", strings.NewReader(`{}`), map[string]string{"id": id})
-	w := httptest.NewRecorder()
-	approveChannelRequest(w, r)
-	if w.Code != http.StatusOK {
-		t.Fatalf("approve: status %d, body %q", w.Code, w.Body.String())
-	}
-	magnetMailInFlight.Wait()
-
-	b := f.last(t).body
-	if str(t, b, "event") != "channel_created" || str(t, b, "to") != email ||
-		str(t, b, "idempotency_key") != "channel_created:"+slug {
-		t.Errorf("approval mail = %v", b)
-	}
-	if v, present := b["to_name"]; !present || v != nil {
-		t.Errorf("to_name = %#v, want an explicit null", v)
-	}
-}
-
 // Unconfigured means off: the channel opens and nothing leaves the server.
 func TestMagnetMailOffWhenUnconfigured(t *testing.T) {
 	useTestSessionStore(t)
