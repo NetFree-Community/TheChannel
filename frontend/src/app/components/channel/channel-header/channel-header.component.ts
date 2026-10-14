@@ -278,7 +278,9 @@ export class ChannelHeaderComponent implements OnInit, AfterViewInit, AfterViewC
     const room = row?.clientWidth;
     if (!row || !name || !room) return undefined;
     const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
-    const needs = name.scrollWidth + gap;
+    // +1: scrollWidth is rounded, and a name cut by a fraction of a pixel
+    // would already show its ellipsis.
+    const needs = name.scrollWidth + gap + 1;
     const full = this.creditFull?.naturalWidth() ?? 0;
     const short = this.creditShort?.naturalWidth() ?? 0;
     return full && needs + full <= room ? 'full'
