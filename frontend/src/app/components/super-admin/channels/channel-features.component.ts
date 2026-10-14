@@ -10,6 +10,8 @@ import {
 } from '@nebular/theme';
 import { SuperAdminService, ChannelFeatures } from '../../../services/super-admin.service';
 import { ConfirmService } from '../../../services/confirm.service';
+import { ChannelSeoSettings } from '../../../models/channel.model';
+import { ChannelSeoFieldsComponent } from '../../shared/channel-seo-fields.component';
 
 interface FeatureConfig {
   key: keyof ChannelFeatures;
@@ -34,6 +36,7 @@ interface FeatureGroup {
     NbButtonModule,
     NbIconModule,
     NbToggleModule,
+    ChannelSeoFieldsComponent,
   ],
   templateUrl: './channel-features.component.html',
   styleUrl: './channel-features.component.scss',
@@ -43,6 +46,10 @@ export class ChannelFeaturesComponent implements OnInit {
 
   features: ChannelFeatures = this.defaults();
   channelName = '';
+  channelDescription = '';
+  /** Search settings, saved through their own endpoint (see save()). */
+  seo: ChannelSeoSettings = { seoHidden: false, seoTitle: '', seoDescription: '' };
+  private seoSnapshot = '';
 
   saving = false;
   loading = true;
@@ -123,7 +130,14 @@ export class ChannelFeaturesComponent implements OnInit {
         // and an undefined value would leave the toggle unbound.
         this.features = { ...this.defaults(), ...channel.features };
         this.channelName = channel.name || '';
+        this.channelDescription = channel.description || '';
+        this.seo = {
+          seoHidden: !!channel.seoHidden,
+          seoTitle: channel.seoTitle || '',
+          seoDescription: channel.seoDescription || '',
+        };
         this.snapshot = JSON.stringify(this.features);
+        this.seoSnapshot = JSON.stringify(this.seo);
         this.loaded = true;
       })
       .catch((err) => {
@@ -136,7 +150,18 @@ export class ChannelFeaturesComponent implements OnInit {
   }
 
   get dirty(): boolean {
-    return this.loaded && JSON.stringify(this.features) !== this.snapshot;
+    return this.loaded && (JSON.stringify(this.features) !== this.snapshot || this.seoDirty);
+  }
+
+  private get seoDirty(): boolean {
+    return JSON.stringify(this.seo) !== this.seoSnapshot;
+  }
+
+  /** Private or disabled (as currently toggled): never in search. */
+  get seoBlockedReason(): string {
+    if (this.features.disabled) return 'הערוץ מושבת, ולכן לא יופיע בגוגל בכל מקרה.';
+    if (this.features.requireAuth) return 'הערוץ פרטי (כניסה חובה לצפייה), ולכן לא יופיע בגוגל בכל מקרה.';
+    return '';
   }
 
   /** The kill switch asks first: it takes the channel down for everyone. */
@@ -161,14 +186,28 @@ export class ChannelFeaturesComponent implements OnInit {
   save() {
     if (!this.loaded) return;
     this.saving = true;
-    this.superAdminService.updateChannelFeatures(this.slug, this.features)
+    const seo: ChannelSeoSettings = {
+      seoHidden: this.seo.seoHidden,
+      seoTitle: this.seo.seoTitle.trim(),
+      seoDescription: this.seo.seoDescription.trim(),
+    };
+    // The search settings have their own endpoint; sent only when changed,
+    // so a features save never depends on it.
+    const seoSave = this.seoDirty
+      ? this.superAdminService.updateChannelSeo(this.slug, seo)
+      : Promise.resolve();
+    Promise.all([this.superAdminService.updateChannelFeatures(this.slug, this.features), seoSave])
       .then(() => {
         this.snapshot = JSON.stringify(this.features);
+        this.seo = seo;
+        this.seoSnapshot = JSON.stringify(seo);
         this.toastr.success('', 'הגדרות הערוץ נשמרו');
       })
       .catch((err) => this.toastr.danger('', err?.status === 404
         ? 'הערוץ לא נמצא — ייתכן שנמחק'
-        : 'השמירה לא הצליחה, נסו שוב'))
+        : err?.status === 400 && String(err?.error ?? '').includes('seo')
+          ? 'הכותרת או התיאור לגוגל ארוכים מדי (עד 60 תווים לכותרת ועד 155 לתיאור)'
+          : 'השמירה לא הצליחה, נסו שוב'))
       .finally(() => this.saving = false);
   }
 }

@@ -47,6 +47,27 @@
     <nb-card>
       <nb-card-header>
         <h2 class="sa-card-title">
+          <nb-icon icon="search-outline"></nb-icon>
+          מנועי חיפוש
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <app-channel-seo-fields
+          idPrefix="sa-channel-seo"
+          [slug]="slug"
+          [channelName]="channelName"
+          [channelDescription]="channelDescription"
+          [blockedReason]="seoBlockedReason"
+          [listed]="!seo.seoHidden" (listedChange)="seo.seoHidden = !$event"
+          [(seoTitle)]="seo.seoTitle"
+          [(seoDescription)]="seo.seoDescription">
+        </app-channel-seo-fields>
+      </nb-card-body>
+    </nb-card>
+
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
           <nb-icon icon="pricetags-outline"></nb-icon>
           נעילות של המערכת
         </h2>

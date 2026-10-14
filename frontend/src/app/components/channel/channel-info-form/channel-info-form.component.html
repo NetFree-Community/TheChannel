@@ -62,6 +62,25 @@
   </nb-card>
 
   @if (!loading) {
+    <nb-card class="info-card">
+      <nb-card-header class="seo-header">
+        <nb-icon icon="search-outline" aria-hidden="true"></nb-icon>
+        <h2>מנועי חיפוש</h2>
+      </nb-card-header>
+      <nb-card-body>
+        <app-channel-seo-fields
+          idPrefix="channel-seo"
+          [slug]="channel.id || ''"
+          [channelName]="channel.name || ''"
+          [channelDescription]="channel.description || ''"
+          [blockedReason]="seoBlockedReason"
+          [listed]="!channel.seo_hidden" (listedChange)="channel.seo_hidden = !$event"
+          [seoTitle]="channel.seo_title || ''" (seoTitleChange)="channel.seo_title = $event"
+          [seoDescription]="channel.seo_description || ''" (seoDescriptionChange)="channel.seo_description = $event">
+        </app-channel-seo-fields>
+      </nb-card-body>
+    </nb-card>
+
     <div class="save-bar">
       <button nbButton status="primary" type="button" (click)="editChannelInfo()"
               [disabled]="isSending || uploading" [nbSpinner]="isSending" nbSpinnerStatus="control" nbSpinnerSize="small">

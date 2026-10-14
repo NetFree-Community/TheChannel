@@ -9,6 +9,7 @@ import { Channel } from '../../../models/channel.model';
 import { AdminService } from '../../../services/admin.service';
 import { ChatService, Attachment, ChatFile } from '../../../services/chat.service';
 import { MyChannelsService } from '../../../services/my-channels.service';
+import { ChannelSeoFieldsComponent } from '../../shared/channel-seo-fields.component';
 
 /**
  * "פרטי הערוץ": the name, description, logo and contact link readers see in
@@ -25,6 +26,7 @@ import { MyChannelsService } from '../../../services/my-channels.service';
     NbInputModule,
     NbIconModule,
     NbTooltipModule,
+    ChannelSeoFieldsComponent,
   ],
   templateUrl: './channel-info-form.component.html',
   styleUrl: './channel-info-form.component.scss'
@@ -69,7 +71,17 @@ export class ChannelInfoFormComponent implements OnInit {
     return (a.name ?? '') !== (b.name ?? '')
       || (a.description ?? '') !== (b.description ?? '')
       || (a.logoUrl ?? '') !== (b.logoUrl ?? '')
-      || (a.contact_us ?? '') !== (b.contact_us ?? '');
+      || (a.contact_us ?? '') !== (b.contact_us ?? '')
+      || !!a.seo_hidden !== !!b.seo_hidden
+      || (a.seo_title ?? '') !== (b.seo_title ?? '')
+      || (a.seo_description ?? '') !== (b.seo_description ?? '');
+  }
+
+  /** A private channel never reaches search, whatever its toggle says. */
+  get seoBlockedReason(): string {
+    return this.channel.require_auth
+      ? 'הערוץ פרטי (כניסה חובה לצפייה), ולכן לא יופיע בגוגל בכל מקרה.'
+      : '';
   }
 
   get uploading(): boolean {
@@ -98,11 +110,19 @@ export class ChannelInfoFormComponent implements OnInit {
     const description = this.channel.description || '';
     const logoUrl = this.channel.logoUrl || '';
     const contactUs = (this.channel.contact_us || '').trim();
-    this.chatService.editChannelInfo(name, description, logoUrl, contactUs).subscribe({
+    const seo = {
+      seoHidden: !!this.channel.seo_hidden,
+      seoTitle: (this.channel.seo_title || '').trim(),
+      seoDescription: (this.channel.seo_description || '').trim(),
+    };
+    this.chatService.editChannelInfo(name, description, logoUrl, contactUs, seo).subscribe({
       next: () => {
         this.isSending = false;
         this.toastrService.success("", "פרטי הערוץ נשמרו");
-        this.saved = { ...this.channel, name, description, logoUrl, contact_us: contactUs };
+        this.saved = {
+          ...this.channel, name, description, logoUrl, contact_us: contactUs,
+          seo_hidden: seo.seoHidden, seo_title: seo.seoTitle, seo_description: seo.seoDescription,
+        };
         this.channel = { ...this.saved };
         // The header on this page and the channel switcher both show the name
         // and logo; refresh the sources they read from.
@@ -116,6 +136,11 @@ export class ChannelInfoFormComponent implements OnInit {
         const text = typeof err?.error === 'string' ? err.error : '';
         if (err?.status === 400 && text.includes('contact')) {
           this.toastrService.danger("", "קישור צור קשר חייב להתחיל ב-https://‎ או ב-mailto:");
+          return;
+        }
+        // Checked before the generic 'too long' below, which it also matches.
+        if (err?.status === 400 && text.includes('seo')) {
+          this.toastrService.danger("", "הכותרת או התיאור לגוגל ארוכים מדי (עד 60 תווים לכותרת ועד 155 לתיאור)");
           return;
         }
         if (err?.status === 400 && text.includes('too long')) {
