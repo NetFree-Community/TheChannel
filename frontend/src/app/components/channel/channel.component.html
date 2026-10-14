@@ -365,12 +365,7 @@
     </nb-layout-header>
 
     <nb-layout-column class="chat-column">
-      <!-- Attribution lives inside the scrolling column rather than the fixed
-           header, whose height the .columns padding and the ad-column height
-           calculation are both derived from. It is pinned to the top of the
-           column by channel.component.scss, which is what keeps it clear of
-           the header and stops the feed scrolling it away. -->
-      <app-platform-attribution></app-platform-attribution>
+      <!-- The platform credit lives inside the header (app-channel-header). -->
       <app-chat class=""></app-chat>
     </nb-layout-column>
 

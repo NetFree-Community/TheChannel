@@ -34,7 +34,6 @@ import { ShareService } from '../../services/share.service';
 import { MAX_CHANNELS_PER_ACCOUNT } from '../../services/channel.service';
 import { MyChannel, ROLE_LABELS, canManage } from '../../models/my-channel.model';
 import { CreateChannelFormComponent } from '../channel-create/create-channel-form.component';
-import { PlatformAttributionComponent } from './platform-attribution/platform-attribution.component';
 import { SupportBoxComponent } from '../support/support-box.component';
 import { Subscription } from 'rxjs';
 
@@ -57,7 +56,6 @@ import { Subscription } from 'rxjs';
     NbListModule,
     ChatComponent,
     CreateChannelFormComponent,
-    PlatformAttributionComponent
   ],
   templateUrl: './channel.component.html',
   // The hub (my channels) has its own sheet so each file stays under the
@@ -475,7 +473,7 @@ export class ChannelComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   /**
    * Publishes the rendered height of the fixed header as `--chrome-height`, so
-   * the attribution strip can pin itself just below it.
+   * the feed's fixed banners and loading skeleton can sit just below it.
    *
    * The height comes from a Nebular theme token, but `nb-theme(header-height)`
    * only resolves inside `nb-install-component()` — used outside it the

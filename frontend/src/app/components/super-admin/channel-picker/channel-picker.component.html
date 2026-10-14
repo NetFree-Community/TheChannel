@@ -1,0 +1,84 @@
+@let state = directory.state;
+@let v = view();
+<div class="picker" (focusout)="onFocusOut($event)">
+  @if (manual) {
+    <!-- The list did not load: type the slug by hand, as before. -->
+    <div class="picker__manual">
+      <input nbInput fullWidth [id]="inputId" type="text" dir="ltr"
+             [value]="query" (input)="query = $any($event.target).value"
+             [placeholder]="placeholder" autocomplete="off" autocapitalize="none" spellcheck="false"
+             [attr.aria-describedby]="errorId"
+             (keydown)="onKeydown($event)">
+      <button nbButton status="primary" size="medium" type="button" (click)="addManual()"
+              [disabled]="!query.trim()">
+        <nb-icon icon="plus-outline"></nb-icon>
+        הוספה
+      </button>
+    </div>
+    <p class="picker__error" [id]="errorId" role="alert">
+      <nb-icon icon="alert-triangle-outline" aria-hidden="true"></nb-icon>
+      <span>רשימת הערוצים לא נטענה, אפשר להקליד את כתובת הערוץ ידנית.</span>
+      <button nbButton ghost size="tiny" status="primary" type="button" (click)="retry()">
+        <nb-icon icon="refresh-outline"></nb-icon>
+        ניסיון נוסף
+      </button>
+    </p>
+  } @else {
+    <div class="picker__field">
+      <nb-icon class="picker__search-icon" icon="search-outline" aria-hidden="true"></nb-icon>
+      <input nbInput fullWidth class="picker__input" [id]="inputId" type="text"
+             role="combobox" aria-autocomplete="list" [attr.aria-expanded]="open"
+             [attr.aria-controls]="open ? listId : null"
+             [attr.aria-activedescendant]="open && activeSlug ? optionId(activeSlug) : null"
+             [attr.aria-busy]="state === 'loading' ? true : null"
+             [value]="query" (input)="onInput($any($event.target).value)"
+             (focus)="openPanel()" (click)="openPanel()" (keydown)="onKeydown($event)"
+             [placeholder]="placeholder" autocomplete="off" autocapitalize="none" spellcheck="false">
+    </div>
+    @if (open) {
+      <!-- mousedown keeps focus in the input (option clicks, list scrollbar). -->
+      <div class="picker__panel" (mousedown)="$event.preventDefault()">
+        @if (state === 'loading' || state === 'idle') {
+          <p class="picker__status" role="status">טוען את רשימת הערוצים…</p>
+        } @else if (!v.rows.length) {
+          <p class="picker__status">{{ directory.channels.length ? 'לא נמצאו ערוצים' : 'אין עדיין ערוצים במערכת' }}</p>
+        } @else if (allTaken(v)) {
+          <p class="picker__status">כל הערוצים שנמצאו כבר ברשימה.</p>
+        }
+        <ul class="picker__list" [id]="listId" role="listbox" aria-label="ערוצים">
+          @for (row of v.rows; track row.channel.slug) {
+            <li class="picker__option" role="option" [id]="optionId(row.channel.slug)"
+                [class.picker__option--active]="row.channel.slug === activeSlug"
+                [class.picker__option--taken]="row.taken"
+                [attr.aria-selected]="row.channel.slug === activeSlug"
+                [attr.aria-disabled]="row.taken ? true : null"
+                (mousemove)="hover(row)" (click)="choose(row)">
+              <span class="picker__name">{{ row.channel.name || row.channel.slug }}</span>
+              <span class="picker__slug" dir="ltr">{{ row.channel.slug }}</span>
+              @if (row.taken) {
+                <span class="picker__taken">
+                  <nb-icon icon="checkmark-outline" aria-hidden="true"></nb-icon>
+                  כבר ברשימה
+                </span>
+              }
+            </li>
+          }
+        </ul>
+        @if (v.hidden) {
+          <p class="picker__more">ועוד {{ v.hidden }} ערוצים, הקלידו כדי לצמצם.</p>
+        }
+      </div>
+    }
+  }
+  @if (missing.length) {
+    <p class="picker__missing" role="note">
+      <nb-icon icon="alert-triangle-outline" aria-hidden="true"></nb-icon>
+      <span>
+        {{ missing.length === 1 ? 'ערוץ ברשימה שכבר לא קיים במערכת:' : 'ערוצים ברשימה שכבר לא קיימים במערכת:' }}
+        <bdi dir="ltr">{{ missing.join(', ') }}</bdi>.
+        {{ missing.length === 1 ? 'הוא נשאר ברשימה עד שתסירו אותו.' : 'הם נשארים ברשימה עד שתסירו אותם.' }}
+      </span>
+    </p>
+  }
+  <span class="picker__live" aria-live="polite">{{ announcement }}</span>
+</div>

@@ -59,6 +59,9 @@ type SettingConfig struct {
 	MagnetMinMessagesSince int64
 	AnalyticsHead          string
 	TinyPngApiKey          string
+	// The bare tokens of the search consoles' ownership meta tags (seo.go).
+	GoogleSiteVerification string
+	BingSiteVerification   string
 }
 
 type Setting struct {
@@ -259,6 +262,12 @@ func (s *Settings) ToConfig() *SettingConfig {
 
 		case "tinypng_api_key":
 			config.TinyPngApiKey = setting.GetString()
+
+		case "google_site_verification":
+			config.GoogleSiteVerification = verificationToken(setting.GetString())
+
+		case "bing_site_verification":
+			config.BingSiteVerification = verificationToken(setting.GetString())
 		}
 	}
 
@@ -304,6 +313,13 @@ func validateSettings(s *Settings) error {
 			// shows it in Hebrew, so it must not change.
 			if v := strings.TrimSpace(setting.GetString()); v != "" && utf8.RuneCountInString(v) < 16 {
 				return fmt.Errorf("api_secret_key must be at least 16 characters")
+			}
+		case "google_site_verification", "bing_site_verification":
+			// Lands in every page's <head>; only a token (or the whole tag
+			// the console hands out, from which the token is taken) is
+			// accepted.
+			if v := strings.TrimSpace(setting.GetString()); v != "" && verificationToken(v) == "" {
+				return fmt.Errorf("%s: not a verification code", setting.Key)
 			}
 		case "max_file_size":
 			// The form posts a number; an empty field (nil or "") means default.

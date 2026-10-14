@@ -283,29 +283,6 @@
 nb-layout-column.chat-column {
 }
 
-// The attribution strip is pinned to the top of the chat column. Left in the
-// normal flow it was invisible either way: the feed opens scrolled to the
-// newest message, so the top of the column sits thousands of pixels above the
-// viewport, and the `.columns` lift below drags that top under the fixed
-// header as well.
-//
-// Sticky offsets resolve against the scrollport, which starts at the top of
-// the viewport behind the fixed header — so `top` has to clear the header, and
-// nothing else. It deliberately does NOT compensate for the
-// `.columns { bottom: var(--input-height) }` lift: that lift does not move the
-// pinned element (measured), so adding it would push the strip a composer's
-// height below the header instead of flush against it.
-app-platform-attribution {
-  position: sticky;
-  // --chrome-height is the fixed header's measured height, published by the
-  // component. The theme token cannot be used here: nb-theme() only resolves
-  // inside nb-install-component(), and outside it the whole declaration is
-  // silently dropped, leaving top: auto and an unpinned strip.
-  top: var(--chrome-height, 0px);
-  // Above the feed it overlays, below the composer (99) and the fixed header.
-  z-index: 10;
-}
-
 nb-layout-column.ad-column {
   flex: 0 0 fit-content !important;
   padding: 0 !important;
@@ -330,7 +307,7 @@ app-advertising {
     bottom: var(--input-height, 0px) !important;
     // Compensates the lift: `bottom` drags the top of the column up by the
     // composer's height, and the first day separator and the unread marker
-    // sat under the header and the attribution strip. Nebular's
+    // sat under the header. Nebular's
     // .layout-container already clears the fixed header. (This used to sit
     // inside `@if meta.variable-exists(--input-height)`, a compile-time test
     // for a Sass variable of that name — the CSS custom property is not one,

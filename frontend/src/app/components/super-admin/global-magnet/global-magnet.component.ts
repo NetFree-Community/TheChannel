@@ -14,6 +14,8 @@ import {
   NbToastrService,
   NbTooltipModule,
 } from '@nebular/theme';
+import { ChannelPickerComponent } from '../channel-picker/channel-picker.component';
+import { ChannelDirectoryService } from '../channel-picker/channel-directory.service';
 import { SuperAdminService, GlobalMagnetConfig } from '../../../services/super-admin.service';
 
 /** The shape Magnet mints: "mgs_" and 48 lowercase hex characters. */
@@ -35,6 +37,7 @@ const STATS_KEY_RE = /^mgs_[0-9a-f]{48}$/;
     NbTagModule,
     NbFormFieldModule,
     NbTooltipModule,
+    ChannelPickerComponent,
   ],
   templateUrl: './global-magnet.component.html',
   styleUrl: './global-magnet.component.scss',
@@ -83,6 +86,8 @@ export class GlobalMagnetComponent implements OnInit {
   constructor(
     private superAdminService: SuperAdminService,
     private toastr: NbToastrService,
+    /** Marks saved channels that no longer exist (see ChannelPickerComponent). */
+    public channelDirectory: ChannelDirectoryService,
   ) {}
 
   ngOnInit(): void {
@@ -156,13 +161,11 @@ export class GlobalMagnetComponent implements OnInit {
     return this.config.enabled && !this.config.lockAll && !this.config.lockedChannels.length;
   }
 
-  addLockedChannel() {
-    const slug = this.newLockedChannel.trim();
-    if (!slug) return;
-    if (!this.config.lockedChannels.includes(slug)) {
-      this.config.lockedChannels.push(slug);
+  addLockedChannel(slug: string) {
+    slug = slug.trim();
+    if (slug && !this.config.lockedChannels.includes(slug)) {
+      this.config.lockedChannels = [...this.config.lockedChannels, slug];
     }
-    this.newLockedChannel = '';
   }
 
   removeLockedChannel(slug: string) {

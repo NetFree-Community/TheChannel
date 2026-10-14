@@ -1,69 +1,221 @@
-// Colours go through the Nebular CSS custom properties so the strip follows the
-// active theme (including dark mode) instead of pinning hex values.
+// Colours go through the Nebular CSS custom properties so the credit follows
+// the active theme (including dark mode) instead of pinning hex values.
 :host {
-  display: block;
-  width: 100%;
-  // The strip is pinned to the top of the chat column (the geometry lives in
-  // channel.component.scss, which has the header-height theme token). Being
-  // pinned means the feed scrolls underneath it, so the host needs its own
-  // opaque background — without one the messages passing behind would read
-  // through the padding around the strip.
-  background: var(--background-basic-color-1);
+  display: inline-flex;
+  min-width: 0;
 }
 
-// A hairline strip, not a pill: it is a credit line under the header and
-// should read as part of the chrome rather than as the first message.
-.attribution {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0 0.4rem;
-  padding: 0.1rem 0.75rem;
-  margin: 0 0 0.5rem;
-  border-bottom: 1px solid var(--border-basic-color-3);
-  font-size: 0.78rem;
-  line-height: 1.5;
-  text-align: center;
-  color: var(--text-hint-color);
-}
-
-.attribution__sep {
-  opacity: 0.6;
-}
-
-.attribution__link {
+// The brand tile: the same indigo gradient and broadcast mark as the app icon
+// and the landing page's top bar, so the credit reads as "הערוץ" at a glance.
+.mark {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  // A thumb-sized target even though the text is small.
-  min-height: 2.5rem;
-  color: var(--color-primary-600);
-  font-weight: 700;
-  text-decoration: none;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.35rem;
+  color: var(--color-basic-100);
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
 
   nb-icon {
-    font-size: 0.9rem;
-    width: 0.9rem;
-    height: 0.9rem;
+    font-size: 0.8rem;
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+}
+
+.free {
+  font-weight: 800;
+  color: var(--color-primary-600);
+}
+
+/* ---------- the pill ('full' and 'short') ---------- */
+
+.credit {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  // One line, never wrapped: the header measures this box to decide whether
+  // the pill fits beside the name (ChannelHeaderComponent.pickCreditVariant).
+  white-space: nowrap;
+  height: 1.5rem;
+  padding-block: 0;
+  padding-inline: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-primary-transparent-300);
+  background: linear-gradient(90deg, var(--color-primary-transparent-100), var(--color-primary-transparent-200));
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-hint-color);
+  text-decoration: none;
+  transition:
+    background var(--motion-base, 200ms) var(--ease-out, ease),
+    border-color var(--motion-base, 200ms) var(--ease-out, ease),
+    box-shadow var(--motion-base, 200ms) var(--ease-out, ease);
+
+  // The pill is 24px tall to sit on the name's line without making the header
+  // taller; this grows the tap target to 32px without moving anything. No
+  // more than that: the description button sits just below and keeps its own.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -0.25rem;
   }
 
   &:hover,
   &:focus-visible {
-    text-decoration: underline;
+    border-color: var(--color-primary-400);
+    background: linear-gradient(90deg, var(--color-primary-transparent-200), var(--color-primary-transparent-300));
+    box-shadow: 0 2px 10px -4px var(--color-primary-transparent-600);
+    text-decoration: none;
+
+    .credit__arrow {
+      transform: translateX(-3px);
+    }
+
+    .mark nb-icon {
+      animation: credit-pulse 900ms var(--ease-out, ease) 1;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
   }
 }
 
-// On a narrow phone the two halves stack; the middle dot would then float on a
-// line of its own, so it is dropped and the parts read as two short lines.
-@media (max-width: 575px) {
-  .attribution {
-    flex-direction: column;
-    gap: 0;
-    font-size: 0.74rem;
+.credit__sep {
+  width: 1px;
+  height: 0.8rem;
+  background: var(--color-primary-transparent-400);
+}
+
+.credit__cta {
+  font-weight: 700;
+  color: var(--color-primary-600);
+}
+
+.credit__arrow {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  color: var(--color-primary-600);
+  transition: transform var(--motion-base, 200ms) var(--ease-out, ease);
+}
+
+.credit--short {
+  gap: 0.3rem;
+  padding-inline-end: 0.5rem;
+}
+
+// The broadcast mark "transmits" once on hover. Silenced by the global
+// prefers-reduced-motion rule in styles.scss.
+@keyframes credit-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- the badge on the logo ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--color-basic-100);
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  // A ring in the header's own colour cuts the badge out of the logo.
+  box-shadow: 0 0 0 2px var(--background-basic-color-1), 0 2px 6px var(--color-primary-transparent-500);
+  cursor: pointer;
+  position: relative;
+
+  nb-icon {
+    font-size: 0.75rem;
+    width: 0.75rem;
+    height: 0.75rem;
   }
 
-  .attribution__sep {
-    display: none;
+  // 20px to the eye, 40px to the thumb.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -0.625rem;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+}
+
+// The badge's card. Rendered in an overlay, but the template is declared here,
+// so these scoped styles still reach it.
+.credit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: min(84vw, 18rem);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-basic-color);
+}
+
+.credit-card__head {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+
+  .mark {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.45rem;
+
+    nb-icon {
+      font-size: 1rem;
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+}
+
+.credit-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.5rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  color: var(--color-basic-100);
+  font-weight: 700;
+  text-decoration: none;
+
+  nb-icon {
+    font-size: 0.95rem;
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--color-basic-100);
+    text-decoration: none;
+    filter: brightness(1.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
   }
 }

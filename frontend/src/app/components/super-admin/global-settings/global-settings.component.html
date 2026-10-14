@@ -46,6 +46,18 @@
                     placeholder="<!-- Google tag -->&#10;<script async src=&quot;…&quot;></script>"></textarea>
           <p class="sa-field__hint">קוד מ-Google Analytics, Tag Manager, Meta Pixel וכדומה. מוזרק כמו שהוא לכל עמוד באתר — להדביק רק קוד ממקור שסומכים עליו.</p>
         </div>
+        <div class="sa-field">
+          <label class="sa-field__label" for="googleVerification">קוד אימות של Google Search Console</label>
+          <input nbInput fullWidth id="googleVerification" name="googleVerification" type="text" dir="ltr" spellcheck="false"
+                 [(ngModel)]="values['google_site_verification']" placeholder='<meta name="google-site-verification" content="…">'>
+          <p class="sa-field__hint">באימות בשיטת "תג HTML" — אפשר להדביק את התג כולו או רק את הקוד. נכנס לראש כל עמוד באתר.</p>
+        </div>
+        <div class="sa-field">
+          <label class="sa-field__label" for="bingVerification">קוד אימות של Bing Webmaster Tools</label>
+          <input nbInput fullWidth id="bingVerification" name="bingVerification" type="text" dir="ltr" spellcheck="false"
+                 [(ngModel)]="values['bing_site_verification']" placeholder='<meta name="msvalidate.01" content="…">'>
+          <p class="sa-field__hint">לא חובה. אותו דבר עבור Bing: התג כולו או רק הקוד.</p>
+        </div>
       </nb-card-body>
     </nb-card>
 

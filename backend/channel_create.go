@@ -45,6 +45,12 @@ var reservedSlugs = map[string]struct{}{
 	"assets":      {},
 	"auth":        {},
 	"static":      {},
+	// Server-rendered pages and search-engine files (seo_content.go,
+	// sitemap.go).
+	"open-channel":      {},
+	"community-channel": {},
+	"robots":            {},
+	"sitemap":           {},
 }
 
 func isReservedSlug(slug string) bool {
