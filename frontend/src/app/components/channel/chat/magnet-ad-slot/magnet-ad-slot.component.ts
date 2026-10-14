@@ -32,9 +32,10 @@ const EMPTY_SLOT_GRACE_MS = 5000;
 const EMPTY_SLOT_MAX_WAIT_MS = 20000;
 
 /**
- * Posted by the frame when Magnet's widget announces that it has no ad
- * ("magnet:empty") and nothing else in the frame is visible, so the host can
- * hide the slot at once instead of showing an empty card for the grace period.
+ * Posted by the frame when every Magnet slot in it has collapsed for lack of
+ * an ad ("magnet:empty") and nothing else in the frame is visible, so the
+ * host can hide the slot at once instead of showing an empty card for the
+ * grace period.
  */
 const NO_AD_FLAG = 'noAd';
 
@@ -191,10 +192,15 @@ export class MagnetAdSlotComponent implements AfterViewInit, OnDestroy {
       `if(window.ResizeObserver){var ro=new ResizeObserver(report);ro.observe(document.documentElement);if(document.body)ro.observe(document.body);}` +
       `new MutationObserver(report).observe(document.documentElement,{childList:true,subtree:true,attributes:true});` +
       `window.addEventListener('load',report);setInterval(report,1000);report();` +
-      // The widget collapses its slot before it fires the event, so a zero
-      // height here means the frame shows nothing at all.
+      // "magnet:empty" also fires when a slot switches to the owner's
+      // fallback, which may not have its height yet (an image still loading,
+      // content a script fills in). So the flag is set only when every Magnet
+      // slot in the frame is collapsed (data-nesher-state="empty", set before
+      // the event) and the frame shows nothing else.
       `document.addEventListener('magnet:empty',function(){var v=h();last=v;` +
-      `parent.postMessage({type:${JSON.stringify(AD_SIZE_MESSAGE)},height:v,${NO_AD_FLAG}:v===0},'*');});` +
+      `var sl=document.querySelectorAll('[data-ad-slot]'),all=sl.length>0;` +
+      `for(var i=0;i<sl.length;i++){if(sl[i].getAttribute('data-nesher-state')!=='empty')all=false;}` +
+      `parent.postMessage({type:${JSON.stringify(AD_SIZE_MESSAGE)},height:v,${NO_AD_FLAG}:v===0&&all},'*');});` +
       `})();</script></body></html>`;
   }
 
