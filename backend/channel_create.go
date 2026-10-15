@@ -51,6 +51,8 @@ var reservedSlugs = map[string]struct{}{
 	"community-channel":    {},
 	"whatsapp-alternative": {},
 	"netfree-channel":      {},
+	"privacy":              {},
+	"terms":                {},
 	"robots":               {},
 	"sitemap":              {},
 }

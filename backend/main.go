@@ -143,6 +143,12 @@ func main() {
 		r.Get(page.Path, h)
 		r.Get(page.Path+"/", h)
 	}
+	for _, p := range legalPages {
+		page := p
+		h := func(w http.ResponseWriter, r *http.Request) { serveLegalPage(w, r, &page) }
+		r.Get(page.Path, h)
+		r.Get(page.Path+"/", h)
+	}
 
 	// User info (global, requires login)
 	r.Group(func(r chi.Router) {
