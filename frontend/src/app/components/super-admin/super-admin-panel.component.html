@@ -38,6 +38,12 @@
                       (click)="select(s.id)">
                 <nb-icon [icon]="s.icon" class="sa-nav__icon"></nb-icon>
                 <span>{{ s.title }}</span>
+                @if (s.id === VIEW_SUPPORT && openTickets > 0) {
+                  <span class="sa-nav__badge" role="status"
+                        [attr.aria-label]="openTickets === 1 ? 'פנייה אחת ממתינה לתשובה' : openTickets + ' פניות ממתינות לתשובה'">
+                    {{ openTickets > 99 ? '99+' : openTickets }}
+                  </span>
+                }
               </button>
             </li>
           }

@@ -1,4 +1,4 @@
-import { Component, ViewEncapsulation } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
@@ -10,6 +10,7 @@ import {
   NbTooltipModule,
 } from '@nebular/theme';
 import { AuthService } from '../../services/auth.service';
+import { SupportService } from '../../services/support.service';
 import { ChannelData } from '../../services/super-admin.service';
 import { ChannelsListComponent } from './channels/channels-list.component';
 import { ChannelFeaturesComponent } from './channels/channel-features.component';
@@ -76,7 +77,18 @@ interface SelectedChannel {
   styleUrl: './super-admin-panel.component.scss',
   encapsulation: ViewEncapsulation.None,
 })
-export class SuperAdminPanelComponent {
+export class SuperAdminPanelComponent implements OnInit, OnDestroy {
+  /**
+   * Tickets waiting for an answer ("open"): drives the red dot on
+   * "פניות למערכת" so the operator knows to look. Polled, because a ticket
+   * arrives from a visitor or by mail while the panel sits open.
+   */
+  openTickets = 0;
+  private ticketsTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly onVisible = () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') this.refreshOpenTickets();
+  };
+
   selectedView: ViewName = 'channels';
   selectedChannel: SelectedChannel | null = null;
   loggingOut = false;
@@ -150,6 +162,7 @@ export class SuperAdminPanelComponent {
     private router: Router,
     private toastr: NbToastrService,
     private titleService: Title,
+    private support: SupportService,
     route: ActivatedRoute,
   ) {
     this.titleService.setTitle('ניהול מערכת · הערוץ');
@@ -158,6 +171,27 @@ export class SuperAdminPanelComponent {
     const view = route.snapshot.queryParamMap.get('view');
     const section = this.sections.find(s => s.id === view);
     if (section) this.selectedView = section.id;
+  }
+
+  ngOnInit() {
+    this.refreshOpenTickets();
+    this.ticketsTimer = setInterval(() => this.refreshOpenTickets(), 60_000);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisible);
+  }
+
+  ngOnDestroy() {
+    if (this.ticketsTimer) clearInterval(this.ticketsTimer);
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.onVisible);
+  }
+
+  /** A failed fetch keeps the last count: the dot is a hint, not a report. */
+  async refreshOpenTickets() {
+    try {
+      const tickets = await this.support.adminList();
+      this.openTickets = (tickets || []).filter(t => t.status === 'open').length;
+    } catch {
+      // keep the previous value
+    }
   }
 
   get isChannelView(): boolean {
@@ -179,6 +213,9 @@ export class SuperAdminPanelComponent {
 
   select(view: ViewName) {
     this.selectedView = view;
+    // Leaving or entering the inbox is when an answer or a status change has
+    // just happened: recount instead of waiting for the next poll.
+    this.refreshOpenTickets();
     this.selectedChannel = null;
     // A phone shows the menu strip above the content: bring the new
     // section's title into view instead of leaving the reader mid-page.
