@@ -11,7 +11,7 @@ import {
 import { MessageComponent } from "./message/message.component";
 import { MagnetAdSlotComponent } from "./magnet-ad-slot/magnet-ad-slot.component";
 import { firstValueFrom, interval, Subscription } from 'rxjs';
-import { ChatMessage, ChatService } from '../../../services/chat.service';
+import { ChatMessage, ChatService, FEED_PAGE_SIZE } from '../../../services/chat.service';
 import { AuthService } from '../../../services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NotificationsService } from '../../../services/notifications.service';
@@ -77,7 +77,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   initialLoadFailed = false;    // true when the first history load errored
   private lastLoadOk = true;    // set by loadMessages; false after a failed load
   offset: number = 0;
-  limit: number = 20;
+  limit: number = FEED_PAGE_SIZE;
   hasOldMessages: boolean = true;
   hasNewMessages: boolean = false;
   thereNewMessages: boolean = false;
@@ -712,7 +712,12 @@ export class ChatComponent implements OnInit, OnDestroy {
 
     try {
       this.isLoading = true;
-      const response = await firstValueFrom(this.chatService.getMessages(startId, this.limit, direction))
+      // The first page of a fresh visit may already be on its way (the route
+      // guard starts it); a failed prefetch resolves null and is asked again.
+      const prefetched = startId === 0 && direction === 'desc' && !opt.messageId && !opt.scrollDown
+        ? this.chatService.takeFirstPage(this.limit) : undefined;
+      const response = (prefetched && await prefetched)
+        || await firstValueFrom(this.chatService.getMessages(startId, this.limit, direction));
       if (response) {
         // Drop ids already in the list (as loadMissedMessages does): an SSE
         // push or a jump can leave the window overlapping the page, and the

@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
-import { ChatService } from './chat.service';
+import { ChatService, FEED_PAGE_SIZE } from './chat.service';
 import { SlugService } from './slug.service';
 import { User } from '../models/user.model';
 
@@ -37,6 +37,8 @@ export const AuthGuard: CanActivateFn = async (route, state) => {
     slugService.slug = slug;
     chatService.clearCache();
     infoProbe = channelRequiresAuth(chatService);
+    // The feed itself, in parallel with the two probes rather than after them.
+    if (route.routeConfig?.path === 'channel/:slug') chatService.prefetchFirstPage(FEED_PAGE_SIZE);
   }
 
   let userInfo: User | null | undefined;
