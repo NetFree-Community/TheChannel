@@ -18,7 +18,7 @@ import {
 } from "@nebular/theme";
 import { filter } from "rxjs";
 import type Viewer from 'viewerjs';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { AuthService } from '../../../services/auth.service';
 import { ChatService } from '../../../services/chat.service';
@@ -193,6 +193,7 @@ export class ChannelHeaderComponent implements OnInit, AfterViewInit, AfterViewC
     private contextMenuService: NbMenuService,
     private toastrService: NbToastrService,
     private router: Router,
+    private route: ActivatedRoute,
     public notificationsService: NotificationsService,
     private titleService: Title,
     private dialogService: NbDialogService,
@@ -293,8 +294,12 @@ export class ChannelHeaderComponent implements OnInit, AfterViewInit, AfterViewC
       // The search title its managers wrote, when there is one: the server
       // sends it as the page's <title>, and Google reads the title after
       // the app has run, so the tab must not swap it back for the name.
-      .then(() => this.titleService.setTitle(
-        this.chatService.channelInfo?.seo_title?.trim() || this.chatService.channelInfo?.name || 'הערוץ'));
+      // A single post's page keeps the post's own title from the server.
+      .then(() => {
+        if (this.route.snapshot.paramMap.has('postId')) return;
+        this.titleService.setTitle(
+          this.chatService.channelInfo?.seo_title?.trim() || this.chatService.channelInfo?.name || 'הערוץ');
+      });
 
     // One subscription for both menus, keyed on the item's data.action — the
     // icon used to be the key, which broke the moment an icon was redesigned.

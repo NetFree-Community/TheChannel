@@ -141,7 +141,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
 
-	addViewsToMessages(ctx, slug, countViews, messages)
+	addViewsToMessages(ctx, slug, countViews && !isCrawler(r), messages)
 }
 
 // maxMessageTextLen is the server-side ceiling on a post's markdown, shared by

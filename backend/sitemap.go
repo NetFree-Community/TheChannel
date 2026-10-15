@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,12 +30,50 @@ var robotsDisallow = []string{
 	"/channel/*/manage",
 }
 
+// robotsAllow are the reads a public channel page makes while it renders.
+// Google runs the app before indexing a page, and with all of /api/ blocked
+// the feed it rendered was empty: no post was ever indexable. The longer
+// (more specific) Allow wins over Disallow: /api/ for Google and Bing. The
+// API answers carry X-Robots-Tag: noindex (main.go), so they are used to
+// render the page but never listed themselves; uploaded files are not, so a
+// post's picture can show in image search.
+var robotsAllow = []string{
+	"/api/channel/*/info",
+	"/api/channel/*/messages",
+	"/api/channel/*/emojis/list",
+	"/api/channel/*/files/",
+}
+
+// noindexAPI marks every API answer except uploaded files as not for the
+// index: robots.txt lets crawlers read a channel's info and posts so the page
+// renders (robotsAllow), and the JSON must not turn up as a result itself.
+func noindexAPI(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") && !strings.Contains(r.URL.Path, "/files/") {
+			w.Header().Set("X-Robots-Tag", "noindex")
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// crawlerUARe matches the user agents of search engines and link-preview
+// fetchers. Now that they may read posts (robotsAllow), their reads must not
+// count as views.
+var crawlerUARe = regexp.MustCompile(`(?i)bot\b|bot/|crawler|spider|slurp|mediapartners|facebookexternalhit|whatsapp|telegram|preview|lighthouse`)
+
+func isCrawler(r *http.Request) bool {
+	return crawlerUARe.MatchString(r.UserAgent())
+}
+
 // GET /robots.txt
 func getRobotsTxt(w http.ResponseWriter, r *http.Request) {
 	origin := requestOrigin(r, getGlobalConfig())
 	var b strings.Builder
 	b.WriteString("User-agent: *\n")
 	b.WriteString("Allow: /\n")
+	for _, p := range robotsAllow {
+		b.WriteString("Allow: " + p + "\n")
+	}
 	for _, p := range robotsDisallow {
 		b.WriteString("Disallow: " + p + "\n")
 	}
@@ -57,6 +96,8 @@ const sitemapCacheTTL = 15 * time.Minute
 type sitemapEntry struct {
 	Path    string
 	LastMod time.Time
+	// Priority is empty for a channel page (priorityChannel).
+	Priority string
 }
 
 var sitemapCache struct {
@@ -116,6 +157,18 @@ func publicChannelEntries(ctx context.Context) ([]sitemapEntry, error) {
 		}
 	}
 
+	// Then each channel's newest posts, so a single post can be a search
+	// result of its own (seo_posts.go).
+	slugs := make([]string, len(public))
+	for i, ch := range public {
+		slugs[i] = ch.Slug
+	}
+	posts, err := channelPostEntries(ctx, slugs)
+	if err != nil {
+		return nil, err
+	}
+	entries = append(entries, posts...)
+
 	sitemapCache.channels = entries
 	sitemapCache.built = time.Now()
 	return entries, nil
@@ -134,6 +187,7 @@ const (
 	priorityHome    = "1.0"
 	priorityGuide   = "0.8"
 	priorityChannel = "0.5"
+	priorityPost    = "0.4"
 )
 
 type xmlURLSet struct {
@@ -188,7 +242,11 @@ func staticSitemapURLs(origin string) []xmlURL {
 func channelURLs(origin string, entries []sitemapEntry) []xmlURL {
 	urls := make([]xmlURL, 0, len(entries))
 	for _, e := range entries {
-		urls = append(urls, xmlURL{Loc: origin + e.Path, LastMod: lastModString(e.LastMod), Priority: priorityChannel})
+		prio := e.Priority
+		if prio == "" {
+			prio = priorityChannel
+		}
+		urls = append(urls, xmlURL{Loc: origin + e.Path, LastMod: lastModString(e.LastMod), Priority: prio})
 	}
 	return urls
 }
