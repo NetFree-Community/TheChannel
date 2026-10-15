@@ -137,97 +137,120 @@
       </nb-card-body>
     </nb-card>
 
-    <!-- Magnet's own numbers come from a super-admin-only endpoint (the global
-         key), so this card is for the super admin alone. -->
-    @if (isSuperAdmin) {
-    <nb-card>
-      <nb-card-header class="card-head">
-        <nb-icon icon="bar-chart-2-outline"></nb-icon>
-        <h2>הקלקות ותגמולים</h2>
-        <span class="pill">מנהל-על</span>
-      </nb-card-header>
+    <!-- The channel's own Magnet numbers. Nisim's rule: a channel that runs
+         its own embed earns from it and may see them; a locked channel serves
+         the platform's embed, so its managers see nothing here at all — the
+         server refuses the routes too. The super admin gets a pointer to the
+         platform's statistics instead. -->
+    @if (ownStats === 'locked') {
+      @if (isSuperAdmin) {
+        <nb-card>
+          <nb-card-header class="card-head">
+            <nb-icon icon="bar-chart-2-outline"></nb-icon>
+            <h2>נתוני מגנט</h2>
+            <span class="pill">מנהל-על</span>
+          </nb-card-header>
+          <nb-card-body>
+            <p class="lead">
+              הערוץ נעול להגדרות המגנט של המערכת, ולכן הפרסומות בו נספרות בנתוני האתר הראשי. מנהלי הערוץ לא
+              רואים כאן שום נתון מגנט.
+            </p>
+            <a nbButton status="primary" size="small" routerLink="/super-admin" [queryParams]="{ view: 'statistics' }">
+              <nb-icon icon="bar-chart-outline"></nb-icon>
+              לסטטיסטיקות של המערכת
+            </a>
+          </nb-card-body>
+        </nb-card>
+      }
+    } @else if (ownStats === 'ready') {
+      <nb-card>
+        <nb-card-header class="card-head">
+          <nb-icon icon="bar-chart-2-outline"></nb-icon>
+          <h2>הנתונים שלכם ממגנט</h2>
+          <span class="pill" [class.pill--on]="statsKeySet">
+            <nb-icon [icon]="statsKeySet ? 'checkmark-circle-2-outline' : 'close-circle-outline'"></nb-icon>
+            {{ statsKeySet ? 'מחובר' : 'לא מחובר' }}
+          </span>
+        </nb-card-header>
 
-      <nb-card-body>
-        <p class="lead">
-          נתונים ישירות ממגנט, לפי המפתח הגלובלי שמוגדר בפאנל מנהל-על ← פרסומות מגנט. נספרות רק הקלקות
-          שאושרו לתשלום; הסכומים נטו, בלי מע"מ. "היום" מתחיל ב-00:00 שעון ישראל, "שבוע" ו"חודש" הם 7 ו-30 ימים
-          אחורה. מגנט שומר תוצאות כחצי דקה, אז רענון מיידי לא תמיד ישנה משהו.
-        </p>
-
-        <div class="stats-actions">
-          @if (!stats && !statsError) {
-            <button nbButton status="primary" size="small" type="button" (click)="loadStats()" [disabled]="statsLoading">
-              <nb-icon icon="bar-chart-2-outline"></nb-icon>
-              {{ statsLoading ? 'טוענים…' : 'הצגת הנתונים' }}
-            </button>
+        <nb-card-body>
+          @if (!statsKeySet || editingKey) {
+            <p class="lead">
+              הפרסומות בערוץ רצות מחשבון המגנט שלכם, ולכן גם הרווח שלכם. כדי לראות כאן קליקים ורווח, צרו מפתח
+              סטטיסטיקה בחשבון המגנט שלכם: <strong>קוד הטמעה ← מפתח סטטיסטיקה</strong>, והדביקו אותו כאן.
+            </p>
+            <div class="field">
+              <label class="field__label" for="magnet-stats-key">מפתח סטטיסטיקה</label>
+              <p class="field__hint">
+                מתחיל ב-mgs_. נשמר בשרת בלבד ולא מוצג שוב, גם לא לכם — כדי להחליף מדביקים מפתח חדש.
+              </p>
+              <div class="key-row">
+                <input
+                  #keyField
+                  nbInput
+                  fullWidth
+                  id="magnet-stats-key"
+                  type="text"
+                  dir="ltr"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="mgs_…"
+                  [status]="keyError ? 'danger' : 'basic'"
+                  [(ngModel)]="keyInput"
+                  (keydown.enter)="saveKey()">
+                <button nbButton status="primary" type="button" (click)="saveKey()" [disabled]="keySaving || !keyInput.trim()">
+                  <nb-icon icon="save-outline"></nb-icon>
+                  {{ keySaving ? 'שומרים…' : 'שמירת המפתח' }}
+                </button>
+                @if (editingKey) {
+                  <button nbButton ghost status="basic" type="button" (click)="cancelKeyEdit()" [disabled]="keySaving">ביטול</button>
+                }
+              </div>
+              @if (keyError) {
+                <p class="field__warn field__warn--danger" role="alert">
+                  <nb-icon icon="alert-circle-outline"></nb-icon>
+                  {{ keyError }}
+                </p>
+              }
+            </div>
           } @else {
-            <button nbButton status="basic" size="small" type="button" (click)="loadStats()" [disabled]="statsLoading">
-              <nb-icon icon="refresh-outline"></nb-icon>
-              {{ statsLoading ? 'מרעננים…' : 'רענון' }}
-            </button>
-            @if (statsLoadedAt) {
-              <span class="stats-meta">עודכן ב-{{ statsLoadedAt | date:'HH:mm:ss' }}</span>
-            }
-          }
-        </div>
-
-        @if (statsError) {
-          <div class="stats-error" role="alert">
-            <nb-icon icon="alert-circle-outline"></nb-icon>
-            <span>{{ statsError }}</span>
-          </div>
-        }
-
-        @if (stats && !statsError) {
-          @if (stats.site?.domain) {
-            <div class="stats-site">
-              <span class="stats-site__label">אתר:</span>
-              <a [href]="siteUrl(stats.site?.domain)" target="_blank" rel="noopener">{{ stats.site?.domain }}</a>
+            <div class="key-set">
+              <span class="key-set__text">
+                <nb-icon icon="lock-outline"></nb-icon>
+                מפתח הסטטיסטיקה של הערוץ שמור. הנתונים למטה מגיעים מחשבון המגנט שלכם.
+              </span>
+              <span class="key-set__actions">
+                <button nbButton ghost status="basic" size="small" type="button" (click)="startKeyEdit()" [disabled]="keySaving">
+                  <nb-icon icon="swap-outline"></nb-icon>
+                  החלפת מפתח
+                </button>
+                <button nbButton ghost status="danger" size="small" type="button" (click)="clearKey()" [disabled]="keySaving">
+                  <nb-icon icon="trash-2-outline"></nb-icon>
+                  מחיקה
+                </button>
+              </span>
             </div>
           }
+        </nb-card-body>
+      </nb-card>
 
-          <div class="stats-grid">
-            <div class="stats-section">
-              <div class="stats-title">
-                <nb-icon icon="navigation-2-outline"></nb-icon>
-                הקלקות
-              </div>
-              <div class="stats-row">
-                <span class="stats-label">היום</span>
-                <span class="stats-value">{{ formatNumber(stats.clicks?.today) }}</span>
-              </div>
-              <div class="stats-row">
-                <span class="stats-label">שבוע אחרון</span>
-                <span class="stats-value">{{ formatNumber(stats.clicks?.week) }}</span>
-              </div>
-              <div class="stats-row">
-                <span class="stats-label">חודש אחרון</span>
-                <span class="stats-value">{{ formatNumber(stats.clicks?.month) }}</span>
-              </div>
-            </div>
-
-            <div class="stats-section">
-              <div class="stats-title">
-                <nb-icon icon="credit-card-outline"></nb-icon>
-                תגמולים <span class="stats-currency">({{ stats.currency || 'ILS' }}, בלי מע"מ)</span>
-              </div>
-              <div class="stats-row">
-                <span class="stats-label">היום</span>
-                <span class="stats-value">{{ formatMoney(stats.earnings?.today, stats.currency) }}</span>
-              </div>
-              <div class="stats-row">
-                <span class="stats-label">שבוע אחרון</span>
-                <span class="stats-value">{{ formatMoney(stats.earnings?.week, stats.currency) }}</span>
-              </div>
-              <div class="stats-row">
-                <span class="stats-label">חודש אחרון</span>
-                <span class="stats-value">{{ formatMoney(stats.earnings?.month, stats.currency) }}</span>
-              </div>
-            </div>
-          </div>
-        }
-      </nb-card-body>
-    </nb-card>
+      @if (statsKeySet) {
+        <app-magnet-stats-panel
+          [source]="statsSource"
+          heading="הפרסומות בערוץ"
+          fixKeyLabel="החלפת המפתח"
+          (fixKey)="startKeyEdit()"></app-magnet-stats-panel>
+      }
+    } @else if (ownStats === 'error') {
+      <nb-card>
+        <nb-card-body class="magnet-empty">
+          <nb-icon icon="wifi-off-outline"></nb-icon>
+          <strong>נתוני מגנט לא נטענו</strong>
+          <button nbButton status="primary" size="small" type="button" (click)="loadOwnStats()">
+            <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+          </button>
+        </nb-card-body>
+      </nb-card>
     }
 
     <div class="save-bar">

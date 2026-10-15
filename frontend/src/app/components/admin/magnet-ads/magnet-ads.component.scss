@@ -93,105 +93,46 @@
   border-bottom: 1px solid var(--border-basic-color-3);
 }
 
-.stats-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-
-  .stats-meta {
-    font-size: 0.82rem;
-    color: var(--text-hint-color);
-  }
+.field__warn--danger {
+  color: var(--color-danger-700);
 }
 
-.stats-error {
+// The key field and its buttons on one line; the buttons drop below on a phone.
+.key-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: var(--color-danger-100);
-  border-inline-start: 3px solid var(--color-danger-500);
-  color: var(--color-danger-700);
-  border-radius: var(--border-radius);
-  font-size: 0.9rem;
-}
+  flex-wrap: wrap;
 
-.stats-site {
-  margin-bottom: 1rem;
-  font-size: 0.95rem;
-
-  .stats-site__label {
-    font-weight: 600;
-    margin-inline-end: 0.4rem;
-  }
-
-  a {
-    direction: ltr;
-    display: inline-block;
-    color: var(--color-primary-600);
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
+  input {
+    flex: 1 1 18rem;
+    min-width: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
   }
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: 1rem;
-}
+.key-set {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
 
-.stats-section {
-  background: var(--background-basic-color-2);
-  padding: 1rem;
-  border-radius: var(--border-radius);
-
-  .stats-title {
-    display: flex;
+  .key-set__text {
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-basic-color-3);
+    gap: 0.4rem;
+    color: var(--text-basic-color);
 
     nb-icon {
-      font-size: 1.1rem;
-      color: var(--color-primary-600);
-    }
-
-    .stats-currency {
-      font-weight: 400;
-      font-size: 0.8rem;
-      color: var(--text-hint-color);
-      margin-inline-start: auto;
+      color: var(--color-success-600);
     }
   }
 
-  .stats-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.4rem 0;
-
-    & + .stats-row {
-      border-top: 1px dashed var(--border-basic-color-3);
-    }
-
-    .stats-label {
-      color: var(--text-hint-color);
-      font-size: 0.9rem;
-    }
-
-    .stats-value {
-      font-weight: 700;
-      direction: ltr;
-      font-variant-numeric: tabular-nums;
-    }
+  .key-set__actions {
+    display: inline-flex;
+    gap: 0.25rem;
   }
 }
 

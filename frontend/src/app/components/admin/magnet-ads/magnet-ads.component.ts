@@ -1,6 +1,6 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import {
   NbAlertModule,
   NbButtonModule,
@@ -15,26 +15,26 @@ import {
 } from '@nebular/theme';
 import { AdminService } from '../../../services/admin.service';
 import { AuthService } from '../../../services/auth.service';
+import { ConfirmService } from '../../../services/confirm.service';
 import { MagnetAdsService } from '../../../services/magnet-ads.service';
-import { SuperAdminService } from '../../../services/super-admin.service';
-import { magnetStatsError } from '../../../services/magnet-stats-errors';
 import { Setting } from '../../../models/setting.model';
 import { toBool } from '../settings/settings.schema';
+import { MagnetStatsPanelComponent } from '../../shared/magnet-stats-panel.component';
 
 type MagnetMode = 'by_messages' | 'by_time';
 
-interface MagnetStatsBucket {
-  today: number;
-  week: number;
-  month: number;
-}
+/**
+ * The channel's own Magnet numbers, as the server decides them:
+ * - locked: the channel serves the platform's embed and the earnings are the
+ *   platform's, so its managers get nothing (the super admin gets a pointer
+ *   to the platform's statistics screen);
+ * - ready: the channel runs its own embed, so it may read its own numbers
+ *   with a stats key from its own Magnet account.
+ */
+type OwnStatsState = 'loading' | 'locked' | 'ready' | 'error';
 
-interface MagnetStatsResponse {
-  site?: { id?: string; domain?: string };
-  currency?: string;
-  clicks?: MagnetStatsBucket;
-  earnings?: MagnetStatsBucket;
-}
+/** The shape rotate_site_stats_key mints; backend/ads.go checks the same. */
+const STATS_KEY_RE = /^mgs_[0-9a-f]{48}$/;
 
 const MAGNET_KEYS = [
   'magnet_enabled',
@@ -52,8 +52,8 @@ const MAGNET_KEYS = [
 @Component({
   selector: 'app-magnet-ads',
   imports: [
-    DatePipe,
     FormsModule,
+    RouterLink,
     NbAlertModule,
     NbCardModule,
     NbButtonModule,
@@ -63,6 +63,7 @@ const MAGNET_KEYS = [
     NbRadioModule,
     NbSpinnerModule,
     NbTooltipModule,
+    MagnetStatsPanelComponent,
   ],
   templateUrl: './magnet-ads.component.html',
   styleUrl: './magnet-ads.component.scss',
@@ -93,16 +94,23 @@ export class MagnetAdsComponent implements OnInit {
   private lastLoaded: Setting[] = [];
   private snapshot = '';
 
-  stats: MagnetStatsResponse | null = null;
-  statsLoading = false;
-  statsError = '';
-  statsLoadedAt: Date | null = null;
+  ownStats: OwnStatsState = 'loading';
+  statsKeySet = false;
+  /** The key field is open over a stored key (replace). */
+  editingKey = false;
+  keyInput = '';
+  keyError = '';
+  keySaving = false;
+  /** Replaced (not mutated) after a key change, so the panel reloads. */
+  statsSource = () => this.adminService.getMagnetStats();
+
+  @ViewChild('keyField') private keyField?: ElementRef<HTMLInputElement>;
 
   constructor(
     private adminService: AdminService,
     private authService: AuthService,
-    private superAdminService: SuperAdminService,
     private magnetAdsService: MagnetAdsService,
+    private confirm: ConfirmService,
     private toast: NbToastrService,
   ) {}
 
@@ -119,20 +127,13 @@ export class MagnetAdsComponent implements OnInit {
     return this.enabled && !this.snippet?.trim();
   }
 
-  // Magnet returns a bare domain; bound to href as-is it resolved relative to
-  // the admin page (/channel/<slug>/<domain>) and 404'd inside the app.
-  siteUrl(domain: string | undefined): string {
-    const d = (domain || '').trim();
-    if (!d) return '';
-    return /^https?:\/\//i.test(d) ? d : `https://${d}`;
-  }
-
   ngOnInit(): void {
     this.loadSettings();
     // The public magnet endpoint is the only place the lock is visible to an
     // owner; forced so a stale cached answer from before the lock is not used.
     this.magnetAdsService.loadSettings(true)
-      .then(s => this.locked = !!s?.locked);
+      .then(s => this.locked = this.locked || !!s?.locked);
+    this.loadOwnStats();
   }
 
   loadSettings() {
@@ -243,35 +244,93 @@ export class MagnetAdsComponent implements OnInit {
       .finally(() => this.inProgress = false);
   }
 
-  async loadStats() {
-    this.statsLoading = true;
-    this.statsError = '';
+  // ─── The channel's own Magnet numbers ───────────────────────────────────
 
-    try {
-      this.stats = await this.superAdminService.getMagnetStats() as MagnetStatsResponse;
-      this.statsLoadedAt = new Date();
-    } catch (err: any) {
-      // This tab has no key field, so a missing key says where it is set.
-      const { message, notConfigured } = magnetStatsError(err);
-      this.statsError = notConfigured
-        ? `${message} — הגדירו אותו בפאנל מנהל-על ← פרסומות מגנט`
-        : message;
-      this.stats = null;
-    } finally {
-      this.statsLoading = false;
+  /** Asks the owner route, not the public endpoint: the server alone decides the lock. */
+  loadOwnStats() {
+    this.ownStats = 'loading';
+    this.adminService.getMagnetStatsKey()
+      .then(r => {
+        this.statsKeySet = !!r?.statsKeySet;
+        this.editingKey = false;
+        this.ownStats = 'ready';
+      })
+      .catch(err => {
+        if (this.isLockedError(err)) {
+          this.showLocked();
+          return;
+        }
+        this.ownStats = 'error';
+      });
+  }
+
+  startKeyEdit() {
+    this.editingKey = true;
+    this.keyError = '';
+    setTimeout(() => this.keyField?.nativeElement.focus());
+  }
+
+  cancelKeyEdit() {
+    this.editingKey = false;
+    this.keyInput = '';
+    this.keyError = '';
+  }
+
+  saveKey() {
+    const key = this.keyInput.trim();
+    if (!STATS_KEY_RE.test(key)) {
+      this.keyError = 'זה לא נראה כמו מפתח סטטיסטיקה: הוא מתחיל ב-mgs_ ואחריו 48 תווים (ספרות ואותיות a–f). העתיקו אותו שוב ממגנט.';
+      return;
     }
+    this.writeKey({ statsKey: key }, 'מפתח הסטטיסטיקה נשמר');
   }
 
-  formatMoney(n: number | undefined, currency: string | undefined): string {
-    if (n === null || n === undefined) return '-';
-    const code = (currency || 'ILS').toUpperCase();
-    const symbol = code === 'ILS' ? '₪' : code === 'USD' ? '$' : code === 'EUR' ? '€' : code + ' ';
-    const formatted = Number(n).toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return code === 'ILS' ? `${formatted} ${symbol}` : `${symbol}${formatted}`;
+  async clearKey() {
+    const ok = await this.confirm.ask({
+      title: 'למחוק את מפתח הסטטיסטיקה?',
+      message: 'הנתונים ממגנט לא יוצגו כאן עד שתדביקו מפתח חדש. הפרסומות עצמן ממשיכות להופיע כרגיל.',
+      status: 'danger',
+      confirmLabel: 'מחיקה',
+    });
+    if (ok) this.writeKey({ clearStatsKey: true }, 'מפתח הסטטיסטיקה נמחק');
   }
 
-  formatNumber(n: number | undefined): string {
-    if (n === null || n === undefined) return '-';
-    return Number(n).toLocaleString('he-IL');
+  private writeKey(body: { statsKey?: string; clearStatsKey?: boolean }, done: string) {
+    this.keySaving = true;
+    this.keyError = '';
+    this.adminService.setMagnetStatsKey(body)
+      .then(r => {
+        this.statsKeySet = !!r?.statsKeySet;
+        this.keyInput = '';
+        this.editingKey = false;
+        this.statsSource = () => this.adminService.getMagnetStats();
+        this.toast.success('', done);
+      })
+      .catch(err => {
+        if (this.isLockedError(err)) {
+          this.showLocked();
+          return;
+        }
+        if (err?.error?.error === 'invalid_stats_key') {
+          this.keyError = err.error.message || 'מפתח הסטטיסטיקה אינו תקין';
+          return;
+        }
+        this.toast.danger('', err?.status === 403 || err?.status === 401
+          ? 'רק בעלי הערוץ יכולים לשנות את מפתח הסטטיסטיקה'
+          : 'שמירת המפתח נכשלה — נסו שוב');
+      })
+      .finally(() => this.keySaving = false);
+  }
+
+  private isLockedError(err: any): boolean {
+    return err?.status === 403 && err?.error?.error === 'magnet_locked';
+  }
+
+  private showLocked() {
+    this.ownStats = 'locked';
+    this.locked = true;
+    this.statsKeySet = false;
+    this.keyInput = '';
+    this.editingKey = false;
   }
 }
