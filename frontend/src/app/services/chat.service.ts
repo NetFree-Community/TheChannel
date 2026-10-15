@@ -45,6 +45,9 @@ export interface Attachment {
   embedded?: string;
 }
 
+// Messages per page of the channel feed.
+export const FEED_PAGE_SIZE = 20;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -108,6 +111,26 @@ export class ChatService {
 
   editChannelInfo(name: string, description: string, logoUrl: string, contactUs: string, seo?: ChannelSeoSettings): Observable<ResponseResult> {
     return this.http.post<ResponseResult>(`/api/channel/${this.slug}/admin/edit-channel-info`, { name, description, logoUrl, contactUs, ...seo });
+  }
+
+  // The newest page of the feed, started by the route guard while it is still
+  // waiting for /user-info and /info, so the messages no longer wait for the
+  // channel view to mount before they are even requested. Handed out once.
+  private firstPage?: { slug: string; limit: number; at: number; request: Promise<ChatResponse | null> };
+
+  prefetchFirstPage(limit: number) {
+    const request = firstValueFrom(this.getMessages(0, limit, 'desc')).catch(() => null);
+    this.firstPage = { slug: this.slug, limit, at: Date.now(), request };
+  }
+
+  // Resolves to null when the prefetch failed; the caller then asks again and
+  // handles that request's error itself. Older than a few seconds it is not
+  // used: the feed would start from a page the live stream did not follow.
+  takeFirstPage(limit: number): Promise<ChatResponse | null> | undefined {
+    const page = this.firstPage;
+    this.firstPage = undefined;
+    if (!page || page.slug !== this.slug || page.limit !== limit || Date.now() - page.at > 10_000) return undefined;
+    return page.request;
   }
 
   getMessages(offset: number, limit: number, direction: string): Observable<ChatResponse> {

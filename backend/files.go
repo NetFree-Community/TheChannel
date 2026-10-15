@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -296,7 +297,7 @@ func serveFile(w http.ResponseWriter, r *http.Request) {
 		// this blob (or may have failed for it). Redirecting to a key that is
 		// not there yet would 404 every legacy image, so a miss falls back to
 		// the local copy, which the migration never deletes.
-		if !r2Exists(ctx, key) {
+		if !r2ExistsCached(ctx, key) {
 			if filePath, ok := localBlobExists(meta.Hash); ok {
 				log.Printf("serveFile: %s/%s not in R2 (key %s), serving local copy\n", slug, fileId, key)
 				http.ServeFile(w, r, filePath)
@@ -307,15 +308,20 @@ func serveFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// The redirect itself is cacheable (private: a channel may require a
+		// login), so the browser skips this round trip on the next view.
 		if r2PublicURL != "" {
 			// Public bucket: redirect to CDN URL (fastest, no auth needed)
+			w.Header().Set("Cache-Control", "private, max-age=3600")
 			http.Redirect(w, r, r2PublicURL+"/"+key, http.StatusFound)
 			return
 		}
-		// Private bucket: generate a pre-signed URL (1-hour TTL).
+		// Private bucket: a pre-signed URL, reused for a while so the browser
+		// can serve the file from its cache (see r2_cache.go).
 		// The client fetches directly from R2 — backend is not in the data path.
-		presignedURL, err := r2PresignURL(ctx, key, time.Hour, contentDispositionAttachment(meta.Filename))
+		presignedURL, left, err := r2PresignCached(ctx, key, contentDispositionAttachment(meta.Filename))
 		if err == nil {
+			w.Header().Set("Cache-Control", "private, max-age="+strconv.Itoa(int(left.Seconds())))
 			http.Redirect(w, r, presignedURL, http.StatusFound)
 			return
 		}
@@ -342,6 +348,7 @@ func serveFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
+	w.Header().Set("Cache-Control", "private, max-age=3600")
 	http.ServeFile(w, r, filePath)
 }
 
@@ -975,7 +982,7 @@ func getFavicon(w http.ResponseWriter, r *http.Request) {
 		key := r2ObjectKey(meta.Hash)
 		// Same partial-migration fallback as serveFile: a logo whose blob has
 		// not been copied to R2 yet is still on local disk.
-		if !r2Exists(ctx, key) {
+		if !r2ExistsCached(ctx, key) {
 			if filePath, ok := localBlobExists(meta.Hash); ok {
 				log.Printf("getFavicon: %s: logo %s not in R2 (key %s), serving local copy\n", slug, fileId, key)
 				serveLocalImageOrFavicon(w, r, meta, filePath)

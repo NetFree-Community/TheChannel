@@ -124,6 +124,9 @@ func r2PresignURL(ctx context.Context, key string, ttl time.Duration, dispositio
 	if disposition != "" {
 		in.ResponseContentDisposition = aws.String(disposition)
 	}
+	// R2 sends no caching header of its own; without one the browser would
+	// fetch the same signed URL again instead of using its copy.
+	in.ResponseCacheControl = aws.String("private, max-age=3600")
 	req, err := presignClient.PresignGetObject(ctx, in, s3.WithPresignExpires(ttl))
 	if err != nil {
 		return "", err
@@ -133,6 +136,7 @@ func r2PresignURL(ctx context.Context, key string, ttl time.Duration, dispositio
 
 // r2Delete removes an object from R2.
 func r2Delete(ctx context.Context, key string) error {
+	r2ForgetKey(key)
 	_, err := r2Client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(r2Bucket),
 		Key:    aws.String(key),
