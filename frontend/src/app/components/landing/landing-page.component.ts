@@ -233,6 +233,10 @@ interface LandingFeature {
       <a class="footer__link" href="/netfree-channel">ערוץ בנטפרי</a>
       <span class="footer__sep" aria-hidden="true">·</span>
       <a class="footer__link" href="#contact" (click)="scrollToContact($event)">יצירת קשר</a>
+      <span class="footer__sep" aria-hidden="true">·</span>
+      <a class="footer__link" href="/privacy">מדיניות פרטיות</a>
+      <span class="footer__sep" aria-hidden="true">·</span>
+      <a class="footer__link" href="/terms">תנאי שימוש</a>
     </footer>
       </nb-layout-column>
     </nb-layout>
