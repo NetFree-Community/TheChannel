@@ -294,6 +294,15 @@ export class ChatComponent implements OnInit, OnDestroy {
     }
     this.initialLoadFailed = false;
 
+    // Opened at one post (/channel/<slug>/post/<id>): show that post, not the
+    // last-read position or the tip.
+    const postId = Number(this.router.snapshot.paramMap.get('postId'));
+    if (Number.isInteger(postId) && postId > 0) {
+      this.isVisible = true;
+      setTimeout(() => this.scrollToId({ messageId: postId, mark: true }), 0);
+      return;
+    }
+
     // Namespaced per channel — message ids are per-channel sequences, so a
     // shared key would carry channel A's position into channel B.
     const lastReadMsg = Number(localStorage.getItem(`lastReadMessage:${this.slugService.slug}`));

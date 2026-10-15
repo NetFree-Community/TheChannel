@@ -525,7 +525,9 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private messageUrl(messageId: number): string {
-    return `${window.location.origin}/channel/${this.slugService.slug}#${messageId}`;
+    // The post's own page, which search engines and link previews read;
+    // old /channel/<slug>#<id> links still open the post too.
+    return `${window.location.origin}/channel/${this.slugService.slug}/post/${messageId}`;
   }
 
   async copyLink(messageId?: number) {

@@ -449,7 +449,7 @@ const (
 
 // channelStaticBody names the channel in the initial HTML. The feed itself
 // is loaded by the app.
-func channelStaticBody(siteName, name, description string) string {
+func channelStaticBody(siteName, name, description, slug string, posts []seoPost) string {
 	var b strings.Builder
 	b.WriteString(staticShellStyle)
 	b.WriteString(`<main class="ssr">`)
@@ -457,7 +457,12 @@ func channelStaticBody(siteName, name, description string) string {
 	if d := strings.TrimSpace(description); d != "" {
 		b.WriteString("<p>" + html.EscapeString(d) + "</p>")
 	}
-	b.WriteString(`<p>ערוץ עדכונים ב<a href="/">` + html.EscapeString(siteName) + `</a>. ההודעות נטענות…</p>`)
+	if len(posts) == 0 {
+		b.WriteString(`<p>ערוץ עדכונים ב<a href="/">` + html.EscapeString(siteName) + `</a>. ההודעות נטענות…</p>`)
+	} else {
+		b.WriteString(`<p>ערוץ עדכונים ב<a href="/">` + html.EscapeString(siteName) + `</a>.</p>`)
+		b.WriteString(channelPostsHTML(slug, posts))
+	}
 	// Every public channel is a way in to the site: the link tells a crawler
 	// where channels come from, and is replaced by the app's own header (whose
 	// credit links to "/") once it starts.

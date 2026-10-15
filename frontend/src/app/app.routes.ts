@@ -43,6 +43,14 @@ export const routes: Routes = [
     component: ChannelComponent,
     canActivate: [AuthGuard],
   },
+  // One post's own address: the channel, opened at that post. The server
+  // gives it the post's title and text, so a search result or a shared link
+  // can point at a single post (backend/seo_posts.go).
+  {
+    path: 'channel/:slug/post/:postId',
+    component: ChannelComponent,
+    canActivate: [AuthGuard],
+  },
   {
     path: 'super-admin',
     canActivate: [AuthGuard, SuperAdminGuard],

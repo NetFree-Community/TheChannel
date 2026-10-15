@@ -244,6 +244,10 @@ func buildPageMeta(ctx context.Context, origin, siteName, p string) pageMeta {
 		m.StructuredData = homeStructuredData(origin, siteName)
 		m.Body = homeStaticBody(siteName)
 
+	case postPagePathRe.MatchString(p):
+		sm := postPagePathRe.FindStringSubmatch(p)
+		m = buildPostPageMeta(ctx, origin, siteName, m, sm[1], sm[2])
+
 	case channelPagePathRe.MatchString(p):
 		slug := channelPagePathRe.FindStringSubmatch(p)[1]
 		ch, vis := lookupPageChannel(ctx, slug)
@@ -264,7 +268,13 @@ func buildPageMeta(ctx context.Context, origin, siteName, p string) pageMeta {
 				m.Image = absoluteURL(origin, logo)
 				m.Card = "summary"
 			}
-			m.Body = channelStaticBody(siteName, name, ch.Description)
+			// The newest posts as text, each linking to its own page: without
+			// them a channel could only be found by its name and description.
+			var posts []seoPost
+			if !ch.SeoHidden {
+				posts = latestSeoPosts(ctx, ch.Slug, channelPagePosts)
+			}
+			m.Body = channelStaticBody(siteName, name, ch.Description, ch.Slug, posts)
 			if ch.SeoHidden {
 				// Taken out of search by its managers: the page works as
 				// always, and a forwarded link still unfurls, but nothing

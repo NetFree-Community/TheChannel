@@ -117,6 +117,7 @@ func main() {
 	// gzip for everything except the SSE stream; see compress.go.
 	r.Use(compressResponses)
 	r.Use(limitRequestBody)
+	r.Use(noindexAPI)
 
 	// Auth routes
 	r.Get("/auth/google", getGoogleAuthValues)
