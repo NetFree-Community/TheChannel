@@ -84,6 +84,9 @@ type SupportMessage struct {
 	AuthorName string    `json:"authorName"`
 	Body       string    `json:"body"`
 	CreatedAt  time.Time `json:"createdAt"`
+	// "email" when the message arrived as a mail to the channels mailbox
+	// (support_inbound.go) rather than through the site. Shown to the operator.
+	Source string `json:"source,omitempty"`
 }
 
 type SupportTicket struct {
@@ -104,6 +107,9 @@ type SupportTicket struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 
+	// "email" when the ticket was opened by a mail to the channels mailbox.
+	Source string `json:"source,omitempty"`
+
 	// AccessToken lets the anonymous sender come back and read the reply. Every
 	// response goes through publicView, which clears it, so it leaves the server
 	// exactly once: in the reply to the request that created the ticket.
@@ -116,12 +122,22 @@ const (
 	// One index per email so a signed-in user can list their own tickets
 	// without scanning the global index.
 	supportUserIndexPrefix = "support_tickets:user:"
+	// supportMatchIndexPrefix indexes EVERY ticket by its email, anonymous ones
+	// included, for one purpose only: pairing an inbound mail with the
+	// sender's thread (support_inbound.go). It is never listed to anyone and
+	// never read on a user's behalf — the user index above stays the only
+	// source of "my tickets", for the reason given in dbSaveSupportTicket.
+	supportMatchIndexPrefix = "support_tickets:match:"
 )
 
 func supportTicketKey(id string) string { return supportTicketKeyPrefix + id }
 
 func supportUserIndexKey(email string) string {
 	return supportUserIndexPrefix + strings.ToLower(email)
+}
+
+func supportMatchIndexKey(email string) string {
+	return supportMatchIndexPrefix + normEmail(email)
 }
 
 func dbSaveSupportTicket(ctx context.Context, t *SupportTicket) error {
@@ -146,6 +162,13 @@ func dbSaveSupportTicket(ctx context.Context, t *SupportTicket) error {
 			return err
 		}
 		// The per-user index must not outlive the tickets it points at.
+		rdb.Expire(ctx, key, supportTicketTTL)
+	}
+	if t.Email != "" {
+		key := supportMatchIndexKey(t.Email)
+		if err := rdb.ZAdd(ctx, key, score).Err(); err != nil {
+			return err
+		}
 		rdb.Expire(ctx, key, supportTicketTTL)
 	}
 	return nil
@@ -202,6 +225,11 @@ func dbUpdateSupportTicket(ctx context.Context, id string, mutate func(*SupportT
 				userKey := supportUserIndexKey(t.Email)
 				p.ZAdd(ctx, userKey, score)
 				p.Expire(ctx, userKey, supportTicketTTL)
+			}
+			if t.Email != "" {
+				matchKey := supportMatchIndexKey(t.Email)
+				p.ZAdd(ctx, matchKey, score)
+				p.Expire(ctx, matchKey, supportTicketTTL)
 			}
 			return nil
 		})

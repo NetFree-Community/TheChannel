@@ -62,7 +62,11 @@
                     {{ t.name }} · <span class="sa-ltr">{{ t.email }}</span>
                   </span>
                   <span class="ticket__tags">
-                    @if (!t.authenticated) { <span class="sa-chip sa-chip--info">נשלחה ללא כניסה</span> }
+                    @if (t.source === 'email') {
+                      <span class="sa-chip sa-chip--info">התקבל במייל</span>
+                    } @else if (!t.authenticated) {
+                      <span class="sa-chip sa-chip--info">נשלחה ללא כניסה</span>
+                    }
                     @if (t.channelSlug) { <span class="sa-chip">ערוץ: <span class="sa-ltr">{{ t.channelSlug }}</span></span> }
                     <span class="sa-chip"
                           [class.sa-chip--warning]="t.status === 'open'"
@@ -83,6 +87,7 @@
                         <div class="msg__meta">
                           <strong>{{ m.author === 'admin' ? 'ניהול' : m.authorName }}</strong>
                           · {{ m.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                          @if (m.source === 'email') { <span class="sa-chip sa-chip--info msg__source">התקבל במייל</span> }
                         </div>
                         <!-- Plain text via interpolation, never markdown: a ticket
                              body must not be able to inject markup into this panel. -->
@@ -98,7 +103,9 @@
                                 placeholder="כתבו כאן את התשובה…" maxlength="5000"></textarea>
                       <p class="sa-field__hint">
                         התשובה נחתמת כ"ניהול".
-                        @if (t.authenticated) {
+                        @if (t.source === 'email') {
+                          הפנייה התקבלה במייל — התשובה תישלח לפונה במייל, והוא יכול להשיב עליה במייל.
+                        } @else if (t.authenticated) {
                           הפונה יראה אותה במסך הפניות שלו בכניסה הבאה.
                         } @else {
                           הפנייה נשלחה בלי כניסה — התשובה תופיע לפונה בדפדפן שממנו שלח אותה.

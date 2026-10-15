@@ -9,6 +9,8 @@ export interface SupportMessage {
   authorName: string;
   body: string;
   createdAt: string;
+  /** 'email' when it arrived as a mail to the channels mailbox. */
+  source?: 'email';
 }
 
 export interface SupportTicket {
@@ -22,6 +24,8 @@ export interface SupportTicket {
   messages: SupportMessage[];
   createdAt: string;
   updatedAt: string;
+  /** 'email' when the ticket was opened by a mail to the channels mailbox. */
+  source?: 'email';
 }
 
 export interface CreatedTicket {

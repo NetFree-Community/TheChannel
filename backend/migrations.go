@@ -73,6 +73,10 @@ const channelFeaturesBackfillV2ID = "2026-08-channel-features-backfill-v2"
 // corpus.
 const localFilesToR2ID = "2026-08-local-files-to-r2"
 
+// supportMatchIndexID indexes the support tickets written before inbound
+// mail existed by their email (support_inbound.go).
+const supportMatchIndexID = "2026-10-support-match-index"
+
 // errMigrationSkipped tells runMigrations that a migration deliberately did no
 // work and must NOT be marked applied — the loop marks every nil return as
 // applied, so a plain nil would burn the one-shot on a boot where the migration
@@ -100,6 +104,7 @@ func runMigrations(ctx context.Context) {
 		{fileSlugFromMessagesID, backfillFileSlugsFromMessages},
 		{channelFeaturesBackfillV2ID, backfillChannelFeaturesV2},
 		{localFilesToR2ID, migrateLocalFilesToR2},
+		{supportMatchIndexID, backfillSupportMatchIndex},
 	}
 
 	for _, m := range migrations {
