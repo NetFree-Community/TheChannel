@@ -130,6 +130,9 @@ func main() {
 
 	// Search engines: see seo.go, seo_content.go and sitemap.go.
 	r.Get("/robots.txt", getRobotsTxt)
+	for p := range googleVerificationFiles {
+		r.Get(p, serveGoogleVerificationFile)
+	}
 	r.Get("/sitemap.xml", getSitemap)
 	r.Get("/sitemap-pages.xml", getSitemapPages)
 	r.Get("/sitemap-channels-{n:[0-9]+}.xml", getSitemapChannels)
