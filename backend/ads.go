@@ -211,8 +211,17 @@ func getMagnetAdsSettings(w http.ResponseWriter, r *http.Request) {
 
 	var settings MagnetAdsSettings
 
-	if isChannelMagnetLocked(globalMagnet, ch) {
-		// Super admin override: use global magnet config
+	if isChannelMagnetLocked(globalMagnet, ch) && !globalMagnet.Enabled {
+		// This endpoint is public and is also how a locked channel's managers
+		// learn of the lock. The platform's placement rules are needed by a
+		// viewer only while its ads run, so with them off nothing of the
+		// global config goes out beyond the lock itself.
+		settings = MagnetAdsSettings{Locked: true}
+	} else if isChannelMagnetLocked(globalMagnet, ch) {
+		// Super admin override: use global magnet config. The snippet and the
+		// placement rules are what every viewer's browser needs to show the
+		// ad, so they are public by nature; nothing else (embed API key,
+		// stats key, lock list) is part of this view.
 		settings = MagnetAdsSettings{
 			Enabled:              globalMagnet.Enabled,
 			Mode:                 globalMagnet.Mode,
@@ -392,7 +401,14 @@ func getMagnetStats(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "missing_stats_key", "מפתח הסטטיסטיקה של מגנט לא הוגדר")
 		return
 	}
+	proxyMagnetStats(w, r, globalMagnet.StatsKey)
+}
 
+// proxyMagnetStats asks Magnet's site-stats for the site that key belongs to
+// and passes the answer through. Shared by the platform's own numbers (the
+// global key) and an unlocked channel's (that channel's key): the two screens
+// read one response shape and one set of error codes.
+func proxyMagnetStats(w http.ResponseWriter, r *http.Request, key string) {
 	// The key travels in a header and never in the URL, so it stays out of
 	// access logs on both sides. Errors below never include it.
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, magnetStatsURL, nil)
@@ -400,7 +416,7 @@ func getMagnetStats(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"request_build_failed"}`, http.StatusInternalServerError)
 		return
 	}
-	req.Header.Set("x-magnet-stats-key", globalMagnet.StatsKey)
+	req.Header.Set("x-magnet-stats-key", key)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := magnetStatsClient.Do(req)
@@ -444,4 +460,116 @@ func getMagnetStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	w.Write(body)
+}
+
+// ─── A channel's own Magnet numbers ────────────────────────────────────────
+//
+// The owner's rule: a channel that manages its own Magnet embed (not locked)
+// earns from it, so its managers may see its numbers, read with a stats key
+// from their own Magnet account. A locked channel serves the platform's embed
+// and the earnings are the platform's: its managers get nothing at all — no
+// key field, no numbers — and these routes refuse before touching Magnet,
+// even when a key was saved before the lock.
+
+const channelMagnetLockedMessage = "הנהלת המערכת קבעה הגדרות פרסומת אחידות לערוץ הזה, ולכן אין כאן נתוני מגנט."
+
+// channelMagnetUnlocked answers 403 (or 500) and returns false unless the
+// channel in the request manages its own Magnet embed. A global config that
+// cannot be read counts as locked: guessing "unlocked" would hand the
+// platform's channels a route to Magnet.
+func channelMagnetUnlocked(ctx context.Context, w http.ResponseWriter, r *http.Request) bool {
+	globalMagnet, err := dbGetGlobalMagnetConfig(ctx)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "config_read_failed", "הגדרות מגנט לא נטענו. נסו שוב בעוד רגע.")
+		return false
+	}
+	ch := channelFromCtx(r)
+	if ch == nil || isChannelMagnetLocked(globalMagnet, ch) {
+		writeJSONError(w, http.StatusForbidden, "magnet_locked", channelMagnetLockedMessage)
+		return false
+	}
+	return true
+}
+
+// channelMagnetStatsKeyView is all a browser learns about the channel's key.
+type channelMagnetStatsKeyView struct {
+	StatsKeySet bool `json:"statsKeySet"`
+}
+
+// getChannelMagnetStatsKey – owner: is a stats key stored for this channel?
+func getChannelMagnetStatsKey(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if !channelMagnetUnlocked(ctx, w, r) {
+		return
+	}
+	key, err := dbGetChannelMagnetStatsKey(ctx, channelSlugFromCtx(r))
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "config_read_failed", "הגדרות מגנט לא נטענו. נסו שוב בעוד רגע.")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(channelMagnetStatsKeyView{StatsKeySet: key != ""})
+}
+
+// setChannelMagnetStatsKey – owner: store, replace or remove the channel's
+// key. Unlike the global form there is nothing else in the body, so an empty
+// key is refused rather than read as "keep".
+func setChannelMagnetStatsKey(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var in struct {
+		StatsKey      string `json:"statsKey"`
+		ClearStatsKey bool   `json:"clearStatsKey"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if !channelMagnetUnlocked(ctx, w, r) {
+		return
+	}
+
+	k := strings.TrimSpace(in.StatsKey)
+	switch {
+	case in.ClearStatsKey:
+		k = ""
+	case !statsKeyRe.MatchString(k):
+		writeJSONError(w, http.StatusBadRequest, "invalid_stats_key",
+			"מפתח הסטטיסטיקה אינו תקין — הוא מתחיל ב-mgs_ ואחריו 48 תווים. העתיקו אותו שוב מחשבון המגנט שלכם: קוד הטמעה ← מפתח סטטיסטיקה.")
+		return
+	}
+
+	if err := dbSetChannelMagnetStatsKey(ctx, channelSlugFromCtx(r), k); err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "config_write_failed", "שמירת המפתח נכשלה. נסו שוב בעוד רגע.")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(channelMagnetStatsKeyView{StatsKeySet: k != ""})
+}
+
+// getChannelMagnetStats – owner: the channel's own numbers from Magnet.
+func getChannelMagnetStats(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if !channelMagnetUnlocked(ctx, w, r) {
+		return
+	}
+	key, err := dbGetChannelMagnetStatsKey(ctx, channelSlugFromCtx(r))
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "config_read_failed", "הגדרות מגנט לא נטענו. נסו שוב בעוד רגע.")
+		return
+	}
+	if key == "" {
+		writeJSONError(w, http.StatusBadRequest, "missing_stats_key", "מפתח הסטטיסטיקה של הערוץ לא הוגדר")
+		return
+	}
+	proxyMagnetStats(w, r, key)
 }

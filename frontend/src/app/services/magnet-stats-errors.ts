@@ -1,7 +1,8 @@
 /**
- * Turns a failed GET /api/super-admin/magnet/stats into Hebrew text, for both
- * screens that show Magnet's numbers (the super-admin statistics card and a
- * channel's magnet tab). Each used to read the status on its own, and a 401
+ * Turns a failed Magnet stats request into Hebrew text — the platform's
+ * (GET /api/super-admin/magnet/stats) or an unlocked channel's own
+ * (GET /api/channel/<slug>/admin/magnet/stats), both drawn by
+ * app-magnet-stats-panel. Screens used to read the status on their own, and a 401
  * meant "no permission" there although it now means Magnet rejected the key.
  *
  * The error code in the body decides first: the backend answers Magnet's 401
@@ -17,6 +18,11 @@ export function magnetStatsError(err: any): { message: string; notConfigured: bo
   const result = (message: string, notConfigured = false, keyProblem = false) =>
     ({ message, notConfigured, keyProblem: keyProblem || notConfigured });
 
+  // A channel locked to the platform's Magnet settings: there is nothing of
+  // its own to show, and no key to fix.
+  if (code === 'magnet_locked') {
+    return result('הערוץ נעול להגדרות המגנט של הנהלת המערכת, ולכן אין כאן נתוני מגנט.');
+  }
   if (code === 'missing_stats_key') {
     return result('מפתח הסטטיסטיקה של מגנט עוד לא הוגדר', true);
   }

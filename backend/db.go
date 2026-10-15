@@ -1467,6 +1467,7 @@ func dbDeleteChannel(ctx context.Context, slug string) error {
 		fmt.Sprintf("channel:%s:sse_connections", p),
 		fmt.Sprintf("channel:%s:events", p),
 		fmt.Sprintf("channel:%s:last_modified", p),
+		channelMagnetStatsKeyKey(p),
 	}
 	allKeys := append(fixedKeys, messageKeys...)
 	allKeys = append(allKeys, reactionKeys...)
@@ -1605,6 +1606,30 @@ func dbSetGlobalMagnetConfig(ctx context.Context, cfg *GlobalMagnetConfig) error
 		return err
 	}
 	return rdb.Set(ctx, "global:magnet:config", data, 0).Err()
+}
+
+// channelMagnetStatsKeyKey holds an unlocked channel's own Magnet stats key.
+// It lives outside channel:<slug>:settings on purpose: settings/get hands that
+// whole blob to the owner's browser, and this secret must never reach one.
+func channelMagnetStatsKeyKey(slug string) string {
+	return fmt.Sprintf("channel:%s:magnet:stats_key", slug)
+}
+
+// dbGetChannelMagnetStatsKey returns "" when the channel has none.
+func dbGetChannelMagnetStatsKey(ctx context.Context, slug string) (string, error) {
+	v, err := rdb.Get(ctx, channelMagnetStatsKeyKey(slug)).Result()
+	if err == redis.Nil {
+		return "", nil
+	}
+	return v, err
+}
+
+// dbSetChannelMagnetStatsKey stores key, or removes it when key is "".
+func dbSetChannelMagnetStatsKey(ctx context.Context, slug, key string) error {
+	if key == "" {
+		return rdb.Del(ctx, channelMagnetStatsKeyKey(slug)).Err()
+	}
+	return rdb.Set(ctx, channelMagnetStatsKeyKey(slug), key, 0).Err()
 }
 
 // GlobalAdsConfig stored at global:ads:config

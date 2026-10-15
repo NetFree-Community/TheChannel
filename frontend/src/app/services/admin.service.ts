@@ -104,6 +104,22 @@ export class AdminService {
     return firstValueFrom(this.http.post<ResponseResult>(`/api/channel/${this.slug}/admin/settings/set`, settings));
   }
 
+  // The channel's own Magnet numbers. Every one of these answers 403
+  // magnet_locked on a channel locked to the platform's Magnet settings, and
+  // the key itself never comes back — only whether one is stored.
+
+  getMagnetStatsKey(): Promise<{ statsKeySet: boolean }> {
+    return firstValueFrom(this.http.get<{ statsKeySet: boolean }>(`/api/channel/${this.slug}/admin/magnet/stats-key`));
+  }
+
+  setMagnetStatsKey(body: { statsKey?: string; clearStatsKey?: boolean }): Promise<{ statsKeySet: boolean }> {
+    return firstValueFrom(this.http.post<{ statsKeySet: boolean }>(`/api/channel/${this.slug}/admin/magnet/stats-key`, body));
+  }
+
+  getMagnetStats(): Promise<unknown> {
+    return firstValueFrom(this.http.get<unknown>(`/api/channel/${this.slug}/admin/magnet/stats`));
+  }
+
   getReports(status: string): Promise<Reports> {
     return firstValueFrom(this.http.get<Reports>(`/api/channel/${this.slug}/admin/reports/get`, {
       params: {

@@ -1,6 +1,6 @@
 import { Component, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import {
   NbButtonModule,
@@ -150,8 +150,14 @@ export class SuperAdminPanelComponent {
     private router: Router,
     private toastr: NbToastrService,
     private titleService: Title,
+    route: ActivatedRoute,
   ) {
     this.titleService.setTitle('ניהול מערכת · הערוץ');
+    // ?view=<section> opens a top-level section directly: a locked channel's
+    // magnet tab sends the super admin to the platform's statistics this way.
+    const view = route.snapshot.queryParamMap.get('view');
+    const section = this.sections.find(s => s.id === view);
+    if (section) this.selectedView = section.id;
   }
 
   get isChannelView(): boolean {
