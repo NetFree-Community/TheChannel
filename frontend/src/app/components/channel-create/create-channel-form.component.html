@@ -36,6 +36,22 @@
         }
       </div>
 
+      <!-- The welcome mail goes out from a sender the inbox has never seen, so
+           Gmail tends to file the first one under spam. Saying so here, while
+           the owner is still looking, is what gets it marked "not spam" once —
+           after that every later mail (support replies) lands in the inbox. -->
+      <div class="created__mail" role="note">
+        <nb-icon aria-hidden="true" icon="email-outline" class="created__mail-icon"></nb-icon>
+        <div>
+          <span class="created__mail-title">שלחנו לכם מייל עם הקישור לערוץ ולניהול שלו</span>
+          <span class="created__mail-text">
+            המייל נשלח מ"מערכת הערוצים" (<bdi dir="ltr">channels&#64;magnetads.co.il</bdi>) לכתובת שאיתה נכנסתם.
+            לא מוצאים אותו? חפשו בתיקיית <strong>הספאם</strong> (דואר זבל) וסמנו אותו <strong>"לא ספאם"</strong>,
+            כדי שגם המיילים הבאים מאיתנו, כמו תשובות לפניות, יגיעו לתיבה הרגילה.
+          </span>
+        </div>
+      </div>
+
       <button nbButton status="primary" size="large" fullWidth type="button"
               class="created__enter" [disabled]="entering" (click)="enterChannel()">
         @if (entering) {
