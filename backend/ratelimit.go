@@ -76,6 +76,9 @@ func init() {
 			// unbounded distinct keys to. Leaving it out of the sweep made it
 			// the only limiter map that grew for the process lifetime.
 			sweep(&supportSubmitLimiters)
+			// Keyed by the From of each inbound mail (support_inbound.go):
+			// as many distinct keys as there are senders.
+			sweep(&inboundMailLimiters)
 			sweep(&loginLimiters)
 			sweep(&importAuthLimiters)
 			sweep(&subscribeLimiters)

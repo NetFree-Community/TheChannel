@@ -194,6 +194,10 @@ func main() {
 	r.Post("/api/support/tickets/{id}/reply", replySupportTicket)
 	r.With(checkLogin).Get("/api/support/my-tickets", listMySupportTickets)
 
+	// Mail to the channels mailbox, handed over by Magnet. Server to server,
+	// guarded by the shared secret alone; see support_inbound.go.
+	r.Post("/api/integrations/magnet/inbound-mail", magnetInboundMail)
+
 	// Per-channel API import (with API key, no channel middleware needed - slug from URL)
 	r.Post("/api/channel/{slug}/import/post", addNewPost)
 
