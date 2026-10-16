@@ -64,6 +64,17 @@
   @if (!loading) {
     <nb-card class="info-card">
       <nb-card-header class="seo-header">
+        <nb-icon icon="shield-outline" aria-hidden="true"></nb-icon>
+        <h2>פתיחה בנטפרי</h2>
+      </nb-card-header>
+      <nb-card-body>
+        <app-netfree-request [slug]="channel.id || ''" [channelName]="channel.name || ''"
+                             [channelDescription]="channel.description || ''" [collapsed]="true"></app-netfree-request>
+      </nb-card-body>
+    </nb-card>
+
+    <nb-card class="info-card">
+      <nb-card-header class="seo-header">
         <nb-icon icon="search-outline" aria-hidden="true"></nb-icon>
         <h2>מנועי חיפוש</h2>
       </nb-card-header>

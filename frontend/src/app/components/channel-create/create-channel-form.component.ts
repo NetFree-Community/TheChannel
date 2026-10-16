@@ -28,6 +28,7 @@ import {
   slugifyChannelName,
 } from '../../services/channel.service';
 import { ShareService } from '../../services/share.service';
+import { NetfreeRequestComponent } from '../shared/netfree-request.component';
 import { MyChannelsService } from '../../services/my-channels.service';
 
 /** `unknown`: the live check could not run (throttled, offline); the server decides on submit. */
@@ -61,6 +62,7 @@ type FormErrorKind = '' | 'limit' | 'auth';
     NbFormFieldModule,
     NbIconModule,
     NbAlertModule,
+    NetfreeRequestComponent,
   ],
   templateUrl: './create-channel-form.component.html',
   styleUrl: './create-channel-form.component.scss',

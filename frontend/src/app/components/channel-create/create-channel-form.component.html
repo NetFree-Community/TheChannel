@@ -36,6 +36,11 @@
         }
       </div>
 
+      <!-- A new channel is blocked in NetFree until they approve it; the
+           request has to go out before the link reaches the audience. -->
+      <app-netfree-request class="created__netfree" [slug]="createdSlug" [channelName]="createdName"
+                           [channelDescription]="description" [collapsed]="true"></app-netfree-request>
+
       <!-- The welcome mail goes out from a sender the inbox has never seen, so
            Gmail tends to file the first one under spam. Saying so here, while
            the owner is still looking, is what gets it marked "not spam" once —
