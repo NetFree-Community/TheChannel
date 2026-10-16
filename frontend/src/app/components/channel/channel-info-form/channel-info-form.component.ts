@@ -10,6 +10,7 @@ import { AdminService } from '../../../services/admin.service';
 import { ChatService, Attachment, ChatFile } from '../../../services/chat.service';
 import { MyChannelsService } from '../../../services/my-channels.service';
 import { ChannelSeoFieldsComponent } from '../../shared/channel-seo-fields.component';
+import { NetfreeRequestComponent } from '../../shared/netfree-request.component';
 
 /**
  * "פרטי הערוץ": the name, description, logo and contact link readers see in
@@ -27,6 +28,7 @@ import { ChannelSeoFieldsComponent } from '../../shared/channel-seo-fields.compo
     NbIconModule,
     NbTooltipModule,
     ChannelSeoFieldsComponent,
+    NetfreeRequestComponent,
   ],
   templateUrl: './channel-info-form.component.html',
   styleUrl: './channel-info-form.component.scss'
