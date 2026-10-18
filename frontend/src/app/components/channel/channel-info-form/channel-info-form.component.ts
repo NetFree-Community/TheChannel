@@ -68,6 +68,10 @@ export class ChannelInfoFormComponent implements OnInit {
     return (this.channel.name || '?').trim().charAt(0).toUpperCase();
   }
 
+  /** The NetFree and search-engine cards start folded: most owners use them once. */
+  netfreeOpen = false;
+  seoOpen = false;
+
   get dirty(): boolean {
     const a = this.channel, b = this.saved;
     return (a.name ?? '') !== (b.name ?? '')

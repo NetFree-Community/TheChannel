@@ -112,6 +112,42 @@
   @include admin-card-header;
 }
 
+.seo-header--fold {
+  padding: 0 !important;
+}
+
+// The whole header is the toggle; the state on the end says what is inside.
+.fold {
+  @include admin-card-header;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--background-basic-color-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: -2px;
+  }
+}
+
+.fold__state {
+  margin-inline-start: auto;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-hint-color);
+}
+
+.fold .fold__chev {
+  color: var(--text-hint-color);
+}
+
 .save-bar {
   @include admin-save-bar;
 }

@@ -33,6 +33,10 @@
 
 @mixin admin-lead {
   margin: 0 0 1rem;
+  // The tabs mark this text class="lead", which Bootstrap also styles
+  // (1.25rem, weight 300): reset both so it reads as a quiet intro line.
+  font-size: 0.9rem;
+  font-weight: 400;
   color: var(--text-hint-color);
   line-height: 1.6;
 }
