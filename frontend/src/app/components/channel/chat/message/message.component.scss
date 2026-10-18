@@ -15,11 +15,15 @@
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  border-radius: var(--card-border-radius);
-  border: 1px solid var(--border-basic-color-3);
+  border-radius: 1.1rem;
+  border: 1px solid var(--border-basic-color-2);
   background: var(--background-basic-color-1);
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: var(--card-shadow);
+  }
 }
 
 .msg--dim {
@@ -35,8 +39,8 @@
 .msg__head {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.75rem 1rem 0;
+  gap: 0.55rem;
+  padding: 0.6rem 0.9rem 0;
 }
 
 .msg__avatar {
@@ -44,14 +48,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: 50%;
   overflow: hidden;
   background: var(--color-primary-100);
   color: var(--color-primary-700);
   font-weight: 800;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 
   img {
     display: block;
@@ -61,11 +65,14 @@
   }
 }
 
+// Name and time on one line; the tags wrap after them on a narrow screen.
 .msg__who {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.5rem;
   line-height: 1.3;
 }
 
@@ -83,7 +90,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-hint-color);
 }
 
@@ -120,16 +127,54 @@
   align-items: center;
   justify-content: center;
   margin-inline-end: -0.5rem;
+  // Taller than the name line; the negative block margin keeps it from
+  // pushing the text down.
+  margin-block: -0.5rem;
+  color: var(--text-hint-color) !important;
+  transition: opacity 0.15s ease;
 
   nb-icon {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
+  }
+}
+
+// With a mouse the ⋮ appears on hover or keyboard focus; on a touch screen
+// (no hover) it stays visible, since there is nothing to hover.
+@media (hover: hover) {
+  .msg__kebab {
+    opacity: 0;
+  }
+
+  .msg:hover .msg__kebab,
+  .msg:focus-within .msg__kebab,
+  .msg__kebab--open {
+    opacity: 1;
+  }
+}
+
+/* ---------- a follow-up by the same author ---------- */
+
+// Each flash stays its own card with its time on top; only the repeated
+// avatar and name go. The name stays in the DOM for screen readers.
+.msg--cont {
+  .msg__avatar {
+    display: none;
+  }
+
+  .msg__author {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 
 /* ---------- body ---------- */
 
 .msg__body {
-  padding: 0.5rem 1rem 0.25rem;
+  padding: 0.35rem 0.9rem 0.45rem;
   min-width: 0;
   overflow-wrap: anywhere;
 }

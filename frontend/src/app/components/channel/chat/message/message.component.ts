@@ -71,6 +71,13 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input()
   indexId: number | undefined;
 
+  /** Follows a message by the same author: the card drops the repeated name and avatar, keeping its time on top. */
+  @Input()
+  continued: boolean = false;
+
+  /** The ⋮ menu is open; keeps the button visible while focus is in the overlay. */
+  actionsOpen = false;
+
   @ViewChild('actionsMenu') actionsMenu?: NbPopoverDirective;
   @ViewChild('media') mediaContainer!: ElementRef;
 
@@ -250,6 +257,7 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
    * the user has already clicked somewhere else, which must not be undone.
    */
   onActionsState(shown: boolean) {
+    this.actionsOpen = shown;
     if (shown) {
       setTimeout(() => document.querySelector<HTMLElement>('.msg-actions .msg-actions__item')?.focus());
       return;

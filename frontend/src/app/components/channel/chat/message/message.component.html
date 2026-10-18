@@ -1,5 +1,5 @@
 @if (message && message.text) {
-<article class="msg" [class.msg--dim]="message.deleted || isSchedulingMessage" [class.msg--ad]="message.is_ads"
+<article class="msg" [class.msg--cont]="continued" [class.msg--dim]="message.deleted || isSchedulingMessage" [class.msg--ad]="message.is_ads"
          (keydown.escape)="onEscape()">
   <header class="msg__head">
     <span class="msg__avatar" aria-hidden="true">
@@ -38,7 +38,8 @@
       <button nbButton ghost shape="round" status="basic" type="button" class="msg__kebab"
               [nbPopover]="actionsTpl" nbPopoverTrigger="click" nbPopoverPlacement="bottom"
               (nbPopoverShowStateChange)="onActionsState($event.isShown)"
-              #actionsMenu="nbPopover" aria-label="פעולות על ההודעה" aria-haspopup="menu">
+              #actionsMenu="nbPopover" aria-label="פעולות על ההודעה" aria-haspopup="menu"
+              [class.msg__kebab--open]="actionsOpen">
         <nb-icon icon="more-vertical-outline"></nb-icon>
       </button>
     }
