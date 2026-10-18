@@ -1,5 +1,5 @@
 @if (message && message.text) {
-<article class="msg" [class.msg--cont]="continued" [class.msg--followed]="followed" [class.msg--dim]="message.deleted || isSchedulingMessage" [class.msg--ad]="message.is_ads"
+<article class="msg" [class.msg--cont]="continued" [class.msg--dim]="message.deleted || isSchedulingMessage" [class.msg--ad]="message.is_ads"
          (keydown.escape)="onEscape()">
   <header class="msg__head">
     <span class="msg__avatar" aria-hidden="true">
@@ -48,15 +48,6 @@
   <div class="msg__body" #media>
     <markdown [data]="message.text" [disableSanitizer]="true" (click)="viewLargeImage($event)">
     </markdown>
-    <!-- A continued message has no header line, so its time sits small at the end of the text. -->
-    @if (continued) {
-      <span class="msg__stamp">
-        @if (isEdited(message)) {
-          <span [nbTooltip]="'נערכה ' + (message.last_edit | messageTime)">נערכה ·</span>
-        }
-        <time [attr.datetime]="isoTime" [nbTooltip]="fullTime">{{ message.timestamp | messageTime }}</time>
-      </span>
-    }
   </div>
 
   @if (message.views || canOfferReactions || (message.reactions && chatService.reactionsEnabled)) {

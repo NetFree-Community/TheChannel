@@ -164,13 +164,6 @@
   margin-bottom: 1rem;
 }
 
-// A follow-up from the same author sits close under the message above it.
-// The list is column-reverse, so the gap above an item is its upper
-// neighbour's margin-bottom; a negative top margin takes most of it back.
-.feed__item--cont {
-  margin-top: -0.8rem;
-}
-
 .feed__item--center {
   align-items: center;
 }

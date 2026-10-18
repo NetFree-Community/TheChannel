@@ -71,13 +71,9 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input()
   indexId: number | undefined;
 
-  /** Follows a message by the same author: the feed drops the repeated name and avatar. */
+  /** Follows a message by the same author: the card drops the repeated name and avatar, keeping its time on top. */
   @Input()
   continued: boolean = false;
-
-  /** The next message continues this one: the two cards join into one group. */
-  @Input()
-  followed: boolean = false;
 
   /** The ⋮ menu is open; keeps the button visible while focus is in the overlay. */
   actionsOpen = false;

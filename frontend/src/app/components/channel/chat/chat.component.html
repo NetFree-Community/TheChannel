@@ -86,9 +86,7 @@
 
     @for (message of messages; track message) {
     @let continued = continuedIds.has(message.id!) && message.id !== lastReadMessageId + 1;
-    @let below = messages[$index - 1];
-    @let followed = !!below && continuedIds.has(below.id!) && below.id !== lastReadMessageId + 1;
-    <nb-list-item class="feed__item" [class.feed__item--cont]="continued">
+    <nb-list-item class="feed__item">
       @if (message.id !== undefined && dayLabels.has(message.id)) {
       <div class="day-separator" role="separator" [attr.aria-label]="dayLabels.get(message.id)">
         <span class="day-separator__pill">{{ dayLabels.get(message.id) }}</span>
@@ -106,7 +104,7 @@
         <div class="last-read-indicator__line"></div>
       </div>
       }
-      <app-message [message]="message" [id]="message.id" [continued]="continued" [followed]="followed"></app-message>
+      <app-message [message]="message" [id]="message.id" [continued]="continued"></app-message>
       @if (adSlotsAfter.has(message.id!)) {
       <div class="magnet-ad-item">
         <app-magnet-ad-slot [slotKey]="'ad-after-' + message.id"></app-magnet-ad-slot>

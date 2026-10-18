@@ -127,6 +127,9 @@
   align-items: center;
   justify-content: center;
   margin-inline-end: -0.5rem;
+  // Taller than the name line; the negative block margin keeps it from
+  // pushing the text down.
+  margin-block: -0.5rem;
   color: var(--text-hint-color) !important;
   transition: opacity 0.15s ease;
 
@@ -137,12 +140,6 @@
 
 // With a mouse the ⋮ appears on hover or keyboard focus; on a touch screen
 // (no hover) it stays visible, since there is nothing to hover.
-@media (hover: none) {
-  .msg--cont .msg__kebab {
-    opacity: 0.6;
-  }
-}
-
 @media (hover: hover) {
   .msg__kebab {
     opacity: 0;
@@ -157,22 +154,14 @@
 
 /* ---------- a follow-up by the same author ---------- */
 
-// No avatar or name line: the ⋮ floats in the corner and the time moves to
-// the end of the text. The name stays in the DOM for screen readers.
+// Each flash stays its own card with its time on top; only the repeated
+// avatar and name go. The name stays in the DOM for screen readers.
 .msg--cont {
-  .msg__head {
-    position: absolute;
-    top: 0.2rem;
-    inset-inline-end: 0.5rem;
-    z-index: 1;
-    padding: 0;
-  }
-
   .msg__avatar {
     display: none;
   }
 
-  .msg__who {
+  .msg__author {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -180,35 +169,6 @@
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
-
-  .msg__kebab {
-    margin-inline-end: 0;
-  }
-
-  .msg__body {
-    padding-top: 0.55rem;
-    padding-bottom: 0.35rem;
-    padding-inline-end: 2.5rem;
-  }
-}
-
-// Cards of one group touch: the corners between them are nearly square.
-.msg--cont {
-  border-start-start-radius: 0.35rem;
-  border-start-end-radius: 0.35rem;
-}
-
-.msg--followed {
-  border-end-start-radius: 0.35rem;
-  border-end-end-radius: 0.35rem;
-}
-
-.msg__stamp {
-  display: block;
-  margin-top: -0.15rem;
-  text-align: end;
-  font-size: 0.7rem;
-  color: var(--text-hint-color);
 }
 
 /* ---------- body ---------- */
