@@ -84,58 +84,34 @@
       </div>
     }
 
-    <div class="composer__toolbar" role="toolbar" aria-label="עיצוב ההודעה">
-      <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('bold')"
-              aria-label="הדגשה" nbTooltip="הדגשה">
-        <ng-icon name="heroBold" class="toolbar-icon"></ng-icon>
-      </button>
-      <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('italic')"
-              aria-label="נטוי" nbTooltip="נטוי">
-        <ng-icon name="heroItalic" class="toolbar-icon"></ng-icon>
-      </button>
-      <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('underline')"
-              aria-label="קו תחתון" nbTooltip="קו תחתון">
-        <ng-icon name="heroUnderline" class="toolbar-icon"></ng-icon>
-      </button>
-      <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('code')"
-              aria-label="קטע קוד" nbTooltip="קטע קוד">
-        <nb-icon icon="code-outline"></nb-icon>
-      </button>
-      <span class="tb-sep" aria-hidden="true"></span>
-      @if (chatService.fileUploadsEnabled) {
-        <button nbButton ghost shape="round" type="button" class="tb" (click)="fileInput.click()"
-                aria-label="צירוף קובץ — תמונה, סרטון, הקלטה או מסמך" nbTooltip="צירוף קובץ">
-          <nb-icon icon="attach-2-outline"></nb-icon>
+    <!-- The formatting buttons stay one tap away behind "Aa", so the resting composer is just a text box. -->
+    @if (showFormatting) {
+      <div class="composer__format" role="toolbar" aria-label="עיצוב הטקסט">
+        <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('bold')"
+                aria-label="הדגשה" nbTooltip="הדגשה">
+          <ng-icon name="heroBold" class="toolbar-icon"></ng-icon>
         </button>
-        <input type="file" #fileInput multiple (change)="onFileSelected($event)" hidden aria-hidden="true">
-      }
-      <button nbButton ghost shape="round" type="button" class="tb tb--help" [nbPopover]="helpTpl" nbPopoverTrigger="click"
-              nbPopoverPlacement="top" aria-label="עזרה לעיצוב הטקסט" aria-haspopup="dialog" #helpPop="nbPopover"
-              [attr.aria-expanded]="helpShown" (nbPopoverShowStateChange)="onHelpState($event.isShown)"
-              (keydown.escape)="helpPop.hide()">
-        <nb-icon icon="question-mark-circle-outline"></nb-icon>
-      </button>
-      <button nbButton ghost shape="round" type="button" class="tb tb--text" [class.tb--on]="showMarkdownPreview"
-              (click)="showMarkdownPreview = !showMarkdownPreview" [disabled]="!input"
-              [attr.aria-pressed]="showMarkdownPreview" aria-label="תצוגה מקדימה"
-              [nbTooltip]="showMarkdownPreview ? 'חזרה לכתיבה' : 'איך ההודעה תיראה לקוראים'">
-        <nb-icon [icon]="showMarkdownPreview ? 'eye-off-outline' : 'eye-outline'"></nb-icon>
-        <span class="tb__label">תצוגה מקדימה</span>
-      </button>
-      <span class="tb-sep" aria-hidden="true"></span>
-      <button nbButton ghost shape="round" type="button" class="tb" [class.tb--on]="isAds"
-              (click)="isAds = !isAds" [attr.aria-pressed]="isAds"
-              [attr.aria-label]="isAds ? 'ההודעה מסומנת כפרסומת — לחיצה מבטלת' : 'סימון ההודעה כפרסומת'"
-              [nbTooltip]="isAds ? 'מסומנת כפרסומת (לחיצה מבטלת)' : 'סימון ההודעה כפרסומת'">
-        <nb-icon icon="pricetags-outline"></nb-icon>
-      </button>
-      <span class="tb-spacer"></span>
-      <nb-toggle class="tb-toggle" labelPosition="start" [checked]="enterSendsMessage"
-                 (checkedChange)="setEnterSendsMessage($event)"
-                 nbTooltip="כשמסומן: Enter שולח את ההודעה ו-Ctrl+Enter יורד שורה. כשלא: Enter יורד שורה">
-        <span class="tb__label">Enter שולח</span>
-      </nb-toggle>
-    </div>
+        <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('italic')"
+                aria-label="נטוי" nbTooltip="נטוי">
+          <ng-icon name="heroItalic" class="toolbar-icon"></ng-icon>
+        </button>
+        <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('underline')"
+                aria-label="קו תחתון" nbTooltip="קו תחתון">
+          <ng-icon name="heroUnderline" class="toolbar-icon"></ng-icon>
+        </button>
+        <button nbButton ghost shape="round" type="button" class="tb" (click)="applyFormat('code')"
+                aria-label="קטע קוד" nbTooltip="קטע קוד">
+          <nb-icon icon="code-outline"></nb-icon>
+        </button>
+        <span class="tb-sep" aria-hidden="true"></span>
+        <button nbButton ghost shape="round" type="button" class="tb tb--help" [nbPopover]="helpTpl" nbPopoverTrigger="click"
+                nbPopoverPlacement="top" aria-label="עזרה לעיצוב הטקסט" aria-haspopup="dialog" #helpPop="nbPopover"
+                [attr.aria-expanded]="helpShown" (nbPopoverShowStateChange)="onHelpState($event.isShown)"
+                (keydown.escape)="helpPop.hide()">
+          <nb-icon icon="question-mark-circle-outline"></nb-icon>
+        </button>
+      </div>
+    }
 
     <div class="composer__input">
       @if (showMarkdownPreview) {
@@ -152,27 +128,62 @@
                   (keydown)="onKeydown($event)" (paste)="onPaste($event)"></textarea>
       }
 
-      <div class="composer__send">
-        @if (message?.id != undefined ? !!schedulingMessage : chatService.scheduledMessagesEnabled) {
-          <button nbButton ghost shape="round" type="button" class="tb" [class.tb--on]="!!schedulingMessage"
-                  (click)="openTimePicker()"
-                  [attr.aria-label]="schedulingMessage ? 'שינוי מועד הפרסום' : 'תזמון — פרסום במועד שתבחרו'"
-                  [nbTooltip]="schedulingMessage ? 'שינוי מועד הפרסום' : 'תזמון הודעה'">
-            <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
-          </button>
+      <button nbButton status="primary" shape="round" type="button" class="composer__send-btn"
+              (click)="sendMessage()" [disabled]="!canSend"
+              [attr.aria-label]="message?.id != undefined && !schedulingMessage ? 'שמירת העריכה' : schedulingMessage ? 'תזמון ההודעה' : 'שליחת ההודעה'"
+              [nbTooltip]="message?.id != undefined && !schedulingMessage ? 'שמירה' : schedulingMessage ? 'תזמון' : 'שליחה'">
+        @if (isSending) {
+          <span class="composer__spin" aria-hidden="true"></span>
+        } @else {
+          <nb-icon [icon]="message?.id != undefined && !schedulingMessage ? 'checkmark-outline' : 'paper-plane-outline'"
+                   class="composer__send-icon"></nb-icon>
         }
-        <button nbButton status="primary" shape="round" type="button" class="composer__send-btn"
-                (click)="sendMessage()" [disabled]="!canSend"
-                [attr.aria-label]="message?.id != undefined && !schedulingMessage ? 'שמירת העריכה' : schedulingMessage ? 'תזמון ההודעה' : 'שליחת ההודעה'"
-                [nbTooltip]="message?.id != undefined && !schedulingMessage ? 'שמירה' : schedulingMessage ? 'תזמון' : 'שליחה'">
-          @if (isSending) {
-            <span class="composer__spin" aria-hidden="true"></span>
-          } @else {
-            <nb-icon [icon]="message?.id != undefined && !schedulingMessage ? 'checkmark-outline' : 'paper-plane-outline'"
-                     class="composer__send-icon"></nb-icon>
-          }
+      </button>
+    </div>
+
+    <!-- One quiet row of small icons under the text; every option the old toolbar had is still here. -->
+    <div class="composer__tools" role="toolbar" aria-label="כלי ההודעה">
+      <button nbButton ghost shape="round" type="button" class="tb tb--fmt" [class.tb--on]="showFormatting"
+              (click)="toggleFormatting()" [attr.aria-pressed]="showFormatting" aria-label="כלי עיצוב הטקסט"
+              [nbTooltip]="showFormatting ? 'הסתרת כלי העיצוב' : 'עיצוב טקסט: הדגשה, נטוי, קו תחתון וקוד'">
+        <span class="tb__aa" aria-hidden="true">Aa</span>
+      </button>
+      @if (chatService.fileUploadsEnabled) {
+        <button nbButton ghost shape="round" type="button" class="tb" (click)="fileInput.click()"
+                aria-label="צירוף קובץ — תמונה, סרטון, הקלטה או מסמך" nbTooltip="צירוף קובץ">
+          <nb-icon icon="attach-2-outline"></nb-icon>
         </button>
-      </div>
+        <input type="file" #fileInput multiple (change)="onFileSelected($event)" hidden aria-hidden="true">
+      }
+      @if (message?.id != undefined ? !!schedulingMessage : chatService.scheduledMessagesEnabled) {
+        <button nbButton ghost shape="round" type="button" class="tb" [class.tb--on]="!!schedulingMessage"
+                (click)="openTimePicker()"
+                [attr.aria-label]="schedulingMessage ? 'שינוי מועד הפרסום' : 'תזמון — פרסום במועד שתבחרו'"
+                [nbTooltip]="schedulingMessage ? 'שינוי מועד הפרסום' : 'תזמון הודעה'">
+          <nb-icon [icon]="schedulingMessage ? 'clock' : 'clock-outline'"></nb-icon>
+        </button>
+      }
+      <button nbButton ghost shape="round" type="button" class="tb" [class.tb--on]="showMarkdownPreview"
+              (click)="showMarkdownPreview = !showMarkdownPreview" [disabled]="!input"
+              [attr.aria-pressed]="showMarkdownPreview" aria-label="תצוגה מקדימה"
+              [nbTooltip]="showMarkdownPreview ? 'חזרה לכתיבה' : 'תצוגה מקדימה: איך ההודעה תיראה לקוראים'">
+        <nb-icon [icon]="showMarkdownPreview ? 'eye-off-outline' : 'eye-outline'"></nb-icon>
+      </button>
+      <button nbButton ghost shape="round" type="button" class="tb" [class.tb--on]="isAds"
+              (click)="isAds = !isAds" [attr.aria-pressed]="isAds"
+              [attr.aria-label]="isAds ? 'ההודעה מסומנת כפרסומת — לחיצה מבטלת' : 'סימון ההודעה כפרסומת'"
+              [nbTooltip]="isAds ? 'מסומנת כפרסומת (לחיצה מבטלת)' : 'סימון ההודעה כפרסומת'">
+        <nb-icon icon="pricetags-outline"></nb-icon>
+      </button>
+      <span class="tb-spacer"></span>
+      <!-- The Enter preference, shrunk from a full toggle to a small chip that says what Enter does now. -->
+      <button type="button" class="enter-chip" [class.enter-chip--on]="enterSendsMessage"
+              (click)="setEnterSendsMessage(!enterSendsMessage)" [attr.aria-pressed]="enterSendsMessage"
+              aria-label="Enter שולח את ההודעה"
+              [nbTooltip]="enterSendsMessage ? 'Enter שולח, Ctrl+Enter יורד שורה. לחיצה: Enter יוריד שורה' : 'Enter יורד שורה. לחיצה: Enter ישלח את ההודעה'">
+        <kbd class="enter-chip__key" aria-hidden="true">↵</kbd>
+        <span>{{ enterSendsMessage ? 'שולח' : 'שורה חדשה' }}</span>
+      </button>
     </div>
 
     @if (input.length >= counterFrom) {
