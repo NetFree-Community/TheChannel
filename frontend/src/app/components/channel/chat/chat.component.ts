@@ -68,6 +68,8 @@ export class ChatComponent implements OnInit, OnDestroy {
    * Recomputed with the ad slots whenever the list changes.
    */
   dayLabels: Map<number, string> = new Map();
+  /** Messages that follow their upper neighbour closely enough to drop the repeated header. */
+  continuedIds: Set<number> = new Set();
   scheduledMessages!: ChatMessage[];
   hideScheduledMessages: boolean = false;
   userInfo?: User;
@@ -193,6 +195,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   onVisibilityChange() {
     if (document.visibilityState === 'visible' && this.dayLabelsDay !== this.todayKey()) {
       this.dayLabels = this.computeDayLabels(this.messages);
+      this.continuedIds = this.computeContinued(this.messages);
     }
   }
 
@@ -529,6 +532,7 @@ export class ChatComponent implements OnInit, OnDestroy {
       this.adSlotsAfter = new Set();
     }
     this.dayLabels = this.computeDayLabels(this.messages);
+    this.continuedIds = this.computeContinued(this.messages);
   }
 
   /**
@@ -566,6 +570,28 @@ export class ChatComponent implements OnInit, OnDestroy {
       labels.set(m.id, label);
     }
     return labels;
+  }
+
+  /**
+   * A message continues the one above it (index i+1, see computeDayLabels)
+   * when the same author posted it within a few minutes, on the same day, with
+   * no ad slot between them. Ads and deleted messages keep their full header:
+   * it carries their label and the restore button.
+   */
+  private computeContinued(messages: ChatMessage[]): Set<number> {
+    const continued = new Set<number>();
+    const windowMs = 10 * 60 * 1000;
+    for (let i = 0; i < messages.length - 1; i++) {
+      const m = messages[i];
+      const above = messages[i + 1];
+      if (m.id === undefined || above.id === undefined) continue;
+      if (this.dayLabels.has(m.id) || this.adSlotsAfter.has(above.id)) continue;
+      if (m.author !== above.author || m.is_ads || above.is_ads || m.deleted || above.deleted) continue;
+      const gap = new Date(m.timestamp as any).getTime() - new Date(above.timestamp as any).getTime();
+      if (!(gap >= 0 && gap <= windowMs)) continue;
+      continued.add(m.id);
+    }
+    return continued;
   }
 
   async keepAliveSSE() {
