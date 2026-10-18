@@ -79,9 +79,67 @@
   width: 100%;
 }
 
+.kpi-notes {
+  display: none;
+}
+
+// A phone keeps the three numbers side by side in small tiles.
 @media (max-width: 767px) {
   .kpis {
-    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .kpi nb-card-body {
+    align-items: center;
+    padding: 0.75rem 0.4rem;
+    text-align: center;
+  }
+
+  .kpi__icon {
+    font-size: 1.2rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .kpi__value {
+    font-size: 1.5rem;
+  }
+
+  .kpi__label {
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .kpi__hint {
+    display: none;
+  }
+
+  .kpi-notes {
+    display: block;
+    margin-top: -0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-hint-color);
+
+    summary {
+      cursor: pointer;
+      padding: 0.35rem 0.25rem;
+      font-weight: 600;
+      color: var(--color-primary-600);
+    }
+
+    dl {
+      margin: 0.25rem 0 0;
+      padding: 0 0.25rem;
+      line-height: 1.5;
+    }
+
+    dt {
+      font-weight: 700;
+      color: var(--text-basic-color);
+    }
+
+    dd {
+      margin: 0 0 0.5rem;
+    }
   }
 
   .chart {

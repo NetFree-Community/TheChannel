@@ -46,6 +46,22 @@
         </nb-card-body>
       </nb-card>
     </div>
+    <!-- On a phone the tiles drop their explanations; they live here, one tap away. -->
+    <details class="kpi-notes">
+      <summary>מה כל מספר אומר?</summary>
+      <dl>
+        <dt>משתתפים</dt>
+        <dd>קוראים שפתחו את הערוץ כשהם מחוברים לגוגל, אי פעם — המספר שמוצג בכותרת הערוץ. אורחים לא נספרים.</dd>
+        <dt>מחוברים עכשיו</dt>
+        <dd>חלונות של הערוץ שפתוחים ברגע זה ומקבלים עדכונים חיים — כולל אורחים.</dd>
+        <dt>שיא מחוברים בו-זמנית</dt>
+        @if (s.peakSSEConnections && s.peakSSEConnections.value) {
+          <dd>נרשם ב-{{ s.peakSSEConnections.timestamp | messageTime }}.</dd>
+        } @else {
+          <dd>עדיין לא נרשם שיא — הוא יופיע עם הכניסה הראשונה.</dd>
+        }
+      </dl>
+    </details>
 
     <nb-card>
       <nb-card-header class="card-head">

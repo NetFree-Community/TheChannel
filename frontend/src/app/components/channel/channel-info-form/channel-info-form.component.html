@@ -63,22 +63,32 @@
 
   @if (!loading) {
     <nb-card class="info-card">
-      <nb-card-header class="seo-header">
-        <nb-icon icon="shield-outline" aria-hidden="true"></nb-icon>
-        <h2>פתיחה בנטפרי</h2>
+      <nb-card-header class="seo-header seo-header--fold">
+        <button type="button" class="fold" (click)="netfreeOpen = !netfreeOpen" [attr.aria-expanded]="netfreeOpen"
+                aria-controls="channel-netfree-body">
+          <nb-icon icon="shield-outline" aria-hidden="true"></nb-icon>
+          <h2>פתיחה בנטפרי</h2>
+          <span class="fold__state">נוסח פנייה מוכן</span>
+          <nb-icon [icon]="netfreeOpen ? 'chevron-up-outline' : 'chevron-down-outline'" class="fold__chev" aria-hidden="true"></nb-icon>
+        </button>
       </nb-card-header>
-      <nb-card-body>
+      <nb-card-body id="channel-netfree-body" [hidden]="!netfreeOpen">
         <app-netfree-request [slug]="channel.id || ''" [channelName]="channel.name || ''"
                              [channelDescription]="channel.description || ''" [collapsed]="true"></app-netfree-request>
       </nb-card-body>
     </nb-card>
 
     <nb-card class="info-card">
-      <nb-card-header class="seo-header">
-        <nb-icon icon="search-outline" aria-hidden="true"></nb-icon>
-        <h2>מנועי חיפוש</h2>
+      <nb-card-header class="seo-header seo-header--fold">
+        <button type="button" class="fold" (click)="seoOpen = !seoOpen" [attr.aria-expanded]="seoOpen"
+                aria-controls="channel-seo-body">
+          <nb-icon icon="search-outline" aria-hidden="true"></nb-icon>
+          <h2>מנועי חיפוש</h2>
+          <span class="fold__state">{{ channel.seo_hidden ? 'מוסתר מגוגל' : 'מוצג בגוגל' }}</span>
+          <nb-icon [icon]="seoOpen ? 'chevron-up-outline' : 'chevron-down-outline'" class="fold__chev" aria-hidden="true"></nb-icon>
+        </button>
       </nb-card-header>
-      <nb-card-body>
+      <nb-card-body id="channel-seo-body" [hidden]="!seoOpen">
         <app-channel-seo-fields
           idPrefix="channel-seo"
           [slug]="channel.id || ''"
