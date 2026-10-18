@@ -11,6 +11,15 @@
   color: var(--color-basic-100);
 }
 
+// Nebular's typography gives headings and paragraphs their own dark text
+// colour, which beat the white inherited from .hero: the title and lead were
+// near-black on the gradient.
+.hero__title,
+.hero__lead,
+.hero__note {
+  color: inherit;
+}
+
 .hero__inner {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
