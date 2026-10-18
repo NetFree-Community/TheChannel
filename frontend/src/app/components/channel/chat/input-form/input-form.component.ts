@@ -13,7 +13,6 @@ import {
   NbPopoverDirective,
   NbPopoverModule,
   NbToastrService,
-  NbToggleModule,
   NbTooltipModule
 } from "@nebular/theme";
 import { MarkdownComponent } from "ngx-markdown";
@@ -28,6 +27,8 @@ import { MessageTimePipe } from '../../../../pipes/message-time.pipe';
 // the channel settings endpoint it used to arrive through is owner-only, so a
 // writer or moderator could never receive it.
 const ENTER_SENDS_MESSAGE_KEY = 'enterSendsMessage';
+// Whether the writer keeps the formatting row open (same per-browser preference).
+const SHOW_FORMATTING_KEY = 'composerShowFormatting';
 
 @Component({
   selector: 'app-input-form',
@@ -36,7 +37,6 @@ const ENTER_SENDS_MESSAGE_KEY = 'enterSendsMessage';
     NbInputModule,
     NbIconModule,
     NbButtonModule,
-    NbToggleModule,
     MarkdownComponent,
     NbAlertModule,
     NgIconsModule,
@@ -67,6 +67,7 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
   showMarkdownPreview: boolean = false;
   hasScrollbar: boolean = false;
   enterSendsMessage: boolean = true;
+  showFormatting: boolean = false;
   private subscription!: Subscription;
 
   @ViewChild('inputTextArea') inputTextArea!: ElementRef<HTMLTextAreaElement>;
@@ -119,6 +120,8 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit() {
     // On by default; only an explicit opt-out ('0') saved by the toggle turns it off.
     this.enterSendsMessage = localStorage.getItem(ENTER_SENDS_MESSAGE_KEY) !== '0';
+    // Closed by default: the resting composer is just the text box.
+    this.showFormatting = localStorage.getItem(SHOW_FORMATTING_KEY) === '1';
 
     if (this.message) {
       this.input = this.message.text || '';
@@ -406,6 +409,11 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
   setEnterSendsMessage(checked: boolean) {
     this.enterSendsMessage = checked;
     localStorage.setItem(ENTER_SENDS_MESSAGE_KEY, checked ? '1' : '0');
+  }
+
+  toggleFormatting() {
+    this.showFormatting = !this.showFormatting;
+    localStorage.setItem(SHOW_FORMATTING_KEY, this.showFormatting ? '1' : '0');
   }
 
   onKeydown(event: KeyboardEvent) {

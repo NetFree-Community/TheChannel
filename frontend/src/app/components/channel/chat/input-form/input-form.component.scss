@@ -122,11 +122,18 @@
 .composer__surface {
   display: flex;
   flex-direction: column;
-  border-radius: var(--card-border-radius);
+  border-radius: 1.25rem;
   border: 1px solid var(--border-basic-color-3);
   background: var(--background-basic-color-1);
   box-shadow: var(--shadow);
-  padding: 0.35rem 0.5rem 0.5rem;
+  padding: 0.4rem 0.5rem 0.3rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  // A soft ring while writing makes the box feel like the place to type.
+  &:focus-within {
+    border-color: var(--color-primary-300);
+    box-shadow: var(--shadow), 0 0 0 3px var(--color-primary-transparent-100);
+  }
 }
 
 /* ---------- attachments ---------- */
@@ -207,82 +214,36 @@
   to { transform: rotate(360deg); }
 }
 
-/* ---------- toolbar ---------- */
+/* ---------- formatting row (behind "Aa") ---------- */
 
-// One row that scrolls sideways on a phone instead of wrapping into the feed.
-.composer__toolbar {
+.composer__format {
   display: flex;
   align-items: center;
   gap: 0.1rem;
+  margin: 0 0.15rem 0.2rem;
+  padding: 0 0.1rem 0.2rem;
+  border-bottom: 1px solid var(--border-basic-color-2);
   overflow-x: auto;
-  overflow-y: hidden;
   scrollbar-width: none;
-  padding: 0 0.1rem;
+  animation: composer-reveal 0.15s ease-out;
 
   &::-webkit-scrollbar {
     display: none;
   }
 }
 
-.tb {
-  flex: 0 0 auto;
-  min-width: 2.5rem;
-  height: 2.5rem;
-  padding: 0 0.4rem !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  color: var(--text-hint-color);
-
-  nb-icon,
-  .toolbar-icon {
-    font-size: 1.25rem;
-    width: 1.25rem;
-    height: 1.25rem;
-  }
+@keyframes composer-reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 
-.tb--on {
-  color: var(--color-primary-600);
-  background: var(--color-primary-transparent-100);
-}
-
-.tb--text {
-  padding-inline: 0.6rem !important;
-}
-
-.tb__label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.tb-sep {
-  flex: 0 0 auto;
-  width: 1px;
-  height: 1.4rem;
-  margin: 0 0.2rem;
-  background: var(--border-basic-color-3);
-}
-
-.tb-spacer {
-  flex: 1 1 auto;
-}
-
-.tb-toggle {
-  flex: 0 0 auto;
-  padding-inline: 0.4rem;
-  color: var(--text-hint-color);
-}
-
-/* ---------- input row ---------- */
+/* ---------- input row: the text box and the send button ---------- */
 
 .composer__input {
   display: flex;
   align-items: flex-end;
   gap: 0.4rem;
-  padding: 0.15rem 0.25rem 0;
+  padding: 0 0.15rem;
 }
 
 .composer__textarea {
@@ -292,7 +253,7 @@
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  padding: 0.5rem 0.5rem !important;
+  padding: 0.55rem 0.4rem !important;
   font-size: 1.05rem;
   line-height: 1.5;
 }
@@ -308,30 +269,152 @@
   overflow-wrap: anywhere;
 }
 
-.composer__send {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-  padding-bottom: 0.1rem;
-}
-
 .composer__send-btn {
+  flex: 0 0 auto;
   width: 2.75rem;
   height: 2.75rem;
+  margin-bottom: 0.1rem;
   padding: 0 !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.12s ease;
 
   nb-icon {
     font-size: 1.3rem;
+  }
+
+  &:not([disabled]):hover {
+    transform: scale(1.06);
+  }
+
+  // Nothing to send yet: a quiet outline instead of a big grey disc.
+  &[disabled] {
+    background: transparent !important;
+    border-color: var(--border-basic-color-3) !important;
+    color: var(--text-disabled-color) !important;
   }
 }
 
 // The paper plane points to the reading direction's end.
 .composer__send-icon {
   transform: scaleX(-1);
+}
+
+/* ---------- tools row: small icons under the text ---------- */
+
+.composer__tools {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+}
+
+.tb {
+  flex: 0 0 auto;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.3rem !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-hint-color);
+  opacity: 0.85;
+
+  nb-icon,
+  .toolbar-icon {
+    font-size: 1.15rem;
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    color: var(--text-basic-color);
+  }
+}
+
+.tb[disabled] {
+  background: transparent !important;
+  opacity: 0.4;
+}
+
+.tb--on {
+  opacity: 1;
+  color: var(--color-primary-600) !important;
+  background: var(--color-primary-transparent-100);
+}
+
+.tb__aa {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.tb-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 1.2rem;
+  margin: 0 0.2rem;
+  background: var(--border-basic-color-3);
+}
+
+.tb-spacer {
+  flex: 1 1 auto;
+}
+
+// The Enter preference as a small chip: it says what Enter does right now.
+.enter-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-hint-color);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--background-basic-color-2);
+    color: var(--text-basic-color);
+    outline: none;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-primary-300);
+  }
+}
+
+.enter-chip__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.2rem;
+  border: 1px solid var(--border-basic-color-4);
+  border-bottom-width: 2px;
+  border-radius: 0.3rem;
+  background: var(--background-basic-color-1);
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.enter-chip--on .enter-chip__key {
+  border-color: var(--color-primary-300);
+  color: var(--color-primary-600);
 }
 
 .composer__counter {
@@ -357,25 +440,7 @@
 
 @media (max-width: 575px) {
   .composer__surface {
-    padding: 0.25rem 0.35rem 0.4rem;
-  }
-
-  // On a phone the row is wider than the screen; a sideways scroll with no
-  // scrollbar hid the preview button behind the edge. Wrap instead: the
-  // formatting buttons on one line, the preview and Enter toggle on the next.
-  .composer__toolbar {
-    flex-wrap: wrap;
-    overflow: visible;
-    row-gap: 0;
-  }
-
-  // Icon only for the preview button (it keeps its aria-label), so the
-  // second line holds preview, the ads tag and the Enter toggle together.
-  .tb--text .tb__label {
-    display: none;
-  }
-  .tb--text {
-    padding-inline: 0.4rem !important;
+    padding: 0.3rem 0.35rem 0.25rem;
   }
 
   .composer__mode {
