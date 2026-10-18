@@ -52,6 +52,16 @@
     }
 
     <nb-list-item class="feed__item">
+      @if (canWrite) {
+      <div class="feed-deleted-toggle">
+        <button nbButton ghost size="tiny" status="basic" type="button" (click)="toggleShowDeleted()"
+          [attr.aria-pressed]="showingDeleted"
+          [nbTooltip]="showingDeleted ? 'ההודעות המחוקות מוצגות רק לכותבי הערוץ' : 'הצגת הודעות שנמחקו, כדי לשחזר אחת מהן'">
+          <nb-icon [icon]="showingDeleted ? 'eye-off-outline' : 'trash-2-outline'"></nb-icon>
+          {{ showingDeleted ? 'הסתרת הודעות מחוקות' : 'הצגת הודעות מחוקות' }}
+        </button>
+      </div>
+      }
       @if (scheduledMessages && scheduledMessages.length) {
       <div class="feed-section">
         <div class="feed-section__line"></div>

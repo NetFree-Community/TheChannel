@@ -106,6 +106,17 @@ export class ChatComponent implements OnInit, OnDestroy {
     private nav: Router,
   ) { }
 
+  /** Staff only: deleted posts are back in the feed, marked, to restore one. */
+  get showingDeleted(): boolean {
+    return this.hasWriteRole() && this.chatService.showDeleted;
+  }
+
+  toggleShowDeleted() {
+    if (!this.hasWriteRole()) return;
+    this.chatService.showDeleted = !this.chatService.showDeleted;
+    this.loadMessages({ resetList: true });
+  }
+
   /** Whether the viewer can post here; decides which empty-state text to show. */
   get canWrite(): boolean {
     return this.hasWriteRole();
@@ -416,7 +427,18 @@ export class ChatComponent implements OnInit, OnDestroy {
           break;
         case 'delete-message':
           // Dropped for every role: a writer who still saw the deleted post
-          // (greyed out) took it for a delete that had not worked.
+          // (greyed out) took it for a delete that had not worked. Only with
+          // "show deleted" on does it stay, marked, so it can be restored.
+          if (this.showingDeleted) {
+            this.zone.run(() => {
+              const index = this.messages.findIndex(m => m.id === message.message.id);
+              if (index !== -1) {
+                this.messages[index].deleted = true;
+                this.messages[index].last_edit = message.message.last_edit;
+              }
+            });
+            break;
+          }
           this.zone.run(() => {
             this.messages = this.messages.filter(m => m.id !== message.message.id);
             this.rebuildItems();
