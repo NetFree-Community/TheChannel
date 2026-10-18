@@ -115,6 +115,24 @@ interface LandingFeature {
       </div>
     </header>
 
+    <!-- A real walk-through of the product (recorded from the app itself):
+         opening a channel, posting, a reader's phone, scheduling, the team and
+         statistics. Silent, with captions burnt in. preload="none" so the
+         page does not pay for the file until someone presses play; the poster
+         alone stands in where the video is held back (e.g. filtered internet). -->
+    <section class="section video" aria-labelledby="video-title">
+      <div class="wrap">
+        <h2 class="section__title" id="video-title">רואים את זה בפעולה</h2>
+        <p class="section__lead">סרטון של דקה: פותחים ערוץ, מפרסמים, והקוראים מקבלים את ההודעה באותו רגע.</p>
+        <video class="video__player" controls muted playsinline preload="none"
+               poster="/assets/video/channel-intro-poster.jpg"
+               aria-label="סרטון הדרכה: איך פותחים ערוץ ומה אפשר לעשות בו">
+          <source src="/assets/video/channel-intro.webm" type="video/webm">
+          <source src="/assets/video/channel-intro.mp4" type="video/mp4">
+        </video>
+      </div>
+    </section>
+
     <!-- How it works -->
     <section class="section" aria-labelledby="how-title">
       <div class="wrap">

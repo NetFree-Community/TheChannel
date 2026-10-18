@@ -99,6 +99,23 @@
   color: var(--text-hint-color);
 }
 
+/* ---------- video ---------- */
+
+.video {
+  padding-bottom: 0;
+}
+
+.video__player {
+  display: block;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  border-radius: 16px;
+  background: var(--color-primary-800);
+  box-shadow: 0 18px 48px rgba(30, 27, 90, 0.22);
+}
+
 /* ---------- steps ---------- */
 
 .steps {
