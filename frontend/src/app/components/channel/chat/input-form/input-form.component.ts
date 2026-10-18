@@ -66,7 +66,7 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
   isSending: boolean = false;
   showMarkdownPreview: boolean = false;
   hasScrollbar: boolean = false;
-  enterSendsMessage: boolean = false;
+  enterSendsMessage: boolean = true;
   private subscription!: Subscription;
 
   @ViewChild('inputTextArea') inputTextArea!: ElementRef<HTMLTextAreaElement>;
@@ -117,7 +117,8 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.enterSendsMessage = localStorage.getItem(ENTER_SENDS_MESSAGE_KEY) === '1';
+    // On by default; only an explicit opt-out ('0') saved by the toggle turns it off.
+    this.enterSendsMessage = localStorage.getItem(ENTER_SENDS_MESSAGE_KEY) !== '0';
 
     if (this.message) {
       this.input = this.message.text || '';
