@@ -415,16 +415,8 @@ export class ChatComponent implements OnInit, OnDestroy {
           });
           break;
         case 'delete-message':
-          if (this.hasWriteRole()) {
-            this.zone.run(() => {
-              const index = this.messages.findIndex(m => m.id === message.message.id);
-              if (index !== -1) {
-                this.messages[index].deleted = true;
-                this.messages[index].last_edit = message.message.last_edit;
-              }
-            });
-            break;
-          };
+          // Dropped for every role: a writer who still saw the deleted post
+          // (greyed out) took it for a delete that had not worked.
           this.zone.run(() => {
             this.messages = this.messages.filter(m => m.id !== message.message.id);
             this.rebuildItems();
@@ -436,8 +428,8 @@ export class ChatComponent implements OnInit, OnDestroy {
             if (index !== -1) {
               this.messages[index] = message.message;
             } else if (!message.message.deleted) {
-              // Not in the list: this is a message that was deleted (readers
-              // drop deleted messages, see 'delete-message') and has now been
+              // Not in the list: this is a message that was deleted (the feed
+              // drops deleted messages, see 'delete-message') and has now been
               // republished. Put it back where it falls in the loaded window
               // — the list is in the server's time order, not id order, so
               // the timestamp is the key. Beyond an end of the window that

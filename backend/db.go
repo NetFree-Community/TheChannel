@@ -294,8 +294,7 @@ var getMessageRange = redis.NewScript(`
 	local messages = {}
 	local max_scan_rounds = 20
 	-- Bounding rounds alone is not a bound on work: each round does one HGETALL
-	-- per entry, and a soft-deleted entry is not appended for a non-admin
-	-- viewer, so #messages stops growing and batch_size stays at the full page
+	-- per entry, and a soft-deleted entry is never appended, so #messages stops growing and batch_size stays at the full page
 	-- size for every round. A page of 100 over a run of tombstones was 20 x 100
 	-- HGETALLs inside one atomic script, and Redis is single-threaded, so every
 	-- other tenant waited behind it. Cap the entries examined, not the rounds.
@@ -305,9 +304,8 @@ var getMessageRange = redis.NewScript(`
 	-- an empty page, so a client paging through one stops early rather than
 	-- reaching the live messages beneath it. Bounding the work is still the
 	-- right side to err on — an unbounded scan stalls every tenant, not one
-	-- feed. Removing deleted entries from this index (keeping a separate one
-	-- for the admin view, which is the only reader that wants them) would make
-	-- the scan never pay for tombstones at all and retire the cap.
+	-- feed. Removing deleted entries from this index would make the scan never
+	-- pay for tombstones at all and retire the cap.
 	local max_scanned = 500
 	local scanned = 0
 	local scan_rounds = 0
@@ -381,7 +379,10 @@ var getMessageRange = redis.NewScript(`
 				end
 			end
 
-			if not message['deleted'] or isAdmin then
+			-- A deleted message is hidden from every viewer, writers and admins
+			-- included: showing it to them greyed out read as if the delete had
+			-- not worked. The hash stays in Redis; only the feed drops it.
+			if not message['deleted'] then
 				table.insert(messages, message)
 			end
 		end

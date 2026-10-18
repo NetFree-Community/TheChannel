@@ -102,9 +102,9 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	countViews := ch != nil && ch.Features.CountViews
 
 	// ETag: skip expensive query if content hasn't changed since client's copy.
-	// The body varies by viewer (admins see real authors and soft-deleted
-	// posts), so the validator has to carry those inputs and the response must
-	// never be reused across identities. The "op" marker retires validators
+	// The body varies by viewer (admins see real authors), so the validator
+	// has to carry those inputs and the response must never be reused across
+	// identities. The "op" marker retires validators
 	// minted before operator posts were re-labelled, whose cached bodies still
 	// name the operator.
 	w.Header().Set("Cache-Control", "private, no-cache")

@@ -192,3 +192,26 @@ func TestMessageRangeEmptyChannel(t *testing.T) {
 		t.Errorf("got %d messages from an empty channel", len(msgs))
 	}
 }
+
+// A deleted message is hidden from writers and admins too, not only readers:
+// shown greyed out, it looked as if the delete had not gone through.
+func TestMessageRangeHidesDeletedFromAdmins(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	const slug = "scan-admin-deleted"
+	seedMessages(t, ctx, slug, 20, func(i int) bool { return i%2 == 0 })
+
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 10, true, false, "desc")
+	if err != nil {
+		t.Fatalf("range: %v", err)
+	}
+	if len(msgs) != 10 {
+		t.Fatalf("got %d messages, want 10", len(msgs))
+	}
+	for _, m := range msgs {
+		if m.ID%2 == 0 || m.Deleted {
+			t.Errorf("message %d is soft-deleted and must not be returned to an admin", m.ID)
+		}
+	}
+}
