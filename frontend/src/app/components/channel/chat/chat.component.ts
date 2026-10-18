@@ -106,6 +106,17 @@ export class ChatComponent implements OnInit, OnDestroy {
     private nav: Router,
   ) { }
 
+  /** Staff only: deleted posts are back in the feed, marked, to restore one. */
+  get showingDeleted(): boolean {
+    return this.hasWriteRole() && this.chatService.showDeleted;
+  }
+
+  toggleShowDeleted() {
+    if (!this.hasWriteRole()) return;
+    this.chatService.showDeleted = !this.chatService.showDeleted;
+    this.loadMessages({ resetList: true });
+  }
+
   /** Whether the viewer can post here; decides which empty-state text to show. */
   get canWrite(): boolean {
     return this.hasWriteRole();
@@ -415,7 +426,10 @@ export class ChatComponent implements OnInit, OnDestroy {
           });
           break;
         case 'delete-message':
-          if (this.hasWriteRole()) {
+          // Dropped for every role: a writer who still saw the deleted post
+          // (greyed out) took it for a delete that had not worked. Only with
+          // "show deleted" on does it stay, marked, so it can be restored.
+          if (this.showingDeleted) {
             this.zone.run(() => {
               const index = this.messages.findIndex(m => m.id === message.message.id);
               if (index !== -1) {
@@ -424,7 +438,7 @@ export class ChatComponent implements OnInit, OnDestroy {
               }
             });
             break;
-          };
+          }
           this.zone.run(() => {
             this.messages = this.messages.filter(m => m.id !== message.message.id);
             this.rebuildItems();
@@ -436,8 +450,8 @@ export class ChatComponent implements OnInit, OnDestroy {
             if (index !== -1) {
               this.messages[index] = message.message;
             } else if (!message.message.deleted) {
-              // Not in the list: this is a message that was deleted (readers
-              // drop deleted messages, see 'delete-message') and has now been
+              // Not in the list: this is a message that was deleted (the feed
+              // drops deleted messages, see 'delete-message') and has now been
               // republished. Put it back where it falls in the loaded window
               // — the list is in the server's time order, not id order, so
               // the timestamp is the key. Beyond an end of the window that

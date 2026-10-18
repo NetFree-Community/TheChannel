@@ -275,6 +275,7 @@ var getMessageRange = redis.NewScript(`
 	local isAdmin = ARGV[2] == 'true'
 	local countViews = ARGV[3] == 'true'
 	local direction = ARGV[4] or 'desc'
+	local showDeleted = ARGV[5] == 'true'
 
 
 	-- ZRANK returns false when the offset key is absent (initial load), which
@@ -294,8 +295,7 @@ var getMessageRange = redis.NewScript(`
 	local messages = {}
 	local max_scan_rounds = 20
 	-- Bounding rounds alone is not a bound on work: each round does one HGETALL
-	-- per entry, and a soft-deleted entry is not appended for a non-admin
-	-- viewer, so #messages stops growing and batch_size stays at the full page
+	-- per entry, and a soft-deleted entry is never appended, so #messages stops growing and batch_size stays at the full page
 	-- size for every round. A page of 100 over a run of tombstones was 20 x 100
 	-- HGETALLs inside one atomic script, and Redis is single-threaded, so every
 	-- other tenant waited behind it. Cap the entries examined, not the rounds.
@@ -305,9 +305,8 @@ var getMessageRange = redis.NewScript(`
 	-- an empty page, so a client paging through one stops early rather than
 	-- reaching the live messages beneath it. Bounding the work is still the
 	-- right side to err on — an unbounded scan stalls every tenant, not one
-	-- feed. Removing deleted entries from this index (keeping a separate one
-	-- for the admin view, which is the only reader that wants them) would make
-	-- the scan never pay for tombstones at all and retire the cap.
+	-- feed. Removing deleted entries from this index would make the scan never
+	-- pay for tombstones at all and retire the cap.
 	local max_scanned = 500
 	local scanned = 0
 	local scan_rounds = 0
@@ -381,7 +380,11 @@ var getMessageRange = redis.NewScript(`
 				end
 			end
 
-			if not message['deleted'] or isAdmin then
+			-- A deleted message is hidden from every viewer by default, writers
+			-- and admins included: showing it to them greyed out read as if the
+			-- delete had not worked. The hash stays in Redis, and staff can ask
+			-- for it back with showDeleted (the feed's "show deleted" toggle).
+			if not message['deleted'] or showDeleted then
 				table.insert(messages, message)
 			end
 		end
@@ -394,12 +397,14 @@ var getMessageRange = redis.NewScript(`
 	return cjson.encode(messages)
 `)
 
-func funcGetMessageRange(ctx context.Context, slug string, start, stop int64, isAdmin, countViews bool, direction string) ([]Message, error) {
+// showDeleted returns soft-deleted messages too; callers pass it only for
+// staff (see getMessages).
+func funcGetMessageRange(ctx context.Context, slug string, start, stop int64, isAdmin, countViews, showDeleted bool, direction string) ([]Message, error) {
 	offsetKeyName := fmt.Sprintf("channel:%s:messages:%d", slug, start)
 	res, err := getMessageRange.Run(ctx, rdb, []string{
 		fmt.Sprintf("channel:%s:m_times", slug),
 		offsetKeyName,
-	}, []string{strconv.FormatInt(stop, 10), strconv.FormatBool(isAdmin), strconv.FormatBool(countViews), direction}).Result()
+	}, []string{strconv.FormatInt(stop, 10), strconv.FormatBool(isAdmin), strconv.FormatBool(countViews), direction, strconv.FormatBool(showDeleted)}).Result()
 	if err != nil {
 		return []Message{}, err
 	}

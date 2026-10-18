@@ -384,3 +384,9 @@ nb-list.hide-scheduled-messages nb-list-item.scheduled-message-item {
   line-height: 1.4rem;
   text-align: center;
 }
+
+.feed-deleted-toggle {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0;
+}

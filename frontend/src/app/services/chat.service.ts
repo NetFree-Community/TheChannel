@@ -129,18 +129,26 @@ export class ChatService {
   takeFirstPage(limit: number): Promise<ChatResponse | null> | undefined {
     const page = this.firstPage;
     this.firstPage = undefined;
-    if (!page || page.slug !== this.slug || page.limit !== limit || Date.now() - page.at > 10_000) return undefined;
+    // The prefetch never asks for deleted posts, so it cannot answer for the toggle.
+    if (!page || this.showDeleted || page.slug !== this.slug || page.limit !== limit || Date.now() - page.at > 10_000) return undefined;
     return page.request;
   }
 
+  /**
+   * Staff toggle in the feed: deleted posts are left out for everyone unless
+   * this is on, so a writer can still find and restore one. The server only
+   * honours it for writers and above.
+   */
+  showDeleted = false;
+
   getMessages(offset: number, limit: number, direction: string): Observable<ChatResponse> {
-    return this.http.get<ChatResponse>(`/api/channel/${this.slug}/messages`, {
-      params: {
-        offset: offset.toString(),
-        limit: limit.toString(),
-        direction: direction
-      }
-    });
+    const params: Record<string, string> = {
+      offset: offset.toString(),
+      limit: limit.toString(),
+      direction: direction
+    };
+    if (this.showDeleted) params['deleted'] = '1';
+    return this.http.get<ChatResponse>(`/api/channel/${this.slug}/messages`, { params });
   }
 
   setReact(messageId: number, react: string) {
@@ -155,6 +163,7 @@ export class ChatService {
    * and pushed every other first-paint request one round trip later.
    */
   clearCache(keepInfoFor?: string) {
+    this.showDeleted = false;
     this.emojis = null;
     this.emojisRequest = undefined;
     if (!keepInfoFor || this.channelInfoSlug !== keepInfoFor) this.channelInfo = undefined;

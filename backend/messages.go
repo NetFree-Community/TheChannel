@@ -100,11 +100,14 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 
 	isAdmin := hasChannelRole(r, slug, RoleWriter)
 	countViews := ch != nil && ch.Features.CountViews
+	// Deleted posts are left out of the feed for everyone; staff can ask for
+	// them with ?deleted=1 to find and restore one.
+	showDeleted := isAdmin && r.URL.Query().Get("deleted") == "1"
 
 	// ETag: skip expensive query if content hasn't changed since client's copy.
-	// The body varies by viewer (admins see real authors and soft-deleted
-	// posts), so the validator has to carry those inputs and the response must
-	// never be reused across identities. The "op" marker retires validators
+	// The body varies by viewer (admins see real authors), so the validator
+	// has to carry those inputs and the response must never be reused across
+	// identities. The "op" marker retires validators
 	// minted before operator posts were re-labelled, whose cached bodies still
 	// name the operator.
 	w.Header().Set("Cache-Control", "private, no-cache")
@@ -114,7 +117,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	// quiet channel — the very population the counter is for — were never
 	// counted and kept seeing the numbers from their first visit.
 	if lm := getLastModified(ctx, slug); lm != "" && !countViews {
-		etag := `"` + lm + "-" + strconv.FormatBool(isAdmin) + "-" + strconv.FormatBool(countViews) + `-op"`
+		etag := `"` + lm + "-" + strconv.FormatBool(isAdmin) + "-" + strconv.FormatBool(countViews) + "-" + strconv.FormatBool(showDeleted) + `-op"`
 		w.Header().Set("ETag", etag)
 		if r.Header.Get("If-None-Match") == etag {
 			w.WriteHeader(http.StatusNotModified)
@@ -122,7 +125,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	messages, err := funcGetMessageRange(ctx, slug, int64(offset), int64(limit), isAdmin, countViews, direction)
+	messages, err := funcGetMessageRange(ctx, slug, int64(offset), int64(limit), isAdmin, countViews, showDeleted, direction)
 	if err != nil {
 		log.Printf("Failed to get messages: %v\n", err)
 		http.Error(w, "error", http.StatusInternalServerError)

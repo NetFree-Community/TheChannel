@@ -102,7 +102,7 @@ func TestMessageRangeReturnsFullPageOfLiveMessages(t *testing.T) {
 	const slug = "scan-live"
 	seedMessages(t, ctx, slug, 60, func(int) bool { return false })
 
-	msgs, err := funcGetMessageRange(ctx, slug, 0, 20, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 20, false, false, false, "desc")
 	if err != nil {
 		t.Fatalf("range: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestMessageRangeSkipsDeletedAndStillFillsPage(t *testing.T) {
 	// Every other message deleted: filling a page of 10 needs ~20 entries.
 	seedMessages(t, ctx, slug, 100, func(i int) bool { return i%2 == 0 })
 
-	msgs, err := funcGetMessageRange(ctx, slug, 0, 10, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 10, false, false, false, "desc")
 	if err != nil {
 		t.Fatalf("range: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestMessageRangeBoundsWorkOverLongTombstoneRun(t *testing.T) {
 	seedMessages(t, ctx, slug, total, func(i int) bool { return i > 40 })
 
 	start := time.Now()
-	msgs, err := funcGetMessageRange(ctx, slug, 0, 100, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 100, false, false, false, "desc")
 	elapsed := time.Since(start)
 	if err != nil {
 		t.Fatalf("range: %v", err)
@@ -184,11 +184,56 @@ func TestMessageRangeEmptyChannel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	msgs, err := funcGetMessageRange(ctx, "scan-empty-channel", 0, 20, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, "scan-empty-channel", 0, 20, false, false, false, "desc")
 	if err != nil {
 		t.Fatalf("range on empty channel: %v", err)
 	}
 	if len(msgs) != 0 {
 		t.Errorf("got %d messages from an empty channel", len(msgs))
+	}
+}
+
+// A deleted message is hidden from writers and admins too, not only readers:
+// shown greyed out, it looked as if the delete had not gone through.
+func TestMessageRangeHidesDeletedFromAdmins(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	const slug = "scan-admin-deleted"
+	seedMessages(t, ctx, slug, 20, func(i int) bool { return i%2 == 0 })
+
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 10, true, false, false, "desc")
+	if err != nil {
+		t.Fatalf("range: %v", err)
+	}
+	if len(msgs) != 10 {
+		t.Fatalf("got %d messages, want 10", len(msgs))
+	}
+	for _, m := range msgs {
+		if m.ID%2 == 0 || m.Deleted {
+			t.Errorf("message %d is soft-deleted and must not be returned to an admin", m.ID)
+		}
+	}
+}
+
+// The staff "show deleted" toggle brings them back, flagged as deleted.
+func TestMessageRangeShowDeletedReturnsTombstones(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	const slug = "scan-show-deleted"
+	seedMessages(t, ctx, slug, 20, func(i int) bool { return i%2 == 0 })
+
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 20, true, false, true, "desc")
+	if err != nil {
+		t.Fatalf("range: %v", err)
+	}
+	if len(msgs) != 20 {
+		t.Fatalf("got %d messages, want all 20", len(msgs))
+	}
+	for _, m := range msgs {
+		if m.Deleted != (m.ID%2 == 0) {
+			t.Errorf("message %d: deleted = %v", m.ID, m.Deleted)
+		}
 	}
 }
