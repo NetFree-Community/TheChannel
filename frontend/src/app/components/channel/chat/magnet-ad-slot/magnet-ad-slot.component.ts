@@ -88,6 +88,8 @@ export class MagnetAdSlotComponent implements AfterViewInit, OnDestroy {
   collapsed = false;
   /** The super admin's global snippet is shown instead of the channel's own. */
   locked = false;
+  /** The header's logo and name: Magnet's site, never a paid click. */
+  readonly magnetUrl = 'https://magnetads.co.il/?utm_source=thechannel&utm_medium=ad_header';
 
   constructor(
     private magnet: MagnetAdsService,
@@ -180,7 +182,9 @@ export class MagnetAdSlotComponent implements AfterViewInit, OnDestroy {
    */
   private frameDocument(snippet: string): string {
     const base = `${location.origin}/`;
-    return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">` +
+    // data-ad-label="off": the header above the frame already says "מגנט"
+    // (with the logo and a link), so widget.js skips its own line under the ad.
+    return `<!doctype html><html lang="he" dir="rtl" data-ad-label="off"><head><meta charset="utf-8">` +
       `<base href="${base}" target="_blank">` +
       `<style>html,body{margin:0;padding:0;background:transparent;overflow:hidden}</style>` +
       `<script>${storageShim({ nc_vid: this.magnet.viewerId() })}</script>` +
