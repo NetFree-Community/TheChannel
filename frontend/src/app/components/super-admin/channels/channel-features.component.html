@@ -1,0 +1,126 @@
+@if (loading) {
+  <nb-card>
+    <nb-card-body>
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את הגדרות הערוץ…</p>
+      </div>
+    </nb-card-body>
+  </nb-card>
+} @else if (loadFailed) {
+  <nb-card>
+    <nb-card-body>
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">הגדרות הערוץ לא נטענו</p>
+        <p class="sa-state__text">בלי העותק מהשרת אי אפשר לשמור — שמירה הייתה מכבה את כל התכונות בבת אחת. נסו לטעון שוב.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="loadFeatures()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
+      </div>
+    </nb-card-body>
+  </nb-card>
+} @else {
+  <div class="features">
+    @for (group of groups; track group.title) {
+      <nb-card>
+        <nb-card-header>
+          <h2 class="sa-card-title">
+            <nb-icon [icon]="group.icon"></nb-icon>
+            {{ group.title }}
+          </h2>
+        </nb-card-header>
+        <nb-card-body class="group-body">
+          @for (item of group.items; track item.key) {
+            <div class="sa-toggle">
+              <nb-toggle [checked]="features[item.key]" (checkedChange)="features[item.key] = $event">
+                <span class="toggle-label">{{ item.label }}</span>
+              </nb-toggle>
+              <p class="sa-toggle__hint">{{ item.hint }}</p>
+            </div>
+          }
+        </nb-card-body>
+      </nb-card>
+    }
+
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
+          <nb-icon icon="search-outline"></nb-icon>
+          מנועי חיפוש
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <app-channel-seo-fields
+          idPrefix="sa-channel-seo"
+          [slug]="slug"
+          [channelName]="channelName"
+          [channelDescription]="channelDescription"
+          [blockedReason]="seoBlockedReason"
+          [listed]="!seo.seoHidden" (listedChange)="seo.seoHidden = !$event"
+          [(seoTitle)]="seo.seoTitle"
+          [(seoDescription)]="seo.seoDescription">
+        </app-channel-seo-fields>
+      </nb-card-body>
+    </nb-card>
+
+    <nb-card>
+      <nb-card-header>
+        <h2 class="sa-card-title">
+          <nb-icon icon="pricetags-outline"></nb-icon>
+          נעילות של המערכת
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <p class="sa-lead">נעילה אומרת שהערוץ מציג את הפרסומת שהמערכת קבעה, ולא את מה שמנהליו הגדירו. משנים אותה במסכי "פרסומת במסגרת" ו"פרסומות מגנט".</p>
+        <div class="locks">
+          <span class="sa-chip" [class.sa-chip--warning]="features.adsLockedByAdmin">
+            <nb-icon [icon]="features.adsLockedByAdmin ? 'lock-outline' : 'unlock-outline'"></nb-icon>
+            פרסומת במסגרת: {{ features.adsLockedByAdmin ? 'נעול להגדרת המערכת' : 'לפי הגדרת הערוץ' }}
+          </span>
+          <span class="sa-chip" [class.sa-chip--warning]="features.magnetLockedByAdmin">
+            <nb-icon [icon]="features.magnetLockedByAdmin ? 'lock-outline' : 'unlock-outline'"></nb-icon>
+            מגנט: {{ features.magnetLockedByAdmin ? 'נעול להגדרת המערכת' : 'לפי הגדרת הערוץ' }}
+          </span>
+        </div>
+      </nb-card-body>
+    </nb-card>
+
+    <nb-card class="danger-card">
+      <nb-card-header>
+        <h2 class="sa-card-title danger-title">
+          <nb-icon icon="alert-triangle-outline"></nb-icon>
+          השבתת הערוץ
+        </h2>
+      </nb-card-header>
+      <nb-card-body>
+        <div class="sa-toggle">
+          <nb-toggle status="danger" [checked]="features.disabled" (checkedChange)="onDisabledChange($event)">
+            <span class="toggle-label">{{ features.disabled ? 'הערוץ מושבת' : 'הערוץ פעיל' }}</span>
+          </nb-toggle>
+          <p class="sa-toggle__hint">
+            כשהערוץ מושבת הוא נסגר לכל המשתמשים, כולל הבעלים, ובמקומו מוצג המסך "הערוץ מושבת".
+            ההודעות והקבצים נשמרים, וההפעלה מחדש מחזירה הכול כמו שהיה.
+          </p>
+        </div>
+      </nb-card-body>
+    </nb-card>
+
+    <nb-card class="save-card">
+      <nb-card-body>
+        <div class="sa-save-bar">
+          <button nbButton status="primary" type="button" (click)="save()" [disabled]="saving || !loaded">
+            <nb-icon icon="save-outline"></nb-icon>
+            {{ saving ? 'שומר…' : 'שמירת ההגדרות' }}
+          </button>
+          @if (dirty) {
+            <span class="sa-save-bar__note sa-save-bar__note--dirty">יש שינויים שעוד לא נשמרו</span>
+          } @else {
+            <span class="sa-save-bar__note">השינויים נכנסים לתוקף מיד לאחר השמירה.</span>
+          }
+        </div>
+      </nb-card-body>
+    </nb-card>
+  </div>
+}

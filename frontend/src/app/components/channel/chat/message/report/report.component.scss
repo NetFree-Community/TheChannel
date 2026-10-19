@@ -1,0 +1,57 @@
+.report {
+  width: min(92vw, 440px);
+  margin: 0;
+}
+
+.report__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.report__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-basic-color);
+}
+
+.report__sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-hint-color);
+}
+
+.report__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-basic-color);
+}
+
+.report__req {
+  font-weight: 400;
+  color: var(--text-hint-color);
+}
+
+.report__counter {
+  margin-top: 0.25rem;
+  text-align: end;
+  font-size: 0.75rem;
+  color: var(--text-hint-color);
+}
+
+.report__foot {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+textarea {
+  resize: vertical;
+}

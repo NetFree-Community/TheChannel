@@ -3,11 +3,25 @@
 
 <head>
   <meta charset="utf-8">
-  <title></title>
+  <title>הערוץ</title>
   <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;400;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#5a5ff5">
+  <meta name="description" content="ערוץ שידור משלכם, פתוח תוך רגע וללא עלות: הודעות, תמונות, סרטונים וקישורים לקהל שלכם.">
+  <!-- The only web font. Preconnecting to both Google Fonts hosts shaves a
+       round-trip off the first text paint; 200 was loaded before but never used,
+       800 is used by the headings and was not loaded. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/assets/manifest.webmanifest">
+  <!-- The per-page Open Graph tags (title, description, image, url) are
+       injected by the server (backend/seo.go), which knows the channel behind
+       /channel/<slug>; crawlers never run the app, so nothing set from
+       Angular would reach a link preview. -->
 </head>
 
 <body>

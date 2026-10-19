@@ -29,10 +29,26 @@ func saveLoginFailedLog(title string, err error) {
 		log.Println("Failed to open log file:", fileErr)
 		return
 	}
+
+	// This is written from unauthenticated request paths, so it must not grow
+	// without bound: rotate past 10MB, keeping a single previous generation
+	// (total usage capped at ~20MB on the volume shared with uploads).
+	if st, serr := f.Stat(); serr == nil && st.Size() > 10<<20 {
+		f.Close()
+		os.Rename(logFile, logFile+".1")
+		f, fileErr = os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if fileErr != nil {
+			log.Println("Failed to reopen log file:", fileErr)
+			return
+		}
+	}
 	defer f.Close()
 
 	t := time.Now().Format(time.DateTime)
-	errStr := err.Error()
+	errStr := ""
+	if err != nil {
+		errStr = err.Error()
+	}
 	logEntry := map[string]any{
 		"title":     title,
 		"error":     errStr,

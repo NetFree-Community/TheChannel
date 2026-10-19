@@ -1,3 +1,10 @@
 * {
-    reverse_proxy backend:3000
+    reverse_proxy backend:3000 {
+        # The backend's RealIP middleware takes the client address from
+        # X-Real-IP (and would also honour True-Client-IP). Both must come from
+        # this proxy and never from the client, or anyone could pick the
+        # address every per-IP rate limit and log line sees.
+        header_up X-Real-IP {remote_host}
+        header_up -True-Client-IP
+    }
 }

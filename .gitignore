@@ -3,6 +3,7 @@ frontend/node_modules/
 frontend/dist/*
 package-lock.json
 backend/__debug*
+backend/channel
 caddy_data/
 redis_data/
 channel_data/*
@@ -10,3 +11,10 @@ caddy_config/
 data/kvrocks.sock
 .env
 .ds_store
+# Redis writes its snapshot into the cwd of whoever started it (tests)
+dump.rdb
+**/dump.rdb
+appendonly.aof
+**/appendonly.aof
+appendonlydir/
+**/appendonlydir/

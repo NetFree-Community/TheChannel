@@ -1,12 +1,22 @@
+import { uploadErrorMessage } from '../../../services/upload-error';
 import { Component, OnInit } from '@angular/core';
-import { NbCardModule, NbDialogRef, NbButtonModule, NbSpinnerModule, NbInputModule, NbToastrService, NbPopoverModule } from '@nebular/theme';
+import {
+  NbButtonModule, NbCardModule, NbIconModule, NbInputModule, NbSpinnerModule, NbToastrService, NbTooltipModule,
+} from '@nebular/theme';
 import { FormsModule } from '@angular/forms';
 import { HttpEventType } from '@angular/common/http';
 import { Channel } from '../../../models/channel.model';
 import { AdminService } from '../../../services/admin.service';
 import { ChatService, Attachment, ChatFile } from '../../../services/chat.service';
+import { MyChannelsService } from '../../../services/my-channels.service';
+import { ChannelSeoFieldsComponent } from '../../shared/channel-seo-fields.component';
+import { NetfreeRequestComponent } from '../../shared/netfree-request.component';
 
-
+/**
+ * "פרטי הערוץ": the name, description, logo and contact link readers see in
+ * the channel header. Edits are local until "שמירה"; the logo file itself is
+ * uploaded the moment it is picked, so the save only ever posts a server URL.
+ */
 @Component({
   selector: 'app-channel-info-form',
   imports: [
@@ -15,37 +25,144 @@ import { ChatService, Attachment, ChatFile } from '../../../services/chat.servic
     NbButtonModule,
     NbSpinnerModule,
     NbInputModule,
-    NbPopoverModule,
+    NbIconModule,
+    NbTooltipModule,
+    ChannelSeoFieldsComponent,
+    NetfreeRequestComponent,
   ],
   templateUrl: './channel-info-form.component.html',
   styleUrl: './channel-info-form.component.scss'
 })
 export class ChannelInfoFormComponent implements OnInit {
 
+  readonly nameMax = 80;
+  readonly descriptionMax = 2000;
+
   constructor(
     private chatService: ChatService,
     private adminService: AdminService,
     private toastrService: NbToastrService,
+    private myChannels: MyChannelsService,
   ) { }
 
+  attachment?: Attachment;
+  channel: Channel = {};
+  isSending = false;
+  loading = true;
+  /** The last copy the server confirmed — what "ביטול שינויים" goes back to. */
+  private saved: Channel = {};
+
   ngOnInit(): void {
-    this.channel = { ...this.chatService.channelInfo };
+    // Opened by deep link the channel info may still be in flight; the dialog
+    // this used to be could rely on the feed having loaded it already.
+    this.chatService.ensureChannelInfo()
+      .catch(() => undefined)
+      .finally(() => {
+        this.saved = { ...this.chatService.channelInfo };
+        this.channel = { ...this.saved };
+        this.loading = false;
+      });
   }
 
-  attachment!: Attachment;
-  channel: Channel = {};
-  isSending: boolean = false;
+  get initial(): string {
+    return (this.channel.name || '?').trim().charAt(0).toUpperCase();
+  }
+
+  /** The NetFree and search-engine cards start folded: most owners use them once. */
+  netfreeOpen = false;
+  seoOpen = false;
+
+  get dirty(): boolean {
+    const a = this.channel, b = this.saved;
+    return (a.name ?? '') !== (b.name ?? '')
+      || (a.description ?? '') !== (b.description ?? '')
+      || (a.logoUrl ?? '') !== (b.logoUrl ?? '')
+      || (a.contact_us ?? '') !== (b.contact_us ?? '')
+      || !!a.seo_hidden !== !!b.seo_hidden
+      || (a.seo_title ?? '') !== (b.seo_title ?? '')
+      || (a.seo_description ?? '') !== (b.seo_description ?? '');
+  }
+
+  /** A private channel never reaches search, whatever its toggle says. */
+  get seoBlockedReason(): string {
+    return this.channel.require_auth
+      ? 'הערוץ פרטי (כניסה חובה לצפייה), ולכן לא יופיע בגוגל בכל מקרה.'
+      : '';
+  }
+
+  get uploading(): boolean {
+    return !!this.attachment?.uploading;
+  }
+
+  resetChanges(): void {
+    if (this.uploading) return;
+    this.channel = { ...this.saved };
+  }
 
   editChannelInfo() {
+    if (!this.channel.name?.trim()) {
+      this.toastrService.warning("", "יש להזין שם לערוץ");
+      return;
+    }
+    // While the logo upload is in flight logoUrl still holds the data: preview,
+    // which the server rejects (400 'invalid logo URL') with no hint which
+    // field is wrong — wait for the server-issued URL instead of posting it.
+    if (this.attachment?.uploading) {
+      this.toastrService.warning("", "הלוגו עדיין בהעלאה, המתינו לסיום ונסו שוב");
+      return;
+    }
     this.isSending = true;
-    this.chatService.editChannelInfo(this.channel.name || '', this.channel.description || '', this.channel.logoUrl || '').subscribe({
+    const name = this.channel.name.trim();
+    const description = this.channel.description || '';
+    const logoUrl = this.channel.logoUrl || '';
+    const contactUs = (this.channel.contact_us || '').trim();
+    const seo = {
+      seoHidden: !!this.channel.seo_hidden,
+      seoTitle: (this.channel.seo_title || '').trim(),
+      seoDescription: (this.channel.seo_description || '').trim(),
+    };
+    this.chatService.editChannelInfo(name, description, logoUrl, contactUs, seo).subscribe({
       next: () => {
         this.isSending = false;
-        this.toastrService.success("", "עריכת פרטי ערוץ בוצעה בהצלחה");
-        this.chatService.updateChannelInfo();
+        this.toastrService.success("", "פרטי הערוץ נשמרו");
+        this.saved = {
+          ...this.channel, name, description, logoUrl, contact_us: contactUs,
+          seo_hidden: seo.seoHidden, seo_title: seo.seoTitle, seo_description: seo.seoDescription,
+        };
+        this.channel = { ...this.saved };
+        // The header on this page and the channel switcher both show the name
+        // and logo; refresh the sources they read from.
+        this.chatService.updateChannelInfo().catch(() => undefined);
+        this.myChannels.invalidate();
       },
-      error: () => {
+      error: (err) => {
         this.isSending = false;
+        // The server refuses a contact link that is not http(s)/mailto — say
+        // which field, rather than a generic failure.
+        const text = typeof err?.error === 'string' ? err.error : '';
+        if (err?.status === 400 && text.includes('contact')) {
+          this.toastrService.danger("", "קישור צור קשר חייב להתחיל ב-https://‎ או ב-mailto:");
+          return;
+        }
+        // Checked before the generic 'too long' below, which it also matches.
+        if (err?.status === 400 && text.includes('seo')) {
+          this.toastrService.danger("", "הכותרת או התיאור לגוגל ארוכים מדי (עד 60 תווים לכותרת ועד 155 לתיאור)");
+          return;
+        }
+        if (err?.status === 400 && text.includes('too long')) {
+          this.toastrService.danger("", "השם או התיאור ארוכים מדי (עד 80 תווים לשם ועד 2000 לתיאור)");
+          return;
+        }
+        // 'invalid logo URL': a data: preview or a non-http(s) address reached
+        // the save — picking the logo again is the only way out.
+        if (err?.status === 400 && text.includes('logo')) {
+          this.toastrService.danger("", "כתובת הלוגו אינה תקינה, בחרו את הלוגו מחדש");
+          return;
+        }
+        if (err?.status === 403 || err?.status === 401) {
+          this.toastrService.danger("", "אין לכם הרשאה לערוך את פרטי הערוץ");
+          return;
+        }
         this.toastrService.danger("", "עריכת פרטי ערוץ נכשלה");
       }
     });
@@ -54,8 +171,12 @@ export class ChannelInfoFormComponent implements OnInit {
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
 
-    if (input.files) {
+    if (input.files && input.files[0]) {
       this.attachment = { file: input.files[0] }
+      // Kept so a failed upload can put the previous logo back: the data: URL
+      // preview set below is only ever replaced on success, and leaving it in
+      // place made every later save of this form fail on 'invalid logo URL'.
+      const previousLogoUrl = this.channel.logoUrl;
       const reader = new FileReader();
       reader.readAsDataURL(this.attachment.file);
       reader.onload = (event) => {
@@ -64,11 +185,14 @@ export class ChannelInfoFormComponent implements OnInit {
         }
       }
 
-      this.uploadFile(this.attachment);
+      this.uploadFile(this.attachment, previousLogoUrl);
     }
+    // Cleared so picking the same logo again (after a failed upload) fires a
+    // change event; a browser only fires it when the selection differs.
+    input.value = '';
   }
 
-  async uploadFile(attachment: Attachment) {
+  async uploadFile(attachment: Attachment, previousLogoUrl?: string) {
     try {
       const formData = new FormData();
       if (!attachment.file) return;
@@ -89,12 +213,10 @@ export class ChannelInfoFormComponent implements OnInit {
           }
         },
         error: (error) => {
-          if (error.status === 413) {
-            this.toastrService.danger("", "קובץ גדול מדי");
-          } else {
-            this.toastrService.danger("", "שגיאה בהעלאת קובץ");
-          }
+          this.toastrService.danger("", uploadErrorMessage(error.status));
           attachment.uploading = false;
+          // Drop the data: preview — only a server URL may reach the save.
+          this.channel.logoUrl = previousLogoUrl;
         },
       });
 

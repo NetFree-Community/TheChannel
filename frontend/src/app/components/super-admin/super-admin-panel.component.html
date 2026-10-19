@@ -1,0 +1,117 @@
+<nb-layout>
+  <nb-layout-header fixed>
+    <div class="sa-header">
+      <div class="sa-header__brand">
+        <span class="sa-header__logo" aria-hidden="true">
+          <nb-icon icon="shield-outline"></nb-icon>
+        </span>
+        <div class="sa-header__text">
+          <span class="sa-header__title">ניהול מערכת</span>
+          <span class="sa-header__sub">מסך המפעיל של כל הערוצים</span>
+        </div>
+      </div>
+
+      <div class="sa-header__actions">
+        <a nbButton ghost status="basic" size="small" routerLink="/"
+           nbTooltip="לדף הבית של האתר" aria-label="לדף הבית של האתר" class="sa-header__btn">
+          <nb-icon icon="home-outline"></nb-icon>
+          <span class="sa-header__btn-text">לאתר</span>
+        </a>
+        <button nbButton ghost status="basic" size="small" type="button" (click)="logout()"
+                [disabled]="loggingOut" nbTooltip="התנתקות מהחשבון" aria-label="התנתקות מהחשבון" class="sa-header__btn">
+          <nb-icon icon="log-out-outline"></nb-icon>
+          <span class="sa-header__btn-text">התנתקות</span>
+        </button>
+      </div>
+    </div>
+  </nb-layout-header>
+
+  <nb-layout-column>
+    <div class="sa-panel">
+      <nav class="sa-nav" aria-label="מדורי הניהול">
+        <ul class="sa-nav__list">
+          @for (s of sections; track s.id) {
+            <li>
+              <button type="button" class="sa-nav__item"
+                      [class.sa-nav__item--active]="activeSection === s.id"
+                      [attr.aria-current]="activeSection === s.id ? 'page' : null"
+                      (click)="select(s.id)">
+                <nb-icon [icon]="s.icon" class="sa-nav__icon"></nb-icon>
+                <span>{{ s.title }}</span>
+                @if (s.id === VIEW_SUPPORT && openTickets > 0) {
+                  <span class="sa-nav__badge" role="status"
+                        [attr.aria-label]="openTickets === 1 ? 'פנייה אחת ממתינה לתשובה' : openTickets + ' פניות ממתינות לתשובה'">
+                    {{ openTickets > 99 ? '99+' : openTickets }}
+                  </span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <main class="sa-content">
+        <header class="sa-intro">
+          @if (isChannelView) {
+            <button nbButton ghost status="basic" size="small" type="button"
+                    class="sa-intro__back" (click)="backToChannels()">
+              <nb-icon icon="arrow-forward-outline"></nb-icon>
+              חזרה לרשימת הערוצים
+            </button>
+          }
+          <h1 class="sa-intro__title">
+            <nb-icon [icon]="current.icon" class="sa-intro__icon" aria-hidden="true"></nb-icon>
+            {{ current.title }}
+            @if (selectedChannel) {
+              <span class="sa-intro__channel">
+                — {{ selectedChannel.name || selectedChannel.slug }}
+                <code class="sa-ltr sa-intro__slug">{{ selectedChannel.slug }}</code>
+              </span>
+            }
+          </h1>
+          <p class="sa-intro__description">{{ current.description }}</p>
+        </header>
+
+        @switch (selectedView) {
+          @case (VIEW_SUPPORT) {
+            <app-support-inbox></app-support-inbox>
+          }
+          @case (VIEW_CHANNELS) {
+            <app-channels-list
+              (editFeatures)="onEditFeatures($event)"
+              (manageUsers)="onManageUsers($event)"
+              (manageStorage)="onManageStorage($event)">
+            </app-channels-list>
+          }
+          @case (VIEW_CHANNEL_FEATURES) {
+            <app-channel-features [slug]="selectedChannel?.slug || ''"></app-channel-features>
+          }
+          @case (VIEW_CHANNEL_USERS) {
+            <app-channel-users [slug]="selectedChannel?.slug || ''"></app-channel-users>
+          }
+          @case (VIEW_CHANNEL_STORAGE) {
+            <app-super-admin-storage [slug]="selectedChannel?.slug || ''"></app-super-admin-storage>
+          }
+          @case (VIEW_GLOBAL_STORAGE) {
+            <app-global-storage></app-global-storage>
+          }
+          @case (VIEW_ADS) {
+            <app-global-ads></app-global-ads>
+          }
+          @case (VIEW_MAGNET) {
+            <app-global-magnet></app-global-magnet>
+          }
+          @case (VIEW_USERS) {
+            <app-global-users></app-global-users>
+          }
+          @case (VIEW_SETTINGS) {
+            <app-global-settings></app-global-settings>
+          }
+          @case (VIEW_STATISTICS) {
+            <app-super-admin-statistics (openMagnet)="select(VIEW_MAGNET)"></app-super-admin-statistics>
+          }
+        }
+      </main>
+    </div>
+  </nb-layout-column>
+</nb-layout>

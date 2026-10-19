@@ -14,27 +14,19 @@ func (r Reactions) MarshalBinary() ([]byte, error) {
 	return json.Marshal(r)
 }
 
-var emojis []string = []string{}
-
-func init() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	e, err := dbGetEmojisList(ctx)
+func isAllowedEmoji(ctx context.Context, slug, emoji string) bool {
+	list, err := dbGetEmojisList(ctx, slug)
 	if err != nil {
-		panic("Failed to load emojis list: " + err.Error())
+		return false
 	}
-
-	emojis = e
-}
-
-func isAllowedEmoji(emoji string) bool {
-	return slices.Contains(emojis, emoji)
+	return slices.Contains(list, emoji)
 }
 
 func setReactions(w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, cookieName)
 	userId := session.Values["user"].(Session).ID
+
+	slug := channelSlugFromCtx(r)
 
 	var req struct {
 		MessageID int    `json:"messageId"`
@@ -46,15 +38,15 @@ func setReactions(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if req.MessageID <= 0 || !isAllowedEmoji(req.Emoji) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if req.MessageID <= 0 || !isAllowedEmoji(ctx, slug, req.Emoji) {
 		http.Error(w, "Invalid message ID or reactions", http.StatusBadRequest)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := setReaction(ctx, req.MessageID, req.Emoji, userId); err != nil {
+	if err := setReaction(ctx, slug, req.MessageID, req.Emoji, userId); err != nil {
 		http.Error(w, "Failed to set reactions", http.StatusInternalServerError)
 		return
 	}
@@ -66,13 +58,26 @@ func setReactions(w http.ResponseWriter, r *http.Request) {
 }
 
 func getEmojisList(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	slug := channelSlugFromCtx(r)
+
+	list, err := dbGetEmojisList(ctx, slug)
+	if err != nil {
+		http.Error(w, "Failed to get emojis list", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(emojis)
+	json.NewEncoder(w).Encode(list)
 }
 
 func setEmojis(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	slug := channelSlugFromCtx(r)
 
 	req := struct {
 		Emojis []string `json:"emojis"`
@@ -84,17 +89,10 @@ func setEmojis(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// if len(req.Emojis) == 0 {
-	// 	http.Error(w, "No emojis provided", http.StatusBadRequest)
-	// 	return
-	// }
-
-	if err := dbSetEmojisList(ctx, req.Emojis); err != nil {
+	if err := dbSetEmojisList(ctx, slug, req.Emojis); err != nil {
 		http.Error(w, "Failed to set emojis", http.StatusInternalServerError)
 		return
 	}
-
-	emojis = req.Emojis
 
 	var res Response
 	res.Success = true

@@ -1,0 +1,160 @@
+:host {
+  display: block;
+}
+
+.guide-card {
+  margin-bottom: 0;
+}
+
+.guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.guide-header__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+
+  nb-icon {
+    font-size: 1.25rem;
+    color: var(--color-primary-600);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+}
+
+// Opened as a dialog the body scrolls inside the card; as a manage section
+// the page scrolls and the cap is lifted (see the phone rule below as well).
+.guide-body {
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+:host-context(app-manage-channel) .guide-body {
+  max-height: none;
+  overflow: visible;
+}
+
+.guide-lead {
+  margin: 0 0 1rem;
+  line-height: 1.6;
+  color: var(--text-hint-color);
+}
+
+.guide-accordion {
+  display: block;
+
+  ::ng-deep nb-accordion-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+}
+
+.guide-section-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-basic-color);
+}
+
+.role-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+  border: 1px solid transparent;
+
+  &--owner {
+    color: var(--color-primary-700);
+    border-color: var(--color-primary-400);
+    background: var(--color-primary-100);
+  }
+
+  &--moderator {
+    color: var(--color-info-700);
+    border-color: var(--color-info-400);
+    background: var(--color-info-100);
+  }
+}
+
+.guide-text {
+  margin: 0 0 0.75rem;
+  line-height: 1.6;
+  color: var(--text-basic-color);
+}
+
+.guide-subtitle {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-basic-color);
+}
+
+.guide-list {
+  margin: 0 0 0.5rem;
+  padding-inline-start: 1.25rem;
+  line-height: 1.7;
+  color: var(--text-basic-color);
+
+  li {
+    margin-bottom: 0.3rem;
+  }
+
+  .guide-list {
+    margin-top: 0.3rem;
+  }
+
+  &--steps li {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.guide-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-hint-color);
+}
+
+.guide-alert {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+code {
+  background: var(--background-basic-color-2);
+  color: var(--text-basic-color);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+  direction: ltr;
+  display: inline-block;
+  unicode-bidi: embed;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 576px) {
+  .guide-body {
+    max-height: none;
+  }
+
+  .guide-section-title {
+    font-size: 0.9rem;
+  }
+
+  .guide-list {
+    padding-inline-start: 1rem;
+  }
+}

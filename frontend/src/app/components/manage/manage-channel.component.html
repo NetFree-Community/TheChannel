@@ -1,0 +1,193 @@
+<nb-layout>
+  <nb-layout-header fixed>
+    <div class="bar">
+      <a nbButton ghost status="basic" size="small" class="bar__back"
+         [routerLink]="['/channel', slug]" aria-label="חזרה לערוץ" nbTooltip="חזרה לערוץ">
+        <nb-icon icon="arrow-forward-outline"></nb-icon>
+        <span class="bar__back-text">חזרה לערוץ</span>
+      </a>
+
+      <div class="bar__channel">
+        <span class="bar__logo" aria-hidden="true">
+          @if (logoUrl) {
+            <img [src]="logoUrl" alt="" width="36" height="36" loading="lazy">
+          } @else {
+            <span class="bar__initial">{{ initial }}</span>
+          }
+        </span>
+        <span class="bar__text">
+          <span class="bar__name">{{ channelName }}</span>
+          <span class="bar__sub">ניהול הערוץ</span>
+        </span>
+      </div>
+
+      <div class="bar__actions">
+        @if (showSwitcher) {
+          <nb-select size="small" class="bar__switch" [selected]="slug" (selectedChange)="switchChannel($event)"
+                     aria-label="מעבר לערוץ אחר שאתם מנהלים" nbTooltip="מעבר לערוץ אחר">
+            <nb-select-label>
+              <nb-icon icon="swap-outline" class="switch__icon"></nb-icon>
+              <span class="switch__current">{{ channelName }}</span>
+            </nb-select-label>
+            @for (c of switcherChannels; track c.slug) {
+              <nb-option [value]="c.slug">
+                <span class="switch__name">{{ c.slug === slug ? channelName : (c.name || c.slug) }}</span>
+                <span class="switch__role">{{ switcherSynthetic && c.slug === slug ? 'מנהל-על' : roleLabels[c.role] }}</span>
+              </nb-option>
+            }
+          </nb-select>
+        }
+        <a nbButton ghost status="basic" size="small" routerLink="/channel"
+           aria-label="הערוצים שלי" nbTooltip="הערוצים שלי">
+          <nb-icon icon="grid-outline"></nb-icon>
+          <span class="bar__hub-text">הערוצים שלי</span>
+        </a>
+      </div>
+    </div>
+  </nb-layout-header>
+
+  <nb-layout-column>
+    <div class="manage">
+      <aside class="manage__nav">
+        <nav class="side" aria-label="מדורי הניהול">
+          @for (s of sections; track s.id) {
+            <a class="side__item" [class.is-active]="isActive(s)" [routerLink]="link(s.id)"
+               [attr.aria-current]="isActive(s) ? 'page' : null">
+              <nb-icon [icon]="s.icon" class="side__icon"></nb-icon>
+              <span class="side__text">
+                <span class="side__title">{{ s.title }}</span>
+                <span class="side__desc">{{ s.nav }}</span>
+              </span>
+            </a>
+            @if (s.id === 'reports' && isActive(s)) {
+              <div class="side__sub">
+                @for (f of reportFilters; track f.id) {
+                  <a class="side__subitem" [class.is-active]="tab === f.id" [routerLink]="link(f.id)">{{ f.title }}</a>
+                }
+              </div>
+            }
+          }
+        </nav>
+      </aside>
+
+      <nav class="manage__tabs" #tabStrip aria-label="מדורי הניהול">
+        @for (s of sections; track s.id) {
+          <a class="tab" [class.is-active]="isActive(s)" [routerLink]="link(s.id)"
+             [attr.aria-current]="isActive(s) ? 'page' : null">
+            <nb-icon [icon]="s.icon"></nb-icon>
+            <span>{{ s.title }}</span>
+          </a>
+        }
+      </nav>
+
+      <section class="manage__content">
+        @if (loading) {
+          <nb-card class="state-card">
+            <nb-card-body class="state-card__body">
+              <nb-spinner status="primary" size="large" message=""></nb-spinner>
+              <p>טוענים את פרטי הערוץ…</p>
+            </nb-card-body>
+          </nb-card>
+        } @else if (loadError) {
+          <nb-card class="state-card">
+            <nb-card-body class="state-card__body">
+              <nb-icon [icon]="loadError === 'network' ? 'wifi-off-outline' : 'lock-outline'" class="state-card__icon"></nb-icon>
+              @switch (loadError) {
+                @case ('notfound') {
+                  <h1 class="state-card__title">הערוץ לא נמצא</h1>
+                  <p>ייתכן שהכתובת שגויה או שהערוץ נמחק.</p>
+                }
+                @case ('forbidden') {
+                  <h1 class="state-card__title">אין לכם גישה לערוץ הזה</h1>
+                  <p>כדי לנהל ערוץ צריך תפקיד של מנהל או בעלים בו. אם קיבלתם הרשאה הרגע — התחברו מחדש.</p>
+                }
+                @default {
+                  <h1 class="state-card__title">לא הצלחנו לטעון את הערוץ</h1>
+                  <p>בדקו את החיבור לאינטרנט ונסו שוב.</p>
+                }
+              }
+              <div class="state-card__actions">
+                @if (loadError === 'network') {
+                  <button nbButton status="primary" size="small" type="button" (click)="reload()">
+                    <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+                  </button>
+                }
+                <a nbButton ghost status="basic" size="small" routerLink="/channel">
+                  <nb-icon icon="grid-outline"></nb-icon> הערוצים שלי
+                </a>
+              </div>
+            </nb-card-body>
+          </nb-card>
+        } @else {
+          @if (section; as s) {
+            <header class="intro">
+              <h1 class="intro__title">{{ s.title }}</h1>
+              <p class="intro__description">{{ s.description }}</p>
+              @if (s.help) {
+                <nb-accordion class="intro__help">
+                  <nb-accordion-item>
+                    <nb-accordion-item-header>
+                      <nb-icon icon="question-mark-circle-outline"></nb-icon>
+                      <span>מה זה?</span>
+                    </nb-accordion-item-header>
+                    <nb-accordion-item-body>{{ s.help }}</nb-accordion-item-body>
+                  </nb-accordion-item>
+                </nb-accordion>
+              }
+            </header>
+          }
+
+          @if (accessDenied) {
+            <nb-card class="state-card">
+              <nb-card-body class="state-card__body">
+                <nb-icon icon="lock-outline" class="state-card__icon"></nb-icon>
+                <h2 class="state-card__title">המסך הזה כבר לא פתוח בפניכם</h2>
+                <p>ההרשאה שלכם בערוץ השתנתה. אם זו טעות, פנו לבעלי הערוץ.</p>
+                <div class="state-card__actions">
+                  <a nbButton status="primary" size="small" [routerLink]="['/channel', slug]">
+                    <nb-icon icon="arrow-forward-outline"></nb-icon> חזרה לערוץ
+                  </a>
+                </div>
+              </nb-card-body>
+            </nb-card>
+          } @else {
+            <!-- Keyed on the role-filtered menu, not the raw id: an owner-only
+                 section a moderator deep-links to lands on the not-found card
+                 instead of being mounted, answering 403 and claiming their
+                 role "changed". -->
+            @switch (section ? tab : '') {
+              @case ('info') { <app-channel-info-form></app-channel-info-form> }
+              @case ('settings') { <app-settings (accessDenied)="onAccessDenied()"></app-settings> }
+              @case ('users') { <app-privileg-dashboard (accessDenied)="onAccessDenied()"></app-privileg-dashboard> }
+              @case ('statistics') { <app-statistics (accessDenied)="onAccessDenied()"></app-statistics> }
+              @case ('emojis') { <app-emojis></app-emojis> }
+              @case ('magnet-ads') { <app-magnet-ads (accessDenied)="onAccessDenied()"></app-magnet-ads> }
+              @case ('storage') { <app-channel-storage [slug]="slug" (accessDenied)="onAccessDenied()"></app-channel-storage> }
+              @case ('reports') { <app-reports [status]="'open'" (accessDenied)="onAccessDenied()"></app-reports> }
+              @case ('reports-closed') { <app-reports [status]="'closed'" (accessDenied)="onAccessDenied()"></app-reports> }
+              @case ('reports-all') { <app-reports [status]="'all'" (accessDenied)="onAccessDenied()"></app-reports> }
+              @case ('guide') { <app-guide></app-guide> }
+              @case ('support') {
+                <app-support-box [channelSlug]="slug" [signedIn]="true" title="פנייה לתמיכה"
+                  subtitle="שאלה, תקלה או בקשה — הפנייה מגיעה להנהלת המערכת, והתשובה תופיע כאן.">
+                </app-support-box>
+              }
+              @default {
+                <nb-card class="state-card">
+                  <nb-card-body class="state-card__body">
+                    <nb-icon icon="compass-outline" class="state-card__icon"></nb-icon>
+                    <h1 class="state-card__title">המסך המבוקש לא נמצא</h1>
+                    <p>ייתכן שהוא פתוח רק לבעלי הערוץ, או שהכתובת שגויה.</p>
+                    <div class="state-card__actions">
+                      <a nbButton status="primary" size="small" [routerLink]="link('info')">לפרטי הערוץ</a>
+                    </div>
+                  </nb-card-body>
+                </nb-card>
+              }
+            }
+          }
+        }
+      </section>
+    </div>
+  </nb-layout-column>
+</nb-layout>

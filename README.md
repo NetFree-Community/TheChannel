@@ -1,5 +1,5 @@
 # הערוץ
-![Go](https://img.shields.io/badge/Go-1.22-blue?style=flat-square&logo=go)
+![Go](https://img.shields.io/badge/Go-1.25-blue?style=flat-square&logo=go)
 ![Angular](https://img.shields.io/badge/Angular-DD0031?style=flat&logo=angular&logoColor=white)
 ![Caddy](https://img.shields.io/badge/Caddy-00BFB3?style=flat&logo=caddy&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
@@ -24,16 +24,20 @@ Caddy לניהול דומיין ויצירת תעודה עבור האתר.
 
 ```caddy
 example.com {
-  reverse_proxy backend:3000
+  reverse_proxy backend:3000 {
+    header_up X-Real-IP {remote_host}
+    header_up -True-Client-IP
+  }
 }
 ```
 
+שתי שורות ה-`header_up` הן חובה, כמו בקובץ `Caddyfile` שמגיע עם הפרויקט: השרת סומך על הכותרת `X-Real-IP` כדי לזהות את כתובת הלקוח (הגבלת קצב לפי IP ורישום ללוג), ולכן היא חייבת להיקבע על ידי ה-proxy ולא להגיע מהלקוח.  
 מלבד הטיפול בבקשות והפניה ל Container המתאים, **Caddy** מטפל גם בהוספת תעודה לדומיין.  
 כך שנותר רק להריץ `docker-compose up --build -d`.  
 
 ## הוראות שימוש  
-לאחר ההרצה הראשונה, יש להכנס למערכת עם חשבון שמוגדר כמנהל.  
-הגדרת מנהלים המזוהים באמצעות כתובת המייל, תחת משתנה הסביבה:  
+לאחר ההרצה הראשונה, יש להכנס למערכת עם חשבון שמוגדר כמנהל-על.  
+הגדרת מנהלי-על המזוהים באמצעות כתובת המייל, תחת משתנה הסביבה:  
 ```
 ADMIN_USERS=example@gmail.com,example1@gmail.com
 ```
@@ -42,7 +46,9 @@ https://example.com/login
 ולהזדהות באמצעות חשבון גוגל. הערכים הדרושים נמצאים בקובץ env.  
 יצירת חשבון והגדרת חשבון עבור הערוץ בגוגל, ניתן לראות דוגמא במדריך [זה](https://dev.to/idrisakintobi/a-step-by-step-guide-to-google-oauth2-authentication-with-javascript-and-bun-4he7).  
 
-יש להגדיר את שם הערוץ תיאור הערוץ ולהעלות לוגו, שמירה וניתן להתחיל לפרסם הודעות...  
+מנהל-על מועבר אחרי הכניסה לפאנל מנהל-העל (`/super-admin`). שם, תחת **ערוצים** ← **ערוץ חדש**, יוצרים את הערוץ הראשון ובוחרים לו מזהה (slug).  
+הערוץ נפתח בכתובת `https://example.com/channel/<slug>`. בתוך הערוץ: תפריט המשתמש ← **ניהול הערוץ** ← **פרטי הערוץ** — מגדירים שם, תיאור ולוגו, שומרים, וניתן להתחיל לפרסם הודעות.  
+משתמש רגיל לוחץ בדף הבית על "פתיחת ערוץ" — הלחיצה מעבירה ישירות לכניסה עם גוגל — ומגיע לעמוד **הערוצים שלי** (`/channel`): משם פותחים ערוץ משלו תוך רגע (עד 5 ערוצים לחשבון), עוברים בין הערוצים, משתפים את הקישור ומגיעים למסך הניהול של כל ערוץ (`/channel/<slug>/manage`). פירוט ב-[SET.md](SET.md).  
 
 ## הגדרות נוספות
 [שאר ההגדרות, הוראות מפורטות ועוד נמצאים כאן](SET.md).

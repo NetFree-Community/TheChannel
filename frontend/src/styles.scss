@@ -1,25 +1,112 @@
 @use 'themes' as *;
 @use '@nebular/theme/styles/globals' as *;
-@use '@ctrl/ngx-emoji-mart/picker';
 
+// Nebular's global styles (layout, typography, scrollbars), compiled once for
+// the registered `custom` theme. The prebuilt default.css that used to be
+// loaded beside this was a second full copy of the same framework CSS with the
+// default palette, which this compilation then had to override rule by rule —
+// roughly half of the stylesheet bytes every visitor downloaded.
 @include nb-install() {
-    @include nb-theme-global();
+  @include nb-theme-global();
 }
 
-/* You can add global styles to this file, and also import other style files */
-@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css');
+:root {
+  // Measured at runtime by the channel page (fixed header / composer heights).
+  // Declared here so a selector reading them before the first measurement
+  // resolves to 0 instead of an invalid value.
+  --chrome-height: 0px;
+  --input-height: 0px;
 
-markdown,
-markdown p {
-    font-weight: 500;
-    font-size: clamp(0.875rem, 2.5vw, 1.15rem);
+  // Emoji render with the colour-emoji font every OS ships. The 24 MB
+  // NotoColorEmoji.ttf that was served from /assets for this purpose — larger
+  // than the rest of the app several times over — is gone.
+  --font-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
+
+  // Type scale. Screens used to pick sizes ad hoc (fs-4, fs-5, h6, small),
+  // so the same kind of text was a different size on every page.
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 1rem;
+  --text-feed: 1.0625rem;
+  --text-lg: 1.15rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --leading-tight: 1.3;
+  --leading-body: 1.6;
+
+  // Motion. One speed and one curve for every hover, press and reveal, so
+  // the app moves as one thing; the reduced-motion block below turns it off.
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-@font-face {
-    font-family: 'Noto Color Emoji';
-    src: url('assets/fonts/NotoColorEmoji-Regular/NotoColorEmoji-Regular.ttf') format('truetype');
+// A shorter header on phones: the theme's 4.75rem bar left a 360px screen
+// with little room for the feed. Every layout rule reads the token, so the
+// fixed-header offsets follow.
+@media (max-width: 575.98px) {
+  .nb-theme-custom {
+    --header-height: 4.25rem;
+    --header-padding: 0.75rem;
+  }
+}
+
+// Nebular's toast is a fixed 400px: on a 360px phone its left 48px, and the
+// end of the text, were off-screen. 1rem covers its 0.5rem margin on each side.
+nb-toast {
+  max-width: calc(100vw - 1rem);
+}
+
+// Buttons answer the pointer: a short colour/shadow transition and a slight
+// press. Nebular styles them without any transition.
+[nbButton],
+.appearance-filled,
+.appearance-ghost,
+.appearance-outline {
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+
+  &:active:not([disabled]) {
+    transform: scale(0.97);
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .emoji {
-    font-family: 'Noto Color Emoji', sans-serif;
+  font-family: var(--font-emoji);
+}
+
+// Feed text. Weight 500 used to be requested here although only 400/600/700/800
+// are loaded, so browsers synthesised it or fell back silently.
+markdown,
+markdown p {
+  font-weight: 400;
+  font-size: var(--text-feed);
+  line-height: var(--leading-body);
+}
+
+// Honour the OS "reduce motion" setting for every transition the theme adds.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

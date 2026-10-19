@@ -1,0 +1,272 @@
+<div class="magnet-page">
+
+  @if (loading) {
+    <nb-card>
+      <nb-card-body class="magnet-loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים את ההגדרות…"></nb-card-body>
+    </nb-card>
+  } @else if (loadFailed) {
+    <nb-card>
+      <nb-card-body class="magnet-empty">
+        <nb-icon icon="wifi-off-outline"></nb-icon>
+        <strong>לא הצלחנו לטעון את ההגדרות</strong>
+        <span>בלי העותק השמור אי אפשר לשמור — אחרת הגדרות אחרות של הערוץ היו נמחקות. נסו שוב.</span>
+        <button nbButton status="primary" size="small" type="button" (click)="loadSettings()">
+          <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+        </button>
+      </nb-card-body>
+    </nb-card>
+  } @else {
+
+    @if (locked) {
+      <nb-alert status="warning" class="magnet-alert">
+        הנהלת המערכת קבעה הגדרות פרסומת אחידות לכל הערוצים, ולכן ההגדרות כאן נעולות ואי אפשר לשמור אותן כל עוד הנעילה פעילה.
+      </nb-alert>
+    }
+
+    <nb-card>
+      <nb-card-header class="card-head">
+        <nb-icon icon="pricetags-outline"></nb-icon>
+        <h2>מה זה מגנט ADS ואיך מחברים</h2>
+        <span class="pill" [class.pill--on]="enabled && !enabledWithoutSnippet" [class.pill--warn]="enabledWithoutSnippet">
+          <nb-icon [icon]="enabled ? 'checkmark-circle-2-outline' : 'close-circle-outline'"></nb-icon>
+          {{ enabled ? (enabledWithoutSnippet ? 'דלוק, חסר קוד' : 'פעיל') : 'כבוי' }}
+        </span>
+      </nb-card-header>
+
+      <nb-card-body>
+        <p class="lead">
+          מגנט ADS היא רשת פרסום חיצונית שמשלמת לבעלי אתרים על הקלקות. כדי להשתמש בה צריך חשבון במערכת מגנט
+          וקוד הטמעה שמקבלים שם — מדביקים אותו כאן, והפרסומת מופיעה בין ההודעות בערוץ, נטענת אצל הקורא רק
+          כשהוא מגיע אליה. אם למגנט אין פרסומת להציג, פשוט לא מופיע כלום.
+        </p>
+
+        <div class="field is-toggle">
+          <div class="toggle-row">
+            <nb-toggle [(checked)]="enabled" labelPosition="end">
+              <span class="field__label field__label--inline">הצגת פרסומות ממגנט בערוץ</span>
+            </nb-toggle>
+          </div>
+          <p class="field__hint field__hint--toggle">
+            כבוי — אין פרסומות בכלל, גם אם יש קוד. דלוק — הפרסומות מופיעות לפי התדירות שבוחרים למטה.
+          </p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="snippet">קוד ההטמעה ממגנט</label>
+          <p class="field__hint">
+            מעתיקים מהמערכת של מגנט ומדביקים כאן כמו שהוא (HTML/JavaScript). הקוד מוטמע בכל מקום שבו מופיעה
+            פרסומת. בלי קוד — גם כשהמתג דלוק לא יוצג כלום.
+          </p>
+          <textarea
+            nbInput
+            fullWidth
+            id="snippet"
+            rows="7"
+            dir="ltr"
+            spellcheck="false"
+            [(ngModel)]="snippet"
+            placeholder='<div id="magnet-ad"></div>&#10;<script src="https://magnet.example/embed.js"></script>'>
+          </textarea>
+          @if (enabledWithoutSnippet) {
+            <p class="field__warn" role="status">
+              <nb-icon icon="alert-triangle-outline"></nb-icon>
+              המתג דלוק אבל אין קוד הטמעה — הקוראים לא יראו פרסומות.
+            </p>
+          }
+        </div>
+      </nb-card-body>
+    </nb-card>
+
+    <nb-card>
+      <nb-card-header class="card-head">
+        <nb-icon icon="clock-outline"></nb-icon>
+        <h2>כל כמה זמן מופיעה פרסומת</h2>
+      </nb-card-header>
+
+      <nb-card-body>
+        <p class="lead">בוחרים לפי מה לספור: לפי מספר ההודעות שהקורא גלל, או לפי הזמן שעבר.</p>
+
+        <div class="mode-options" role="radiogroup" aria-label="שיטת התזמון">
+          <nb-radio
+            name="magnet-mode"
+            value="by_messages"
+            [checked]="mode === 'by_messages'"
+            (valueChange)="mode = $any($event)">
+            לפי מספר הודעות
+          </nb-radio>
+          <nb-radio
+            name="magnet-mode"
+            value="by_time"
+            [checked]="mode === 'by_time'"
+            (valueChange)="mode = $any($event)">
+            לפי זמן
+          </nb-radio>
+        </div>
+
+        @if (mode === 'by_messages') {
+          <div class="field">
+            <label class="field__label" for="per-messages">פרסומת אחת כל כמה הודעות</label>
+            <p class="field__hint">למשל 5 — פרסומת אחרי כל חמש הודעות.</p>
+            <input nbInput type="number" inputmode="numeric" min="1" id="per-messages" class="input--short" [(ngModel)]="perMessages">
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="min-time">ולא יותר מפעם בכל… (שניות)</label>
+            <p class="field__hint">
+              גם אם עברו מספיק הודעות, פרסומת לא תופיע אחרי הודעה שפורסמה פחות מזה אחרי ההודעה של הפרסומת הקודמת. 0 או ריק — בלי הגבלה.
+            </p>
+            <input nbInput type="number" inputmode="numeric" min="0" id="min-time" class="input--short" [(ngModel)]="minTimeSeconds">
+          </div>
+        }
+
+        @if (mode === 'by_time') {
+          <div class="field">
+            <label class="field__label" for="per-seconds">פרסומת אחת כל כמה שניות</label>
+            <p class="field__hint">הזמן נמדד בין שעות הפרסום של ההודעות, לא לפי זמן הקריאה. למשל 60 — פרסומת אחרי ההודעה הראשונה שפורסמה דקה או יותר אחרי ההודעה של הפרסומת הקודמת.</p>
+            <input nbInput type="number" inputmode="numeric" min="1" id="per-seconds" class="input--short" [(ngModel)]="perSeconds">
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="min-msgs">ורק אחרי לפחות… הודעות חדשות</label>
+            <p class="field__hint">
+              גם אם עבר הזמן, פרסומת לא תופיע אם לא נוספו מאז הקודמת לפחות כך וכך הודעות. 0 או ריק — בלי הגבלה.
+            </p>
+            <input nbInput type="number" inputmode="numeric" min="0" id="min-msgs" class="input--short" [(ngModel)]="minMessagesSince">
+          </div>
+        }
+      </nb-card-body>
+    </nb-card>
+
+    <!-- The channel's own Magnet numbers. Nisim's rule: a channel that runs
+         its own embed earns from it and may see them; a locked channel serves
+         the platform's embed, so its managers see nothing here at all — the
+         server refuses the routes too. The super admin gets a pointer to the
+         platform's statistics instead. -->
+    @if (ownStats === 'locked') {
+      @if (isSuperAdmin) {
+        <nb-card>
+          <nb-card-header class="card-head">
+            <nb-icon icon="bar-chart-2-outline"></nb-icon>
+            <h2>נתוני מגנט</h2>
+            <span class="pill">מנהל-על</span>
+          </nb-card-header>
+          <nb-card-body>
+            <p class="lead">
+              הערוץ נעול להגדרות המגנט של המערכת, ולכן הפרסומות בו נספרות בנתוני האתר הראשי. מנהלי הערוץ לא
+              רואים כאן שום נתון מגנט.
+            </p>
+            <a nbButton status="primary" size="small" routerLink="/super-admin" [queryParams]="{ view: 'statistics' }">
+              <nb-icon icon="bar-chart-outline"></nb-icon>
+              לסטטיסטיקות של המערכת
+            </a>
+          </nb-card-body>
+        </nb-card>
+      }
+    } @else if (ownStats === 'ready') {
+      <nb-card>
+        <nb-card-header class="card-head">
+          <nb-icon icon="bar-chart-2-outline"></nb-icon>
+          <h2>הנתונים שלכם ממגנט</h2>
+          <span class="pill" [class.pill--on]="statsKeySet">
+            <nb-icon [icon]="statsKeySet ? 'checkmark-circle-2-outline' : 'close-circle-outline'"></nb-icon>
+            {{ statsKeySet ? 'מחובר' : 'לא מחובר' }}
+          </span>
+        </nb-card-header>
+
+        <nb-card-body>
+          @if (!statsKeySet || editingKey) {
+            <p class="lead">
+              הפרסומות בערוץ רצות מחשבון המגנט שלכם, ולכן גם הרווח שלכם. כדי לראות כאן קליקים ורווח, צרו מפתח
+              סטטיסטיקה בחשבון המגנט שלכם: <strong>קוד הטמעה ← מפתח סטטיסטיקה</strong>, והדביקו אותו כאן.
+            </p>
+            <div class="field">
+              <label class="field__label" for="magnet-stats-key">מפתח סטטיסטיקה</label>
+              <p class="field__hint">
+                מתחיל ב-mgs_. נשמר בשרת בלבד ולא מוצג שוב, גם לא לכם — כדי להחליף מדביקים מפתח חדש.
+              </p>
+              <div class="key-row">
+                <input
+                  #keyField
+                  nbInput
+                  fullWidth
+                  id="magnet-stats-key"
+                  type="text"
+                  dir="ltr"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="mgs_…"
+                  [status]="keyError ? 'danger' : 'basic'"
+                  [(ngModel)]="keyInput"
+                  (keydown.enter)="saveKey()">
+                <button nbButton status="primary" type="button" (click)="saveKey()" [disabled]="keySaving || !keyInput.trim()">
+                  <nb-icon icon="save-outline"></nb-icon>
+                  {{ keySaving ? 'שומרים…' : 'שמירת המפתח' }}
+                </button>
+                @if (editingKey) {
+                  <button nbButton ghost status="basic" type="button" (click)="cancelKeyEdit()" [disabled]="keySaving">ביטול</button>
+                }
+              </div>
+              @if (keyError) {
+                <p class="field__warn field__warn--danger" role="alert">
+                  <nb-icon icon="alert-circle-outline"></nb-icon>
+                  {{ keyError }}
+                </p>
+              }
+            </div>
+          } @else {
+            <div class="key-set">
+              <span class="key-set__text">
+                <nb-icon icon="lock-outline"></nb-icon>
+                מפתח הסטטיסטיקה של הערוץ שמור. הנתונים למטה מגיעים מחשבון המגנט שלכם.
+              </span>
+              <span class="key-set__actions">
+                <button nbButton ghost status="basic" size="small" type="button" (click)="startKeyEdit()" [disabled]="keySaving">
+                  <nb-icon icon="swap-outline"></nb-icon>
+                  החלפת מפתח
+                </button>
+                <button nbButton ghost status="danger" size="small" type="button" (click)="clearKey()" [disabled]="keySaving">
+                  <nb-icon icon="trash-2-outline"></nb-icon>
+                  מחיקה
+                </button>
+              </span>
+            </div>
+          }
+        </nb-card-body>
+      </nb-card>
+
+      @if (statsKeySet) {
+        <app-magnet-stats-panel
+          [source]="statsSource"
+          heading="הפרסומות בערוץ"
+          fixKeyLabel="החלפת המפתח"
+          (fixKey)="startKeyEdit()"></app-magnet-stats-panel>
+      }
+    } @else if (ownStats === 'error') {
+      <nb-card>
+        <nb-card-body class="magnet-empty">
+          <nb-icon icon="wifi-off-outline"></nb-icon>
+          <strong>נתוני מגנט לא נטענו</strong>
+          <button nbButton status="primary" size="small" type="button" (click)="loadOwnStats()">
+            <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+          </button>
+        </nb-card-body>
+      </nb-card>
+    }
+
+    <div class="save-bar">
+      <button nbButton status="primary" type="button" (click)="save()" [disabled]="inProgress || locked || !loaded"
+              [nbSpinner]="inProgress" nbSpinnerStatus="control" nbSpinnerSize="small">
+        <nb-icon icon="save-outline"></nb-icon>
+        {{ inProgress ? 'שומרים…' : 'שמירת שינויים' }}
+      </button>
+      @if (dirty && !inProgress) {
+        <button nbButton ghost status="basic" size="small" type="button" (click)="resetChanges()">ביטול שינויים</button>
+      }
+      <span class="save-bar__spacer"></span>
+      <span class="save-bar__state" [class.is-dirty]="dirty" aria-live="polite">
+        {{ locked ? 'נעול על ידי הנהלת המערכת' : dirty ? 'יש שינויים שלא נשמרו' : 'הכול שמור' }}
+      </span>
+    </div>
+  }
+
+</div>

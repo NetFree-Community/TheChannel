@@ -10,7 +10,6 @@ import (
 
 	"github.com/boj/redistore"
 	"github.com/icza/dyno"
-	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/idtoken"
@@ -37,12 +36,13 @@ type GoogleAuthValues struct {
 }
 
 type Session struct {
-	ID         string     `json:"id"`
-	Username   string     `json:"username"`
-	Email      string     `json:"email"`
-	PublicName string     `json:"publicName"`
-	Picture    string     `json:"picture,omitempty"`
-	Privileges Privileges `json:"privileges,omitempty"`
+	ID           string                 `json:"id"`
+	Username     string                 `json:"username"`
+	Email        string                 `json:"email"`
+	PublicName   string                 `json:"publicName"`
+	Picture      string                 `json:"picture,omitempty"`
+	GlobalRole   GlobalRole             `json:"globalRole,omitempty"`
+	ChannelRoles map[string]ChannelRole `json:"channelRoles,omitempty"`
 }
 
 type Response struct {
@@ -65,6 +65,13 @@ func login(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	defer r.Body.Close()
 	var auth Auth
+
+	// Rationed first: the round trip to Google is the expensive part, but the
+	// failure paths below each spawn an audit-log write too, so an unlimited
+	// stream of malformed requests was an unlimited stream of goroutines.
+	if !allowOrRetryAfter(w, loginLimiter(clientKey(r)), "too many login attempts — please wait") {
+		return
+	}
 
 	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
 		go saveLoginFailedLog("Decode", err)
@@ -94,21 +101,36 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !token.Valid() {
-		go saveLoginFailedLog("Invalid token", nil)
+		go saveLoginFailedLog("Invalid token", errors.New("oauth2 token not valid"))
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
 	tokenStr, _ := dyno.GetString(token.Extra("id_token"))
 	tokenValidator, err := idtoken.NewValidator(ctx)
+	if err != nil {
+		go saveLoginFailedLog("NewValidator", err)
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
 	payload, err := tokenValidator.Validate(ctx, tokenStr, googleOAuthClientId)
 	if err != nil {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
+	// The email address is the sole authorization principal (ADMIN_USERS,
+	// ownerEmail, channel roles), so an unproven one must not be accepted.
+	// Google always emits email_verified alongside email for the scopes we
+	// request, so an absent claim is treated as unverified.
+	if verified, verr := dyno.GetBoolean(payload.Claims["email_verified"]); verr != nil || !verified {
+		go saveLoginFailedLog("unverified email", errors.New("email_verified claim is false or absent"))
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
 	email, _ := dyno.GetString(payload.Claims["email"])
-	go registeringEmail(email)
+	go registeringEmail("", normEmail(email))
 
 	u, err := getUser(ctx, payload.Claims)
 	if err != nil {
@@ -118,15 +140,25 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 	picture, _ := dyno.GetString(payload.Claims["picture"])
 	userSession := Session{
-		ID:         u.ID,
-		Username:   u.Username,
-		PublicName: u.PublicName,
-		Picture:    picture,
-		Privileges: u.Privileges,
-		Email:      u.Email,
+		ID:           u.ID,
+		Username:     u.Username,
+		PublicName:   u.PublicName,
+		Picture:      picture,
+		GlobalRole:   u.GlobalRole,
+		ChannelRoles: u.ChannelRoles,
+		Email:        u.Email,
 	}
 
 	session, _ := store.Get(r, cookieName)
+	// Rotate the session identifier before writing the authenticated principal,
+	// otherwise an attacker-planted cookie would be upgraded to the victim's
+	// session (fixation). redistore mints a fresh ID only when ID is empty.
+	if session.ID != "" {
+		session.Options.MaxAge = -1
+		_ = session.Save(r, w)       // drops session_<oldID> from Redis
+		w.Header().Del("Set-Cookie") // discard the expiry cookie; the real one is set below
+		session.ID = ""
+	}
 	session.Values["user"] = userSession
 	session.Options.MaxAge = 60 * 60 * 24 * 30 // 30 days
 	if err := session.Save(r, w); err != nil {
@@ -171,23 +203,29 @@ func checkLogin(next http.Handler) http.Handler {
 	})
 }
 
-func checkPrivilege(r *http.Request, privilege Privilege) bool {
-	session, _ := store.Get(r, cookieName)
-
-	s, ok := session.Values["user"].(Session)
-	if !ok {
-		return false
-	}
-
-	return s.Privileges[privilege]
-}
-
 func getUserInfo(w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, cookieName)
 	userInfo, ok := session.Values["user"].(Session)
 	if !ok {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
+	}
+
+	// Register the viewer against the channel they entered. This is the only
+	// per-channel writer of registered_emails, which backs the channel user
+	// count. Returns "" on the global mount, which stays unaffected.
+	if slug := channelSlugFromCtx(r); slug != "" {
+		go registeringEmail(slug, userInfo.Email)
+	}
+
+	// Authorization resolves roles live (see sessionUser); the copy stored in
+	// the cookie at login time can be stale, so refresh it before responding
+	// or the UI would keep offering actions the backend now rejects.
+	userInfo.GlobalRole = ""
+	userInfo.ChannelRoles = nil
+	if u, ok := sessionUser(r); ok {
+		userInfo.GlobalRole = u.GlobalRole
+		userInfo.ChannelRoles = u.ChannelRoles
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -197,7 +235,8 @@ func getUserInfo(w http.ResponseWriter, r *http.Request) {
 func getUser(ctx context.Context, claims map[string]any) (*User, error) {
 	var user User
 
-	email, _ := dyno.GetString(claims["email"])
+	rawEmail, _ := dyno.GetString(claims["email"])
+	email := normEmail(rawEmail)
 	if email == "" {
 		return nil, errors.New("email not found in claims")
 	}
@@ -208,7 +247,8 @@ func getUser(ctx context.Context, claims map[string]any) (*User, error) {
 	id, _ := dyno.GetString(claims["sub"]) // Google user ID
 
 	if v, ok := privilegesUsers.Load(email); ok {
-		user = v.(User)
+		stored := v.(User)
+		user = stored
 		if user.ID != id && id != "" {
 			user.ID = id
 		}
@@ -221,26 +261,59 @@ func getUser(ctx context.Context, claims map[string]any) (*User, error) {
 		if user.PublicName == "" {
 			user.PublicName = name
 		}
-		privilegesUsers.Store(email, user)
-		users, err := dbGetUsersList(ctx)
-		if err != nil && err != redis.Nil {
-			return nil, err
+		// Only write when a profile field actually changed. Every privileged
+		// login used to rewrite the whole users:list blob under WATCH, so a
+		// burst of logins contended with each other and with role edits, and
+		// the loser's login answered 500 — for a write that changed nothing.
+		if user.ID == stored.ID && user.Username == stored.Username &&
+			user.Email == stored.Email && user.PublicName == stored.PublicName {
+			return &user, nil
 		}
-		for i, u := range users {
-			if u.Email == email {
-				users[i] = user
+		// Refresh only the profile fields, atomically. Writing the whole in-memory
+		// User back would race with (and undo) a concurrent role edit, and the
+		// roles are owned by the admin paths, not by a login.
+		if err := dbUpdateUsersList(ctx, func(users []User) []User {
+			for i := range users {
+				if normEmail(users[i].Email) == email {
+					users[i].ID = user.ID
+					users[i].Username = user.Username
+					users[i].Email = user.Email
+					users[i].PublicName = user.PublicName
+				}
 			}
-		}
-		if err := dbSetUsersList(ctx, users); err != nil {
+			return users
+		}); err != nil {
 			return nil, err
+		}
+		// Update the live map the same way: merge profile fields onto whatever
+		// entry is CURRENT, never store the pre-refresh snapshot wholesale — a
+		// role rebuild landing between the Load above and here would otherwise be
+		// overwritten with pre-revocation roles (or a deleted entry resurrected).
+		if cur, ok := privilegesUsers.Load(email); ok {
+			c := cur.(User)
+			c.ID, c.Username, c.Email, c.PublicName = user.ID, user.Username, user.Email, user.PublicName
+			privilegesUsers.Store(email, c)
 		}
 	} else {
+		// PublicName is what posts and the audit trail show; a first-time user
+		// used to get none, so their first message carried an empty author.
 		user = User{
-			ID:       id,
-			Username: name,
-			Email:    email,
+			ID:         id,
+			Username:   name,
+			Email:      email,
+			PublicName: name,
 		}
 	}
 
 	return &user, nil
+}
+
+func registeringEmail(slug, email string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if slug == "" {
+		rdb.SAdd(ctx, "registered_emails", email)
+	} else {
+		rdb.SAdd(ctx, "channel:"+slug+":registered_emails", email)
+	}
 }

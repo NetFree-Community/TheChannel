@@ -1,0 +1,193 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { ChannelUser } from '../models/channel-user.model';
+import { Setting } from '../models/setting.model';
+import { ChannelSeoSettings } from '../models/channel.model';
+
+export type { ChannelUser, Setting };
+
+export interface ChannelFeatures {
+  reactions: boolean;
+  fileUploads: boolean;
+  reports: boolean;
+  ads: boolean;
+  notifications: boolean;
+  requireAuth: boolean;
+  requireAuthFiles: boolean;
+  countViews: boolean;
+  scheduledMessages: boolean;
+  webhook: boolean;
+  magnetLockedByAdmin: boolean;
+  adsLockedByAdmin: boolean;
+  // When on, every /api/channel/{slug}/* call answers 403 channel_disabled and
+  // the channel view shows the "הערוץ מושבת" page.
+  disabled: boolean;
+}
+
+export interface ChannelData {
+  slug: string;
+  name: string;
+  description: string;
+  logoUrl: string;
+  ownerEmail: string;
+  createdAt: string;
+  features: ChannelFeatures;
+  contactUs: string;
+  // Search settings; an older backend omits them (listed, default text).
+  seoHidden?: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
+}
+
+export interface GlobalAdsConfig {
+  src: string;
+  width: number;
+  lockAll: boolean;
+  lockedChannels: string[];
+}
+
+export interface GlobalMagnetConfig {
+  enabled: boolean;
+  snippet: string;
+  mode: string;
+  perMessages: number;
+  minTimeSeconds: number;
+  perSeconds: number;
+  minMessagesSinceLast: number;
+  apiKey: string;
+  lockAll: boolean;
+  lockedChannels: string[];
+  /** Whether a Magnet stats key is stored. The key itself never leaves the server. */
+  statsKeySet?: boolean;
+}
+
+/**
+ * The save body. An empty statsKey keeps the stored key (the screen never
+ * holds it), so removing it takes the explicit clearStatsKey flag.
+ */
+export interface GlobalMagnetConfigSave extends GlobalMagnetConfig {
+  statsKey?: string;
+  clearStatsKey?: boolean;
+}
+
+export interface SuperAdminUser {
+  id: string;
+  username: string;
+  email: string;
+  publicName: string;
+  globalRole: string;
+  channelRoles: Record<string, string>;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class SuperAdminService {
+
+  constructor(private http: HttpClient) {}
+
+  getChannels(): Promise<ChannelData[]> {
+    return firstValueFrom(this.http.get<ChannelData[]>('/api/super-admin/channels'));
+  }
+
+  createChannel(slug: string, name: string, ownerEmail: string): Promise<ChannelData> {
+    return firstValueFrom(this.http.post<ChannelData>('/api/super-admin/channels/create', { slug, name, ownerEmail }));
+  }
+
+  getChannel(slug: string): Promise<ChannelData> {
+    return firstValueFrom(this.http.get<ChannelData>(`/api/super-admin/channels/${slug}`));
+  }
+
+  deleteChannel(slug: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/super-admin/channels/${slug}`));
+  }
+
+  updateChannelFeatures(slug: string, features: ChannelFeatures): Promise<void> {
+    return firstValueFrom(this.http.put<void>(`/api/super-admin/channels/${slug}/features`, features));
+  }
+
+  /** The channel's search settings (backend/channel_seo.go); works on a disabled channel too. */
+  updateChannelSeo(slug: string, seo: ChannelSeoSettings): Promise<void> {
+    return firstValueFrom(this.http.put<void>(`/api/super-admin/channels/${slug}/seo`, seo));
+  }
+
+  /**
+   * Flips only the kill switch. The features endpoint replaces the whole
+   * record, so the current flags are fetched first and sent back untouched —
+   * a stale copy from the channels list would silently revert a setting the
+   * operator changed on the features screen a moment earlier.
+   */
+  async setChannelDisabled(slug: string, disabled: boolean): Promise<ChannelFeatures> {
+    const channel = await this.getChannel(slug);
+    const features: ChannelFeatures = { ...channel.features, disabled };
+    await this.updateChannelFeatures(slug, features);
+    return features;
+  }
+
+  getChannelUsers(slug: string): Promise<ChannelUser[]> {
+    return firstValueFrom(this.http.get<ChannelUser[]>(`/api/super-admin/channels/${slug}/users`));
+  }
+
+  setChannelUsers(slug: string, users: ChannelUser[]): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`/api/super-admin/channels/${slug}/users`, { users }));
+  }
+
+  getGlobalUsers(): Promise<SuperAdminUser[]> {
+    return firstValueFrom(this.http.get<SuperAdminUser[]>('/api/super-admin/users/list'));
+  }
+
+  setGlobalUsers(users: SuperAdminUser[]): Promise<void> {
+    return firstValueFrom(this.http.post<void>('/api/super-admin/users/set', { list: users }));
+  }
+
+  getGlobalSettings(): Promise<Setting[]> {
+    return firstValueFrom(this.http.get<Setting[]>('/api/super-admin/global-settings/get'));
+  }
+
+  setGlobalSettings(settings: Setting[]): Promise<void> {
+    return firstValueFrom(this.http.post<void>('/api/super-admin/global-settings/set', settings));
+  }
+
+  getAdsConfig(): Promise<GlobalAdsConfig> {
+    return firstValueFrom(this.http.get<GlobalAdsConfig>('/api/super-admin/ads/config'));
+  }
+
+  setAdsConfig(cfg: GlobalAdsConfig): Promise<void> {
+    return firstValueFrom(this.http.post<void>('/api/super-admin/ads/config', cfg));
+  }
+
+  getMagnetConfig(): Promise<GlobalMagnetConfig> {
+    return firstValueFrom(this.http.get<GlobalMagnetConfig>('/api/super-admin/magnet/config'));
+  }
+
+  /** Answers with the saved config, redacted like getMagnetConfig. */
+  setMagnetConfig(cfg: GlobalMagnetConfigSave): Promise<GlobalMagnetConfig> {
+    return firstValueFrom(this.http.post<GlobalMagnetConfig>('/api/super-admin/magnet/config', cfg));
+  }
+
+  getMagnetStats(): Promise<any> {
+    return firstValueFrom(this.http.get<any>('/api/super-admin/magnet/stats'));
+  }
+
+  resetStatistics(): Promise<void> {
+    return firstValueFrom(this.http.post<void>('/api/super-admin/statistics/reset', {}));
+  }
+
+  getGlobalStorageConfig(): Promise<{ defaultQuotaGb: number }> {
+    return firstValueFrom(this.http.get<{ defaultQuotaGb: number }>('/api/super-admin/storage/config'));
+  }
+
+  setGlobalStorageConfig(defaultQuotaGb: number): Promise<void> {
+    return firstValueFrom(this.http.post<void>('/api/super-admin/storage/config', { defaultQuotaGb }));
+  }
+
+  getChannelStorage(slug: string): Promise<any> {
+    return firstValueFrom(this.http.get<any>(`/api/super-admin/channels/${slug}/storage`));
+  }
+
+  setChannelStorage(slug: string, quotaGb: number): Promise<void> {
+    return firstValueFrom(this.http.put<void>(`/api/super-admin/channels/${slug}/storage`, { quotaGb }));
+  }
+}
+

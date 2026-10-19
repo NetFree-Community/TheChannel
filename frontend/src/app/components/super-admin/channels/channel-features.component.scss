@@ -1,0 +1,55 @@
+// Shared classes (.sa-*) come from the panel stylesheet.
+:host {
+  display: block;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.features nb-card {
+  margin: 0;
+}
+
+.group-body {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.toggle-label {
+  font-weight: 600;
+  color: var(--text-basic-color);
+}
+
+.locks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.locks .sa-chip {
+  white-space: normal;
+}
+
+// The kill switch is the one setting that takes the channel down for
+// everyone; the theme's danger tokens keep it visibly apart.
+.danger-card {
+  border-color: var(--color-danger-300);
+}
+
+.danger-title {
+  color: var(--color-danger-700);
+}
+
+.danger-title nb-icon {
+  color: var(--color-danger-600);
+}
+
+.save-card {
+  position: sticky;
+  bottom: 0.5rem;
+  z-index: 1;
+  border-color: var(--color-primary-200);
+}

@@ -1,0 +1,72 @@
+<nb-card>
+  <nb-card-header>
+    <h2 class="sa-card-title">
+      <nb-icon icon="hard-drive-outline"></nb-icon>
+      שימוש באחסון
+    </h2>
+  </nb-card-header>
+  <nb-card-body>
+    @if (loading) {
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את נתוני האחסון…</p>
+      </div>
+    } @else if (loadFailed || !config) {
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">נתוני האחסון לא נטענו</p>
+        <p class="sa-state__text">נסו לטעון שוב.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="load()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
+      </div>
+    } @else {
+      <div class="usage">
+        <div class="usage__numbers">
+          <span class="usage__used sa-ltr">{{ formatBytes(config.storageInfo.usedBytes) }}</span>
+          <span class="usage__of">מתוך <span class="sa-ltr">{{ formatBytes(config.storageInfo.quotaBytes) }}</span></span>
+        </div>
+        <nb-progress-bar [value]="barValue" [status]="progressStatus(config.storageInfo.level)" [displayValue]="true"
+                         aria-label="אחוז האחסון בשימוש"></nb-progress-bar>
+        <p class="sa-field__hint">
+          @if (config.storageInfo.level === 'critical') {
+            האחסון כמעט מלא — העלאות חדשות ייכשלו בקרוב. הגדילו את הנפח או בקשו ממנהלי הערוץ למחוק קבצים.
+          } @else if (config.storageInfo.level === 'warning') {
+            האחסון מתקרב למגבלה.
+          } @else {
+            יש מספיק מקום.
+          }
+          @if (config.storageInfo.autoCleanup) {
+            ניקוי אוטומטי פעיל: כשהמקום נגמר, הקבצים הישנים ביותר נמחקים.
+          }
+        </p>
+      </div>
+
+      <form class="quota" (ngSubmit)="save()" novalidate>
+        <div class="sa-field">
+          <label class="sa-field__label" for="channelQuota">נפח מותר לערוץ (GB)</label>
+          <nb-form-field class="quota__field">
+            <nb-icon nbPrefix icon="hard-drive-outline"></nb-icon>
+            <input nbInput fullWidth id="channelQuota" name="channelQuota" type="number" min="0" step="0.5"
+                   inputmode="decimal" dir="ltr" [(ngModel)]="quotaGb">
+          </nb-form-field>
+          @if (quotaInvalid) {
+            <p class="sa-field__error">יש להזין מספר 0 ומעלה.</p>
+          } @else if (usesDefault) {
+            <p class="sa-field__hint">0 = ברירת המחדל של המערכת (כרגע <span class="sa-ltr">{{ formatBytes(config.storageInfo.quotaBytes) }}</span>). שינוי ברירת המחדל במסך "אחסון" יחול גם על הערוץ הזה.</p>
+          } @else {
+            <p class="sa-field__hint">נפח קבוע לערוץ הזה בלבד. 0 מחזיר לברירת המחדל של המערכת.</p>
+          }
+        </div>
+        <div class="sa-save-bar">
+          <button nbButton status="primary" type="submit" [disabled]="saving || quotaInvalid">
+            <nb-icon icon="save-outline"></nb-icon>
+            {{ saving ? 'שומר…' : 'שמירת הנפח' }}
+          </button>
+          <span class="sa-save-bar__note">השינוי חל מיד על ההעלאות הבאות.</span>
+        </div>
+      </form>
+    }
+  </nb-card-body>
+</nb-card>

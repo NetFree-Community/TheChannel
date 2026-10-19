@@ -1,0 +1,349 @@
+:host {
+  display: block;
+}
+
+// The landing sections are full-bleed (hero gradient, footer), so drop the
+// default column padding that nb-layout-column adds.
+:host ::ng-deep nb-layout-column {
+  padding: 0;
+}
+
+// Colours come from the theme's CSS custom properties, so the page follows
+// the active theme instead of pinning hex values. The hero and its preview
+// mock are in landing-hero.scss.
+
+.wrap {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+.wrap--narrow {
+  max-width: 660px;
+}
+
+/* ---------- top bar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--background-basic-color-1);
+  border-bottom: 1px solid var(--border-basic-color-3);
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.5rem;
+  }
+}
+
+.topbar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--text-basic-color);
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  font-size: 1.15rem;
+  color: var(--color-basic-100);
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+}
+
+/* ---------- sections ---------- */
+
+.section {
+  padding: clamp(2.75rem, 7vw, 4.5rem) 0;
+  background: var(--background-basic-color-1);
+}
+
+.section--alt {
+  background: var(--background-basic-color-2);
+}
+
+.section--tight {
+  padding: clamp(1.75rem, 4vw, 2.5rem) 0;
+}
+
+.section__title {
+  text-align: center;
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: 800;
+  color: var(--text-basic-color);
+
+  &--small {
+    font-size: 1.1rem;
+    margin-bottom: 0.9rem;
+  }
+}
+
+.section__lead {
+  text-align: center;
+  margin: 0 auto 2rem;
+  max-width: 560px;
+  line-height: 1.6;
+  color: var(--text-hint-color);
+}
+
+/* ---------- video ---------- */
+
+.video {
+  padding-bottom: 0;
+}
+
+.video__player {
+  display: block;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  border-radius: 16px;
+  background: var(--color-primary-800);
+  box-shadow: 0 18px 48px rgba(30, 27, 90, 0.22);
+}
+
+/* ---------- steps ---------- */
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.step {
+  position: relative;
+  padding: 1.9rem 1.25rem 1.5rem;
+  border-radius: var(--card-border-radius);
+  background: var(--background-basic-color-1);
+  border: 1px solid var(--border-basic-color-3);
+  box-shadow: var(--card-shadow);
+  text-align: center;
+}
+
+.step__num {
+  position: absolute;
+  top: -0.9rem;
+  // Centred with auto inline margins rather than a 50% offset plus a
+  // translate, whose sign depends on the writing direction.
+  inset-inline: 0;
+  margin-inline: auto;
+  width: 1.8rem;
+  height: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 800;
+  background: var(--color-primary-500);
+  color: var(--color-basic-100);
+  box-shadow: 0 4px 10px var(--color-primary-transparent-300);
+}
+
+.step__icon {
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-primary-500);
+}
+
+.step__title {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-basic-color);
+}
+
+.step__text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-hint-color);
+}
+
+/* ---------- features ---------- */
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  border-radius: var(--card-border-radius);
+  background: var(--background-basic-color-1);
+  border: 1px solid var(--border-basic-color-3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow);
+  }
+}
+
+.feature__icon-wrap {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.85rem;
+  background: var(--color-primary-100);
+}
+
+.feature__icon {
+  font-size: 1.4rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--color-primary-600);
+}
+
+.feature__title {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-basic-color);
+}
+
+.feature__text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-hint-color);
+}
+
+/* ---------- audience chips ---------- */
+
+.audience {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.audience__item {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: var(--background-basic-color-2);
+  border: 1px solid var(--border-basic-color-3);
+  color: var(--text-basic-color);
+}
+
+/* ---------- questions ---------- */
+
+.faq {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.faq__item {
+  border: 1px solid var(--border-basic-color-3);
+  border-radius: 0.75rem;
+  background: var(--background-basic-color-1);
+  padding: 0 1rem;
+}
+
+.faq__q {
+  cursor: pointer;
+  padding: 0.85rem 0;
+  font-weight: 700;
+  color: var(--text-basic-color);
+}
+
+.faq__a {
+  margin: 0 0 0.85rem;
+  line-height: 1.7;
+  color: var(--text-hint-color);
+}
+
+/* ---------- closing call to action ---------- */
+
+.cta__inner {
+  text-align: center;
+}
+
+.cta__text {
+  margin: 0 0 1.5rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-hint-color);
+}
+
+.cta__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ---------- footer ---------- */
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  font-size: 0.85rem;
+  background: var(--background-basic-color-2);
+  border-top: 1px solid var(--border-basic-color-3);
+  color: var(--text-hint-color);
+}
+
+.footer__brand {
+  font-weight: 800;
+  color: var(--text-basic-color);
+}
+
+.footer__sep {
+  opacity: 0.6;
+}
+
+.footer__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  color: var(--color-primary-600);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+@media (max-width: 767px) {
+  .steps,
+  .features {
+    grid-template-columns: 1fr;
+  }
+}

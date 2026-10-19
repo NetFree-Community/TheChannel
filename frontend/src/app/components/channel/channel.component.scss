@@ -1,5 +1,284 @@
 @use '../../../themes' as *;
-@use "sass:meta";
+
+// Colours resolve through the active Nebular theme (nb-install-component emits
+// the CSS custom properties), so the onboarding and disabled states follow
+// light/dark instead of pinning hex values. The "my channels" hub is styled in
+// channel-hub.scss (same component, second sheet) to stay under the budget.
+@include nb-install-component() {
+  .plain-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .plain-header__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: nb-theme(text-basic-color);
+    text-decoration: none;
+  }
+
+  .plain-header__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.6rem;
+    font-size: 1.15rem;
+    color: nb-theme(color-basic-100);
+    background: linear-gradient(135deg, nb-theme(color-primary-500), nb-theme(color-primary-700));
+  }
+
+  .plain-header__user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .plain-header__avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid nb-theme(border-basic-color-4);
+  }
+
+  .plain-header__name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: nb-theme(text-basic-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 10rem;
+  }
+
+  @media (max-width: 575px) {
+    .plain-header__name {
+      display: none;
+    }
+  }
+
+  /* ---------- disabled / not found ---------- */
+
+  .state-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: clamp(1.5rem, 6vw, 4rem) 1rem;
+  }
+
+  .state-card {
+    width: 100%;
+    max-width: 480px;
+    margin: 0;
+    border-radius: nb-theme(card-border-radius);
+  }
+
+  .state-card__body {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .state-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    font-size: 2rem;
+    background: nb-theme(color-primary-100);
+    color: nb-theme(color-primary-600);
+
+    nb-icon {
+      font-size: inherit;
+      width: 1em;
+      height: 1em;
+    }
+
+    &--danger {
+      background: nb-theme(color-danger-100);
+      color: nb-theme(color-danger-600);
+    }
+  }
+
+  .state-card__title {
+    margin: 1rem 0 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: nb-theme(text-basic-color);
+  }
+
+  .state-card__text {
+    margin: 0 0 0.35rem;
+    line-height: 1.7;
+    color: nb-theme(text-basic-color);
+  }
+
+  .state-card__slug {
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.3rem;
+    font-family: inherit;
+    font-weight: 700;
+    background: nb-theme(background-basic-color-2);
+    color: nb-theme(color-primary-700);
+  }
+
+  .state-card__hint {
+    margin: 0 0 1.5rem;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: nb-theme(text-hint-color);
+  }
+
+  .state-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+  }
+
+  /* ---------- no channel yet: onboarding ---------- */
+
+  .onboarding {
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: clamp(1.25rem, 5vw, 2.5rem) 1rem 3rem;
+    animation: rise 0.35s ease-out both;
+  }
+
+  .onboarding__hero {
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .onboarding__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.85rem;
+    margin-bottom: 0.9rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: nb-theme(color-primary-100);
+    color: nb-theme(color-primary-700);
+
+    nb-icon {
+      font-size: 0.95rem;
+      width: 0.95rem;
+      height: 0.95rem;
+    }
+  }
+
+  .onboarding__title {
+    margin: 0 0 0.6rem;
+    font-size: clamp(1.5rem, 5vw, 2.1rem);
+    font-weight: 800;
+    line-height: 1.25;
+    color: nb-theme(text-basic-color);
+  }
+
+  .onboarding__lead {
+    margin: 0 auto;
+    max-width: 540px;
+    line-height: 1.7;
+    color: nb-theme(text-hint-color);
+  }
+
+  .onboarding__steps {
+    list-style: none;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .onboarding__step {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 1rem 0.9rem;
+    border-radius: nb-theme(border-radius);
+    background: nb-theme(background-basic-color-1);
+    border: 1px solid nb-theme(border-basic-color-3);
+    box-shadow: nb-theme(card-shadow);
+  }
+
+  .onboarding__step-num {
+    position: absolute;
+    top: 0.5rem;
+    inset-inline-end: 0.6rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background: nb-theme(color-primary-100);
+    color: nb-theme(color-primary-700);
+  }
+
+  .onboarding__step-icon {
+    flex: 0 0 auto;
+    font-size: 1.35rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    color: nb-theme(color-primary-500);
+  }
+
+  .onboarding__step-title {
+    margin: 0 0 0.15rem;
+    padding-inline-end: 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: nb-theme(text-basic-color);
+  }
+
+  .onboarding__step-text {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: nb-theme(text-hint-color);
+  }
+
+  @media (max-width: 767px) {
+    .onboarding__steps {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 nb-layout-column.chat-column {
 }
@@ -26,11 +305,14 @@ app-advertising {
   .columns {
     position: relative !important;
     bottom: var(--input-height, 0px) !important;
-
-    @if (meta.variable-exists(--input-height)) {
-      //noinspection CssInvalidPropertyValue
-      padding-top: calc(nb-theme(header-height) + nb-theme(header-padding) * 2) !important;
-    }
+    // Compensates the lift: `bottom` drags the top of the column up by the
+    // composer's height, and the first day separator and the unread marker
+    // sat under the header. Nebular's
+    // .layout-container already clears the fixed header. (This used to sit
+    // inside `@if meta.variable-exists(--input-height)`, a compile-time test
+    // for a Sass variable of that name — the CSS custom property is not one,
+    // so the rule was never emitted.)
+    padding-top: var(--input-height, 0px) !important;
   }
 }
 
@@ -40,4 +322,12 @@ app-advertising {
   left: 0;
   right: 0;
   z-index: 99;
+
+  // The composer draws its own rounded surface, so Nebular's 1.25rem nav
+  // padding is only lost width on a 360px phone.
+  @media (max-width: 575.98px) {
+    nav {
+      padding: 0.5rem 0.75rem;
+    }
+  }
 }

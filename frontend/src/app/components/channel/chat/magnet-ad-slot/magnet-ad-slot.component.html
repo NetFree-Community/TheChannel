@@ -1,0 +1,9 @@
+<div class="ad" [class.collapsed]="collapsed">
+  <div class="ad__head">
+    <span class="ad__badge">פרסומת</span>
+    <span class="ad__hint">{{ locked ? 'תוכן ממומן שמוצג על ידי המערכת' : 'תוכן ממומן שמנהלי הערוץ בחרו להציג' }}</span>
+  </div>
+  <div class="ad__card">
+    <div #host class="magnet-ad-host" [attr.data-slot]="slotKey"></div>
+  </div>
+</div>

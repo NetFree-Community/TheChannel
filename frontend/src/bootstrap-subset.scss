@@ -1,0 +1,48 @@
+// Bootstrap, trimmed to what the templates use: the grid, spacing/flex/text
+// utilities, tables, forms, and a few small components. The full bootstrap.min.css
+// that was loaded before also shipped dropdowns, modals, carousels, offcanvas,
+// toasts, navbars and the dark-mode variable set — none of them used — on every
+// page load. Add a component's partial here before using its classes.
+//
+// This compiles the LTR build, exactly like the file it replaces: the templates
+// were written against it under <html dir="rtl">, so swapping in the RTL build
+// would flip every ms-/me-/text-start class they rely on.
+@import 'bootstrap/scss/functions';
+
+// Defaults overridden before Bootstrap reads them, so .btn-primary, .alert and
+// friends follow the brand theme in themes.scss instead of Bootstrap blue.
+$enable-dark-mode: false;
+$font-family-sans-serif: Assistant, 'Segoe UI', system-ui, -apple-system, sans-serif;
+$primary: #5a5ff5;
+$secondary: #6b7280;
+$body-color: #1b1f2e;
+$body-bg: #f6f7fb;
+$border-color: #e6e8f0;
+$border-radius: 0.625rem;
+$border-radius-sm: 0.5rem;
+$border-radius-lg: 0.875rem;
+$border-radius-xl: 1rem;
+$border-radius-xxl: 1.25rem;
+
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/variables-dark';
+@import 'bootstrap/scss/maps';
+@import 'bootstrap/scss/mixins';
+@import 'bootstrap/scss/utilities';
+
+@import 'bootstrap/scss/root';
+@import 'bootstrap/scss/reboot';
+@import 'bootstrap/scss/type';
+@import 'bootstrap/scss/images';
+@import 'bootstrap/scss/containers';
+@import 'bootstrap/scss/grid';
+@import 'bootstrap/scss/tables';
+@import 'bootstrap/scss/forms';
+@import 'bootstrap/scss/buttons';
+@import 'bootstrap/scss/badge';
+@import 'bootstrap/scss/alert';
+@import 'bootstrap/scss/card';
+@import 'bootstrap/scss/spinners';
+@import 'bootstrap/scss/close';
+@import 'bootstrap/scss/helpers';
+@import 'bootstrap/scss/utilities/api';

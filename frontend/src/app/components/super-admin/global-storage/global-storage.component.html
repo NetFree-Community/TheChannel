@@ -1,0 +1,55 @@
+<nb-card>
+  <nb-card-header>
+    <h2 class="sa-card-title">
+      <nb-icon icon="hard-drive-outline"></nb-icon>
+      נפח ברירת מחדל לערוץ
+    </h2>
+  </nb-card-header>
+  <nb-card-body>
+    @if (loading) {
+      <div class="sa-state">
+        <span class="sa-spinner" role="status" aria-label="טוען"></span>
+        <p class="sa-state__text">טוען את הגדרות האחסון…</p>
+      </div>
+    } @else if (loadFailed) {
+      <div class="sa-state">
+        <span class="sa-state__icon sa-state__icon--danger"><nb-icon icon="alert-triangle-outline"></nb-icon></span>
+        <p class="sa-state__title">הגדרות האחסון לא נטענו</p>
+        <p class="sa-state__text">נסו לטעון שוב. בלי הערך הנוכחי לא כדאי לשמור.</p>
+        <button nbButton status="primary" size="small" type="button" (click)="load()">
+          <nb-icon icon="refresh-outline"></nb-icon>
+          טעינה מחדש
+        </button>
+      </div>
+    } @else {
+      <p class="sa-lead">
+        כל ערוץ מקבל את הנפח הזה לקבצים ולתמונות שלו, אלא אם נקבע לו נפח אחר מרשימת הערוצים.
+        כשהנפח מתמלא, העלאות חדשות נדחות (או שהקבצים הישנים נמחקים, אם הערוץ הפעיל ניקוי אוטומטי).
+      </p>
+      <form (ngSubmit)="save()" novalidate>
+        <div class="sa-field">
+          <label class="sa-field__label" for="defaultQuota">נפח לכל ערוץ (GB)</label>
+          <nb-form-field class="quota__field">
+            <nb-icon nbPrefix icon="hard-drive-outline"></nb-icon>
+            <input nbInput fullWidth id="defaultQuota" name="defaultQuota" type="number" min="1" step="1"
+                   inputmode="numeric" dir="ltr" [(ngModel)]="defaultQuotaGb">
+          </nb-form-field>
+          @if (quotaInvalid) {
+            <p class="sa-field__error">יש להזין נפח של 1 GB לפחות. 0 היה מבטל את המגבלה לכל הערוצים.</p>
+          } @else {
+            <p class="sa-field__hint">מספר שלם של ג׳יגה-בייט. השינוי חל מיד על כל ערוץ שלא נקבע לו נפח משלו.</p>
+          }
+        </div>
+        <div class="sa-save-bar">
+          <button nbButton status="primary" type="submit" [disabled]="saving || quotaInvalid">
+            <nb-icon icon="save-outline"></nb-icon>
+            {{ saving ? 'שומר…' : 'שמירה' }}
+          </button>
+          @if (dirty) {
+            <span class="sa-save-bar__note sa-save-bar__note--dirty">הערך השתנה ועוד לא נשמר</span>
+          }
+        </div>
+      </form>
+    }
+  </nb-card-body>
+</nb-card>

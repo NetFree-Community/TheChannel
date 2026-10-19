@@ -1,0 +1,28 @@
+// Shared classes (.sa-*) come from the panel stylesheet; the Magnet card is
+// app-magnet-stats-panel. Every colour here is a theme token.
+:host {
+  display: block;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stats nb-card {
+  margin: 0;
+}
+
+// The reset cannot be undone; the danger tokens keep the card visibly apart.
+.danger-card {
+  border-color: var(--color-danger-300);
+}
+
+.danger-title {
+  color: var(--color-danger-700);
+}
+
+.danger-title nb-icon {
+  color: var(--color-danger-600);
+}

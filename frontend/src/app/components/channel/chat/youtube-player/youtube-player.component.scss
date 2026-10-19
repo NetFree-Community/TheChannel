@@ -1,0 +1,28 @@
+.yt {
+  position: relative;
+  display: block;
+  border-radius: var(--card-border-radius);
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--shadow);
+  line-height: 0;
+}
+
+.yt__close {
+  position: absolute;
+  top: 0.5rem;
+  inset-inline-end: 0.5rem;
+  z-index: 2;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55) !important;
+  color: #fff !important;
+
+  nb-icon {
+    font-size: 1.3rem;
+  }
+}

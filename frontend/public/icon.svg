@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Brand mark: an indigo tile with a broadcast signal. Same hues as the
+       primary tokens in src/themes.scss (color-primary-500/700). -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6b70ff"/>
+      <stop offset="1" stop-color="#3d41c4"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#g)"/>
+  <circle cx="32" cy="36" r="5" fill="#fff"/>
+  <path d="M22.1 45.9a14 14 0 0 1 0-19.8M41.9 26.1a14 14 0 0 1 0 19.8" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M15.3 52.7a23.6 23.6 0 0 1 0-33.4M48.7 19.3a23.6 23.6 0 0 1 0 33.4" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="3.6" stroke-linecap="round"/>
+</svg>

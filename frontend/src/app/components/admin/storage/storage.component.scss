@@ -1,0 +1,108 @@
+@use '../admin-shared' as *;
+
+:host {
+  display: block;
+}
+
+.storage-page {
+  @include admin-page;
+}
+
+.storage-loading {
+  min-height: 6rem;
+}
+
+.storage-empty {
+  @include admin-empty;
+}
+
+.card-head {
+  @include admin-card-header;
+}
+
+.lead {
+  @include admin-lead;
+}
+
+.pill {
+  @include admin-pill(var(--background-basic-color-3), var(--text-hint-color));
+  margin-inline-start: auto;
+
+  &--on {
+    background: var(--color-success-100);
+    color: var(--color-success-700);
+  }
+}
+
+.usage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.usage__numbers {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.usage__used {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-basic-color);
+  font-variant-numeric: tabular-nums;
+  // "0 B", not "B 0": the unit otherwise lands on the left in the RTL line.
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+}
+
+.ltr-figure {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+}
+
+.usage__of {
+  color: var(--text-hint-color);
+}
+
+.usage__free {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-hint-color);
+}
+
+.storage-alert {
+  margin: 1rem 0 0;
+}
+
+.cleanup {
+  margin-bottom: 0.75rem;
+}
+
+.cleanup__label {
+  font-weight: 600;
+  color: var(--text-basic-color);
+}
+
+.cleanup__list {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  line-height: 1.6;
+  color: var(--text-basic-color);
+
+  li {
+    margin-bottom: 0.4rem;
+  }
+}
+
+.cleanup__note {
+  color: var(--text-hint-color);
+}
+
+.cleanup__hint {
+  @include admin-hint;
+  margin-top: 0.75rem;
+}

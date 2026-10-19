@@ -1,0 +1,43 @@
+<section class="nf" [attr.aria-labelledby]="'nf-title-' + slug">
+  <div class="nf__head">
+    <nb-icon icon="shield-outline" aria-hidden="true" class="nf__icon"></nb-icon>
+    <div>
+      <h3 class="nf__title" [id]="'nf-title-' + slug">גולשי נטפרי? צריך לבקש פתיחה של הערוץ</h3>
+      <p class="nf__text">
+        ערוץ חדש חסום בנטפרי עד שהם מאשרים אותו. הכנו לכם נוסח פנייה עם כתובת הערוץ ועם תשובות לשאלות שנטפרי שואלים.
+        מעתיקים, ממלאים את הפרטים החסרים (______), ושולחים בפנייה חדשה לנטפרי עם <strong>וידאו סלפי</strong>
+        שבו אתם מתחייבים לעמוד בכללים.
+      </p>
+    </div>
+  </div>
+
+  <div class="nf__actions">
+    <button nbButton status="primary" size="small" type="button" (click)="copy()" aria-live="polite">
+      <nb-icon aria-hidden="true" [icon]="copied ? 'checkmark-outline' : 'copy-outline'"></nb-icon>
+      {{ copied ? 'הנוסח הועתק ✓' : 'העתקת נוסח הפנייה' }}
+    </button>
+    <a nbButton appearance="outline" status="primary" size="small" [href]="ticketUrl" target="_blank" rel="noopener">
+      <nb-icon aria-hidden="true" icon="external-link-outline"></nb-icon>
+      פתיחת פנייה בנטפרי
+    </a>
+    <button nbButton ghost status="basic" size="small" type="button" (click)="toggle()"
+            [attr.aria-expanded]="!collapsed">
+      <nb-icon aria-hidden="true" [icon]="collapsed ? 'chevron-down-outline' : 'chevron-up-outline'"></nb-icon>
+      {{ collapsed ? 'הצגת הנוסח' : 'הסתרת הנוסח' }}
+    </button>
+  </div>
+
+  @if (copyFailed) {
+    <p class="nf__warn" role="alert">הדפדפן חסם את ההעתקה. הנוסח מסומן למטה, העתיקו אותו ידנית.</p>
+  }
+
+  @if (!collapsed) {
+    <textarea #requestText class="nf__textarea" readonly rows="14" dir="rtl"
+              aria-label="נוסח הפנייה לנטפרי" [value]="text"></textarea>
+  }
+
+  <p class="nf__foot">
+    כפתור הפנייה דורש חשבון בנטפרי. אין חשבון? אפשר לפנות לנטפרי בכל דרך אחרת עם אותו נוסח.
+    <a href="/netfree-channel" target="_blank" rel="noopener">כל ההסבר</a>
+  </p>
+</section>
