@@ -59,6 +59,20 @@
     </div>
   }
 
+  @if (selectedTag; as t) {
+    <div class="composer__mode composer__mode--tag" role="status" [style.--tag]="t.color">
+      <nb-icon icon="hash-outline"></nb-icon>
+      <span class="composer__mode-text">
+        ההודעה תתויג:
+        <span class="tag-chip"><span class="tag-chip__dot" aria-hidden="true"></span>{{ t.name }}</span>
+      </span>
+      <button nbButton ghost size="tiny" status="basic" type="button" (click)="tag = ''" aria-label="הסרת התגית מההודעה">
+        <nb-icon icon="close-outline"></nb-icon>
+        הסרה
+      </button>
+    </div>
+  }
+
   <div class="composer__surface">
     @if (attachments.length) {
       <div class="composer__files">
@@ -175,6 +189,17 @@
               [nbTooltip]="isAds ? 'מסומנת כפרסומת (לחיצה מבטלת)' : 'סימון ההודעה כפרסומת'">
         <nb-icon icon="pricetags-outline"></nb-icon>
       </button>
+      @if (chatService.tags.length) {
+        <button nbButton ghost shape="round" type="button" class="tb tb--tag" [class.tb--on]="!!selectedTag"
+                [style.--tag]="selectedTag?.color"
+                [nbPopover]="tagTpl" nbPopoverTrigger="click" nbPopoverPlacement="top" #tagPop="nbPopover"
+                (nbPopoverShowStateChange)="tagPickerShown = $event.isShown"
+                aria-haspopup="listbox" [attr.aria-expanded]="tagPickerShown"
+                [attr.aria-label]="selectedTag ? 'התגית: ' + selectedTag.name + ' — לחיצה לשינוי' : 'הוספת תגית להודעה'">
+          <nb-icon icon="hash-outline"></nb-icon>
+          @if (selectedTag) { <span class="tb__tag-dot" aria-hidden="true"></span> }
+        </button>
+      }
       <span class="tb-spacer"></span>
       <!-- The Enter preference, shrunk from a full toggle to a small chip that says what Enter does now. -->
       <button type="button" class="enter-chip" [class.enter-chip--on]="enterSendsMessage"
@@ -212,5 +237,30 @@
       <nb-icon icon="external-link-outline"></nb-icon>
       המדריך המלא (באנגלית, נפתח בחלון חדש)
     </button>
+  </div>
+</ng-template>
+
+<!-- Tag picker: one optional tag per post. -->
+<ng-template #tagTpl>
+  <div class="tag-pick" role="listbox" aria-label="בחירת תגית להודעה" (keydown.escape)="closeTagPicker()">
+    <strong class="tag-pick__title">תגית להודעה</strong>
+    <span class="tag-pick__hint">לא חובה — הקוראים יוכלו לסנן לפיה</span>
+    <div class="tag-pick__list">
+      @for (t of chatService.tags; track t.id) {
+        <button type="button" role="option" class="tag-pick__opt" [class.is-on]="tag === t.id"
+                [attr.aria-selected]="tag === t.id" [style.--tag]="t.color" [style.--tag-ink]="ink(t.color)"
+                (click)="pickTag(tag === t.id ? '' : t.id)">
+          <span class="tag-pick__dot" aria-hidden="true"></span>
+          {{ t.name }}
+          @if (tag === t.id) { <nb-icon icon="checkmark-outline"></nb-icon> }
+        </button>
+      }
+    </div>
+    @if (tag) {
+      <button nbButton ghost size="tiny" status="basic" type="button" class="tag-pick__clear" (click)="pickTag('')">
+        <nb-icon icon="close-outline"></nb-icon>
+        ללא תגית
+      </button>
+    }
   </div>
 </ng-template>

@@ -40,6 +40,8 @@ type Message struct {
 	Views     int          `json:"views" redis:"views"`
 	Reactions Reactions    `json:"reactions" redis:"reactions"`
 	IsAds     bool         `json:"is_ads" redis:"is_ads"`
+	// Tag is the id of one of the channel's tags (see tags.go), or "".
+	Tag string `json:"tag,omitempty" redis:"tag"`
 }
 
 type User struct {
@@ -165,6 +167,18 @@ func setMessage(ctx context.Context, slug string, m *Message, isUpdate bool) err
 		}
 	}
 
+	// A tag the channel no longer has (deleted while a scheduled post waited,
+	// or a hand-made request) is dropped rather than indexed under a key no
+	// filter can reach. An edit needs the stored tag to move the post between
+	// indexes.
+	if m.Tag != "" && !tagExists(ctx, slug, m.Tag) {
+		m.Tag = ""
+	}
+	previousTag := ""
+	if isUpdate {
+		previousTag, _ = rdb.HGet(ctx, messageKey, "tag").Result()
+	}
+
 	// The hash and its index entry go in one transaction: written separately,
 	// a failure between the two left an orphan hash that no listing showed,
 	// no cleanup reached, and that still counted as existing for reactions
@@ -183,6 +197,7 @@ func setMessage(ctx context.Context, slug string, m *Message, isUpdate bool) err
 				"last_edit": m.LastEdit,
 				"deleted":   m.Deleted,
 				"is_ads":    m.IsAds,
+				"tag":       m.Tag,
 			}
 			// The author travels with the edit only when the caller carries
 			// it: updateMessage copies it from the stored record, re-labelled
@@ -198,6 +213,14 @@ func setMessage(ctx context.Context, slug string, m *Message, isUpdate bool) err
 		}
 		if !isUpdate {
 			p.ZAdd(ctx, fmt.Sprintf("channel:%s:m_times", slug), redis.Z{Score: float64(m.Timestamp.Unix()), Member: messageKey})
+		}
+		// The tag indexes mirror m_times, so an update scores by the stored
+		// timestamp the caller copied onto m.
+		if previousTag != "" && previousTag != m.Tag {
+			p.ZRem(ctx, channelTagIndexKey(slug, previousTag), messageKey)
+		}
+		if m.Tag != "" && (!isUpdate || previousTag != m.Tag) {
+			p.ZAdd(ctx, channelTagIndexKey(slug, m.Tag), redis.Z{Score: float64(m.Timestamp.Unix()), Member: messageKey})
 		}
 		return nil
 	}); err != nil {
@@ -270,12 +293,16 @@ func setReaction(ctx context.Context, slug string, messageId int, emoji string, 
 var getMessageRange = redis.NewScript(`
 	local time_set_key = KEYS[1]
 	local offset_key = KEYS[2]
+	-- The channel's full index. Equal to KEYS[1] unless the feed is filtered
+	-- by a tag, when KEYS[1] is that tag's index.
+	local all_set_key = KEYS[3]
 
 	local required_length = tonumber(ARGV[1])
 	local isAdmin = ARGV[2] == 'true'
 	local countViews = ARGV[3] == 'true'
 	local direction = ARGV[4] or 'desc'
 	local showDeleted = ARGV[5] == 'true'
+	local tagFilter = ARGV[6] or ''
 
 
 	-- ZRANK returns false when the offset key is absent (initial load), which
@@ -290,6 +317,19 @@ var getMessageRange = redis.NewScript(`
 	local start_index = 0
 	if rank then
 		start_index = rank + 1
+	elseif all_set_key ~= time_set_key then
+		-- Filtered feed, cursor not in the tag's index (its tag was changed
+		-- or removed since the client loaded it): resume by its time instead
+		-- of from an end of the index, which for an asc page meant the
+		-- channel's oldest tagged posts arriving as "new".
+		local score = redis.call('ZSCORE', all_set_key, offset_key)
+		if score then
+			if direction == 'asc' then
+				start_index = redis.call('ZCOUNT', time_set_key, '-inf', score)
+			else
+				start_index = redis.call('ZCOUNT', time_set_key, score, '+inf')
+			end
+		end
 	end
 
 	local messages = {}
@@ -384,7 +424,10 @@ var getMessageRange = redis.NewScript(`
 			-- and admins included: showing it to them greyed out read as if the
 			-- delete had not worked. The hash stays in Redis, and staff can ask
 			-- for it back with showDeleted (the feed's "show deleted" toggle).
-			if not message['deleted'] or showDeleted then
+			-- The tag index is the filter; this re-check only guards against
+			-- an entry a concurrent retag has not removed yet.
+			local tagOk = tagFilter == '' or message['tag'] == tagFilter
+			if tagOk and (not message['deleted'] or showDeleted) then
 				table.insert(messages, message)
 			end
 		end
@@ -399,12 +442,19 @@ var getMessageRange = redis.NewScript(`
 
 // showDeleted returns soft-deleted messages too; callers pass it only for
 // staff (see getMessages).
-func funcGetMessageRange(ctx context.Context, slug string, start, stop int64, isAdmin, countViews, showDeleted bool, direction string) ([]Message, error) {
+// A non-empty tag pages through that tag's index instead of the whole feed.
+func funcGetMessageRange(ctx context.Context, slug string, start, stop int64, isAdmin, countViews, showDeleted bool, direction string, tag string) ([]Message, error) {
 	offsetKeyName := fmt.Sprintf("channel:%s:messages:%d", slug, start)
+	allKey := fmt.Sprintf("channel:%s:m_times", slug)
+	timeKey := allKey
+	if tag != "" {
+		timeKey = channelTagIndexKey(slug, tag)
+	}
 	res, err := getMessageRange.Run(ctx, rdb, []string{
-		fmt.Sprintf("channel:%s:m_times", slug),
+		timeKey,
 		offsetKeyName,
-	}, []string{strconv.FormatInt(stop, 10), strconv.FormatBool(isAdmin), strconv.FormatBool(countViews), direction, strconv.FormatBool(showDeleted)}).Result()
+		allKey,
+	}, []string{strconv.FormatInt(stop, 10), strconv.FormatBool(isAdmin), strconv.FormatBool(countViews), direction, strconv.FormatBool(showDeleted), tag}).Result()
 	if err != nil {
 		return []Message{}, err
 	}
@@ -1474,6 +1524,8 @@ func dbDeleteChannel(ctx context.Context, slug string) error {
 		fmt.Sprintf("channel:%s:last_modified", p),
 		channelMagnetStatsKeyKey(p),
 	}
+	fixedKeys = append(fixedKeys, tagIndexKeysFor(ctx, p)...)
+	fixedKeys = append(fixedKeys, channelTagsKey(p))
 	allKeys := append(fixedKeys, messageKeys...)
 	allKeys = append(allKeys, reactionKeys...)
 	allKeys = append(allKeys, reporterKeys...)

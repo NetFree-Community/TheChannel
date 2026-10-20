@@ -1,3 +1,5 @@
+@use '../../../../utils/tag-chip' as *;
+
 :host {
   display: block;
   width: 100%;
@@ -101,6 +103,39 @@
   color: var(--text-hint-color);
   font-weight: 600;
   white-space: nowrap;
+}
+
+// The post's channel tag: a soft pill in the tag's colour. Tapping it filters
+// the feed to that tag.
+.msg__label {
+  @include tag-chip-soft;
+  gap: 0.3rem;
+  padding: 0.05rem 0.55rem 0.05rem 0.6rem;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.12s;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--tag, #888) 26%, var(--background-basic-color-1));
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tag, var(--color-primary-500));
+    outline-offset: 2px;
+  }
+}
+
+.msg__label-dot {
+  @include tag-chip-dot(0.5rem);
 }
 
 .msg__tag--warning {

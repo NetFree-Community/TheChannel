@@ -23,6 +23,7 @@ import { SettingsComponent } from '../admin/settings/settings.component';
 import { PrivilegDashboardComponent } from '../admin/privileg-dashboard/privileg-dashboard.component';
 import { StatisticsComponent } from '../admin/statistics/statistics.component';
 import { EmojisComponent } from '../admin/emojis/emojis.component';
+import { TagsComponent } from '../admin/tags/tags.component';
 import { MagnetAdsComponent } from '../admin/magnet-ads/magnet-ads.component';
 import { StorageComponent } from '../admin/storage/storage.component';
 import { ReportsComponent } from '../admin/reports/reports.component';
@@ -73,6 +74,7 @@ type LoadError = '' | 'notfound' | 'forbidden' | 'network';
     PrivilegDashboardComponent,
     StatisticsComponent,
     EmojisComponent,
+    TagsComponent,
     MagnetAdsComponent,
     StorageComponent,
     ReportsComponent,
@@ -131,6 +133,12 @@ export class ManageChannelComponent implements OnInit, OnDestroy {
       id: 'emojis', title: 'תגובות אימוג\'י', icon: 'smiling-face-outline', access: 'moderator',
       nav: 'התגובות המותרות',
       description: 'אילו אימוג\'ים הקוראים יכולים להגיב בהם על הודעות בערוץ.',
+    },
+    {
+      id: 'tags', title: 'תגיות', icon: 'hash-outline', access: 'moderator',
+      nav: 'סיווג וסינון הודעות',
+      description: 'תוויות צבעוניות להודעות: הכותבים מצמידים תגית להודעה, והקוראים מסננים לפיהן בראש הערוץ.',
+      help: 'תגית על הודעה היא רשות, לא חובה. מחיקת תגית מסירה אותה מכל ההודעות שתויגו בה, וההודעות עצמן נשארות. השינויים נשמרים בלחיצה על "שמירה".',
     },
     {
       id: 'magnet-ads', title: 'פרסומות ממגנט', icon: 'pricetags-outline', access: 'owner',

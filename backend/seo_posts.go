@@ -100,7 +100,7 @@ func latestSeoPosts(ctx context.Context, slug string, n int) []seoPost {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 	// A few more than needed, since ads are dropped after the read.
-	msgs, err := funcGetMessageRange(ctx, slug, 0, int64(n+5), false, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, slug, 0, int64(n+5), false, false, false, "desc", "")
 	if err != nil {
 		return nil
 	}

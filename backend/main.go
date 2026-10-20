@@ -221,6 +221,7 @@ func main() {
 		r.Get("/events", getEvents)
 		r.With(channelIfRequireAuthFiles).Get("/files/{fileid}", serveFile)
 		r.Get("/emojis/list", getEmojisList)
+		r.Get("/tags/list", getTagsList)
 		r.Get("/notifications-config", getNotificationsConfig)
 		r.Get("/ads/settings", getAdsSettings)
 		r.Get("/ads/magnet", getMagnetAdsSettings)
@@ -256,6 +257,7 @@ func main() {
 				r.Post("/edit-channel-info", protectedWithChannelRole(RoleModerator, editChannelInfo))
 				r.Get("/statistics", protectedWithChannelRole(RoleModerator, getStatistics))
 				r.Post("/set-emojis", protectedWithChannelRole(RoleModerator, setEmojis))
+				r.Post("/tags/set", protectedWithChannelRole(RoleModerator, setTags))
 				r.Get("/reports/get", protectedWithChannelRole(RoleModerator, getReports))
 				r.Post("/reports/set", protectedWithChannelRole(RoleModerator, setReports))
 

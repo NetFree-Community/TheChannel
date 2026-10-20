@@ -1,0 +1,160 @@
+<div class="tags-tab">
+  <nb-card>
+    <nb-card-header class="tags-tab__head">
+      <nb-icon icon="hash-outline"></nb-icon>
+      <h2>תגיות הערוץ</h2>
+      @if (tags) {
+        <span class="tags-tab__count">{{ tags.length }} / {{ maxTags }}</span>
+      }
+    </nb-card-header>
+    <nb-card-body>
+      <p class="tags-tab__lead">
+        תגית היא תווית צבעונית שאפשר להצמיד להודעה (למשל "חדשות", "אירועים", "מבצעים"). בכתיבת הודעה בוחרים תגית —
+        או משאירים בלי, זה לא חובה. הקוראים רואים את התגית על ההודעה, ובראש הערוץ יופיע פס סינון שבו הם בוחרים
+        לראות רק הודעות של תגית מסוימת. כשאין תגיות, הפס לא מוצג בכלל.
+      </p>
+
+      @if (loading) {
+        <div class="tags-tab__loading" [nbSpinner]="true" nbSpinnerStatus="primary" nbSpinnerMessage="טוענים…"></div>
+      } @else if (!tags) {
+        <div class="tags-tab__empty">
+          <nb-icon icon="wifi-off-outline"></nb-icon>
+          <strong>לא הצלחנו לטעון את התגיות</strong>
+          <span>כדי לא למחוק בטעות את התגיות הקיימות, אי אפשר לשמור עד שהן נטענות.</span>
+          <button nbButton status="primary" size="small" type="button" (click)="load()">
+            <nb-icon icon="refresh-outline"></nb-icon> ניסיון נוסף
+          </button>
+        </div>
+      } @else {
+        @if (tags.length) {
+          <div class="tags-tab__preview" aria-label="כך הקוראים יראו את פס הסינון">
+            <span class="tags-tab__preview-label">תצוגה מקדימה</span>
+            <div class="preview-bar">
+              <span class="chip chip--all">הכול</span>
+              @for (t of tags; track $index) {
+                <span class="chip" [style.--tag]="t.color" [style.--tag-ink]="ink(t.color)">
+                  <span class="chip__dot"></span>{{ t.name || '…' }}
+                </span>
+              }
+            </div>
+          </div>
+
+          <ul class="tag-rows">
+            @for (t of tags; track $index; let i = $index; let first = $first; let last = $last) {
+              <li class="tag-row" [class.is-open]="colorOpen === i">
+                <div class="tag-row__main">
+                  <button type="button" class="swatch" [style.background]="t.color" (click)="toggleColor(i)"
+                          [attr.aria-expanded]="colorOpen === i" [attr.aria-label]="'בחירת צבע לתגית ' + t.name"
+                          nbTooltip="שינוי צבע"></button>
+                  <input nbInput fieldSize="small" class="tag-row__name" [(ngModel)]="t.name" [maxlength]="maxName"
+                         [status]="!t.name.trim() || nameTaken(t.name, i) ? 'danger' : 'basic'"
+                         [attr.aria-label]="'שם התגית ' + (i + 1)" placeholder="שם התגית">
+                  <span class="tag-row__actions">
+                    <button nbButton ghost size="small" shape="round" type="button" class="icon-btn" [disabled]="first"
+                            (click)="move(i, -1)" aria-label="הזזה למעלה" nbTooltip="הזזה למעלה">
+                      <nb-icon icon="chevron-up-outline"></nb-icon>
+                    </button>
+                    <button nbButton ghost size="small" shape="round" type="button" class="icon-btn" [disabled]="last"
+                            (click)="move(i, 1)" aria-label="הזזה למטה" nbTooltip="הזזה למטה">
+                      <nb-icon icon="chevron-down-outline"></nb-icon>
+                    </button>
+                    <button nbButton ghost size="small" shape="round" status="danger" type="button" class="icon-btn"
+                            (click)="removeTag(i)" [attr.aria-label]="'מחיקת התגית ' + t.name" nbTooltip="מחיקה">
+                      <nb-icon icon="trash-2-outline"></nb-icon>
+                    </button>
+                  </span>
+                </div>
+                @if (nameTaken(t.name, i)) {
+                  <span class="tag-row__error">כבר יש תגית בשם הזה</span>
+                }
+                @if (colorOpen === i) {
+                  <div class="palette" role="group" aria-label="בחירת צבע">
+                    @for (p of palette; track p.color) {
+                      <button type="button" class="palette__swatch" [style.background]="p.color"
+                              [class.is-on]="t.color === p.color" (click)="setColor(i, p.color)"
+                              [attr.aria-label]="p.name" [attr.aria-pressed]="t.color === p.color" [nbTooltip]="p.name">
+                        @if (t.color === p.color) { <nb-icon icon="checkmark-outline" [style.color]="ink(p.color)"></nb-icon> }
+                      </button>
+                    }
+                    <label class="palette__custom" [class.is-on]="!isPreset(t.color)" nbTooltip="צבע אחר">
+                      <input type="color" [ngModel]="t.color" (ngModelChange)="setColor(i, $event)" aria-label="צבע אחר">
+                      <nb-icon icon="plus-outline"></nb-icon>
+                    </label>
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="tags-tab__empty">
+            <nb-icon icon="hash-outline"></nb-icon>
+            <strong>עוד אין תגיות בערוץ</strong>
+            <span>הוסיפו את התגית הראשונה למטה. אפשר גם לא להגדיר תגיות בכלל — הערוץ ימשיך לעבוד כרגיל.</span>
+          </div>
+        }
+      }
+    </nb-card-body>
+  </nb-card>
+
+  @if (!loading && tags) {
+    <nb-card>
+      <nb-card-header class="tags-tab__head">
+        <nb-icon icon="plus-circle-outline"></nb-icon>
+        <h2>תגית חדשה</h2>
+      </nb-card-header>
+      <nb-card-body>
+        @if (tags.length >= maxTags) {
+          <p class="tags-tab__lead">הגעתם למספר התגיות המרבי ({{ maxTags }}). כדי להוסיף, מחקו תגית קיימת.</p>
+        } @else {
+          <form class="new-tag" (ngSubmit)="addTag()">
+            <div class="new-tag__row">
+              <input nbInput fieldSize="medium" class="new-tag__name" name="newName" [(ngModel)]="newName"
+                     [maxlength]="maxName" placeholder="למשל: חדשות" aria-label="שם התגית החדשה"
+                     [status]="newName.trim() && nameTaken(newName) ? 'danger' : 'basic'">
+              <span class="chip chip--lg" [style.--tag]="newColor" [style.--tag-ink]="ink(newColor)" aria-hidden="true">
+                <span class="chip__dot"></span>{{ newName.trim() || 'תצוגה מקדימה' }}
+              </span>
+            </div>
+            @if (newName.trim() && nameTaken(newName)) {
+              <span class="tag-row__error">כבר יש תגית בשם הזה</span>
+            }
+            <div class="palette palette--inline" role="group" aria-label="צבע התגית החדשה">
+              @for (p of palette; track p.color) {
+                <button type="button" class="palette__swatch" [style.background]="p.color"
+                        [class.is-on]="newColor === p.color" (click)="newColor = p.color"
+                        [attr.aria-label]="p.name" [attr.aria-pressed]="newColor === p.color" [nbTooltip]="p.name">
+                  @if (newColor === p.color) { <nb-icon icon="checkmark-outline" [style.color]="ink(p.color)"></nb-icon> }
+                </button>
+              }
+              <label class="palette__custom" [class.is-on]="!isPreset(newColor)" nbTooltip="צבע אחר">
+                <input type="color" name="newColor" [(ngModel)]="newColor" aria-label="צבע אחר">
+                <nb-icon icon="plus-outline"></nb-icon>
+              </label>
+            </div>
+            <div>
+              <button nbButton status="primary" size="small" type="submit" [disabled]="!canAdd">
+                <nb-icon icon="plus-outline"></nb-icon>
+                הוספה לרשימה
+              </button>
+            </div>
+          </form>
+        }
+      </nb-card-body>
+    </nb-card>
+
+    <div class="tags-tab__save">
+      <button nbButton status="primary" type="button" (click)="save()" [disabled]="saving || !dirty"
+              [nbSpinner]="saving" nbSpinnerStatus="control" nbSpinnerSize="small">
+        <nb-icon icon="save-outline"></nb-icon>
+        {{ saving ? 'שומרים…' : 'שמירה' }}
+      </button>
+      @if (dirty && !saving) {
+        <button nbButton ghost status="basic" size="small" type="button" (click)="load()">ביטול שינויים</button>
+      }
+      <span class="save-bar__spacer"></span>
+      <span class="save-bar__state" [class.is-dirty]="dirty" aria-live="polite">
+        {{ dirty ? 'יש שינויים שלא נשמרו' : 'הכול שמור' }}
+      </span>
+    </div>
+  }
+</div>

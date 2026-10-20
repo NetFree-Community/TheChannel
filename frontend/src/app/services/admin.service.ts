@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, firstValueFrom, Observable, Subject } from 'rxjs';
-import { ChatFile, ChatMessage } from './chat.service';
+import { ChannelTag, ChatFile, ChatMessage } from './chat.service';
 import { ResponseResult } from '../models/response-result.model';
 import { Setting } from '../models/setting.model';
 import { Reports, Report } from '../models/report.model';
@@ -90,6 +90,10 @@ export class AdminService {
 
   setChannelUsers(users: ChannelUser[]): Promise<ResponseResult> {
     return firstValueFrom(this.http.post<ResponseResult>(`/api/channel/${this.slug}/admin/users/set`, { users }));
+  }
+
+  setTags(tags: ChannelTag[]) {
+    return firstValueFrom(this.http.post<{ success: boolean; tags: ChannelTag[] }>(`/api/channel/${this.slug}/admin/tags/set`, { tags }));
   }
 
   setEmojis(emojis: string[] | undefined) {

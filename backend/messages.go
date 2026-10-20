@@ -103,6 +103,14 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	// Deleted posts are left out of the feed for everyone; staff can ask for
 	// them with ?deleted=1 to find and restore one.
 	showDeleted := isAdmin && r.URL.Query().Get("deleted") == "1"
+	// ?tag=<id> narrows the feed to one of the channel's tags. Only the
+	// shape is checked here: an id the channel does not have names an empty
+	// index and answers an empty page.
+	tag := r.URL.Query().Get("tag")
+	if tag != "" && !tagIDRegex.MatchString(tag) {
+		http.Error(w, "invalid tag", http.StatusBadRequest)
+		return
+	}
 
 	// ETag: skip expensive query if content hasn't changed since client's copy.
 	// The body varies by viewer (admins see real authors), so the validator
@@ -117,7 +125,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	// quiet channel — the very population the counter is for — were never
 	// counted and kept seeing the numbers from their first visit.
 	if lm := getLastModified(ctx, slug); lm != "" && !countViews {
-		etag := `"` + lm + "-" + strconv.FormatBool(isAdmin) + "-" + strconv.FormatBool(countViews) + "-" + strconv.FormatBool(showDeleted) + `-op"`
+		etag := `"` + lm + "-" + strconv.FormatBool(isAdmin) + "-" + strconv.FormatBool(countViews) + "-" + strconv.FormatBool(showDeleted) + "-t" + tag + `-op"`
 		w.Header().Set("ETag", etag)
 		if r.Header.Get("If-None-Match") == etag {
 			w.WriteHeader(http.StatusNotModified)
@@ -125,7 +133,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	messages, err := funcGetMessageRange(ctx, slug, int64(offset), int64(limit), isAdmin, countViews, showDeleted, direction)
+	messages, err := funcGetMessageRange(ctx, slug, int64(offset), int64(limit), isAdmin, countViews, showDeleted, direction, tag)
 	if err != nil {
 		log.Printf("Failed to get messages: %v\n", err)
 		http.Error(w, "error", http.StatusInternalServerError)
@@ -198,6 +206,7 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 	message.File = body.File
 	message.Views = 0
 	message.IsAds = body.IsAds
+	message.Tag = body.Tag
 
 	if err = setMessage(ctx, slug, &message, false); err != nil {
 		log.Printf("Failed to set new message: %v\n", err)
