@@ -102,7 +102,7 @@ func TestMessageRangeReturnsFullPageOfLiveMessages(t *testing.T) {
 	const slug = "scan-live"
 	seedMessages(t, ctx, slug, 60, func(int) bool { return false })
 
-	msgs, err := funcGetMessageRange(ctx, slug, 0, 20, false, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 20, false, false, false, "desc", "")
 	if err != nil {
 		t.Fatalf("range: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestMessageRangeSkipsDeletedAndStillFillsPage(t *testing.T) {
 	// Every other message deleted: filling a page of 10 needs ~20 entries.
 	seedMessages(t, ctx, slug, 100, func(i int) bool { return i%2 == 0 })
 
-	msgs, err := funcGetMessageRange(ctx, slug, 0, 10, false, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 10, false, false, false, "desc", "")
 	if err != nil {
 		t.Fatalf("range: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestMessageRangeBoundsWorkOverLongTombstoneRun(t *testing.T) {
 	seedMessages(t, ctx, slug, total, func(i int) bool { return i > 40 })
 
 	start := time.Now()
-	msgs, err := funcGetMessageRange(ctx, slug, 0, 100, false, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 100, false, false, false, "desc", "")
 	elapsed := time.Since(start)
 	if err != nil {
 		t.Fatalf("range: %v", err)
@@ -184,7 +184,7 @@ func TestMessageRangeEmptyChannel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	msgs, err := funcGetMessageRange(ctx, "scan-empty-channel", 0, 20, false, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, "scan-empty-channel", 0, 20, false, false, false, "desc", "")
 	if err != nil {
 		t.Fatalf("range on empty channel: %v", err)
 	}
@@ -202,7 +202,7 @@ func TestMessageRangeHidesDeletedFromAdmins(t *testing.T) {
 	const slug = "scan-admin-deleted"
 	seedMessages(t, ctx, slug, 20, func(i int) bool { return i%2 == 0 })
 
-	msgs, err := funcGetMessageRange(ctx, slug, 0, 10, true, false, false, "desc")
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 10, true, false, false, "desc", "")
 	if err != nil {
 		t.Fatalf("range: %v", err)
 	}
@@ -224,7 +224,7 @@ func TestMessageRangeShowDeletedReturnsTombstones(t *testing.T) {
 	const slug = "scan-show-deleted"
 	seedMessages(t, ctx, slug, 20, func(i int) bool { return i%2 == 0 })
 
-	msgs, err := funcGetMessageRange(ctx, slug, 0, 20, true, false, true, "desc")
+	msgs, err := funcGetMessageRange(ctx, slug, 0, 20, true, false, true, "desc", "")
 	if err != nil {
 		t.Fatalf("range: %v", err)
 	}

@@ -134,6 +134,15 @@ export class MessageComponent implements OnInit, AfterViewInit, OnDestroy {
       && !this.isSchedulingMessage && !this.message?.is_ads;
   }
 
+  /** The card's tag, when it has one the channel still defines. */
+  get tag() {
+    return this.chatService.tagById(this.message?.tag);
+  }
+
+  filterByTag(id: string) {
+    this.chatService.tagFilterRequests.next(id);
+  }
+
   /** Any menu entry at all? Readers who may only copy the link still get the menu. */
   get hasActions(): boolean {
     return !this.isSchedulingMessage || this.canModify(this.message!);

@@ -373,7 +373,9 @@ func updateScheduledMessages(w http.ResponseWriter, r *http.Request) {
 		if typ == "" {
 			typ = "md"
 		}
-		messages[i] = Message{Type: typ, Text: m.Text, Timestamp: m.Timestamp, IsAds: m.IsAds}
+		// The tag is checked again when the post goes out (setMessage), in
+		// case it was deleted while the post waited.
+		messages[i] = Message{Type: typ, Text: m.Text, Timestamp: m.Timestamp, IsAds: m.IsAds, Tag: m.Tag}
 	}
 
 	// Take the same per-channel claim the dispatcher holds: dbSaveScheduledMessages

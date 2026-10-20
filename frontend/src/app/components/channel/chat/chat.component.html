@@ -5,6 +5,34 @@
   </div>
 }
 
+<!-- Tag filter: pinned under the header for every viewer, shown once the
+     channel's managers defined at least one tag. -->
+@if (tags.length) {
+  <nav class="tag-bar" aria-label="סינון ההודעות לפי תגית">
+    <div class="tag-bar__inner">
+      <span class="tag-bar__label" aria-hidden="true">
+        <nb-icon icon="funnel-outline"></nb-icon>
+      </span>
+      <div class="tag-bar__scroll" role="toolbar" aria-label="תגיות">
+        <button type="button" class="tag-filter tag-filter--all" [class.is-on]="!activeTag"
+                [attr.aria-pressed]="!activeTag" (click)="setTagFilter('')">
+          הכול
+        </button>
+        @for (t of tags; track t.id) {
+          <button type="button" class="tag-filter" [class.is-on]="activeTag === t.id"
+                  [style.--tag]="t.color" [style.--tag-ink]="ink(t.color)"
+                  [attr.aria-pressed]="activeTag === t.id"
+                  (click)="setTagFilter(activeTag === t.id ? '' : t.id)">
+            <span class="tag-filter__dot" aria-hidden="true"></span>
+            {{ t.name }}
+            @if (activeTag === t.id) { <nb-icon icon="close-outline" class="tag-filter__x" aria-hidden="true"></nb-icon> }
+          </button>
+        }
+      </div>
+    </div>
+  </nav>
+}
+
 @if (initialLoadFailed) {
   <div class="feed-banner feed-banner--danger" role="alert">
     <nb-icon icon="alert-triangle-outline"></nb-icon>
@@ -117,7 +145,18 @@
     <nb-list-item class="feed__item feed__item--center">
       @if (!isLoading) {
       <div class="feed-empty">
-        @if (canWrite) {
+        @if (activeTag) {
+          <span class="feed-empty__tag" [style.--tag]="activeTagInfo?.color" aria-hidden="true">
+            <nb-icon icon="hash-outline"></nb-icon>
+          </span>
+          <h2 class="feed-empty__title">אין עדיין הודעות עם התגית "{{ activeTagInfo?.name }}"</h2>
+          <p class="feed-empty__text">כשתתפרסם הודעה עם התגית הזו, היא תופיע כאן מעצמה.</p>
+          <div class="feed-empty__actions">
+            <button nbButton appearance="outline" status="primary" size="small" type="button" (click)="setTagFilter('')">
+              הצגת כל ההודעות
+            </button>
+          </div>
+        } @else if (canWrite) {
           <nb-icon icon="paper-plane-outline" class="feed-empty__icon"></nb-icon>
           <h2 class="feed-empty__title">הערוץ מוכן!</h2>
           <p class="feed-empty__text">כתבו את ההודעה הראשונה בתיבה למטה — כל מי שפתח את הקישור לערוץ יראה אותה מיד.</p>

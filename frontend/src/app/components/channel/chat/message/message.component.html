@@ -13,6 +13,14 @@
       <span class="msg__author">{{ canModerate ? message.author : chatService.channelInfo?.name }}</span>
       <span class="msg__meta">
         <time class="msg__time" [attr.datetime]="isoTime" [nbTooltip]="fullTime">{{ message.timestamp | messageTime }}</time>
+        @if (tag; as t) {
+          <button type="button" class="msg__label" [style.--tag]="t.color" (click)="filterByTag(t.id)"
+                  [disabled]="isSchedulingMessage"
+                  [attr.aria-label]="'תגית: ' + t.name + '. הצגת כל ההודעות עם התגית'"
+                  [nbTooltip]="'הצגת כל ההודעות עם התגית ' + t.name">
+            <span class="msg__label-dot" aria-hidden="true"></span>{{ t.name }}
+          </button>
+        }
         @if (isSchedulingMessage) {
           <span class="msg__tag msg__tag--warning">מתוזמנת</span>
         }

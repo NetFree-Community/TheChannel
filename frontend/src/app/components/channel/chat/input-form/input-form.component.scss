@@ -1,3 +1,5 @@
+@use '../../../../utils/tag-chip' as *;
+
 :host {
   display: block;
   width: 100%;
@@ -63,6 +65,117 @@
 .composer__mode--ads {
   background: var(--color-warning-100);
   color: var(--color-warning-800);
+}
+
+.composer__mode--tag {
+  background: color-mix(in srgb, var(--tag, #888) 12%, var(--background-basic-color-1));
+  color: var(--text-basic-color);
+
+  > nb-icon {
+    color: var(--tag);
+  }
+}
+
+.tag-chip {
+  @include tag-chip-soft;
+  gap: 0.3rem;
+  margin-inline-start: 0.25rem;
+  padding: 0 0.55rem;
+  font-size: 0.85em;
+}
+
+.tag-chip__dot {
+  @include tag-chip-dot(0.5rem);
+}
+
+/* ---------- tag picker (popover) ---------- */
+
+.tb--tag {
+  position: relative;
+
+  &.tb--on {
+    color: var(--tag, var(--color-primary-600)) !important;
+    background: color-mix(in srgb, var(--tag, #3366ff) 14%, transparent);
+  }
+}
+
+.tb__tag-dot {
+  position: absolute;
+  top: 0.3rem;
+  inset-inline-end: 0.3rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--tag);
+  box-shadow: 0 0 0 2px var(--background-basic-color-1);
+}
+
+.tag-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.85rem;
+  max-width: min(88vw, 20rem);
+}
+
+.tag-pick__title {
+  font-size: 0.95rem;
+}
+
+.tag-pick__hint {
+  font-size: 0.78rem;
+  color: var(--text-hint-color);
+  margin-bottom: 0.25rem;
+}
+
+.tag-pick__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: 0.15rem;
+}
+
+.tag-pick__opt {
+  @include tag-chip-soft;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.8rem;
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s, background-color 0.15s;
+
+  &:hover {
+    background: color-mix(in srgb, var(--tag, #888) 26%, var(--background-basic-color-1));
+  }
+
+  &.is-on {
+    @include tag-chip-solid;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tag, var(--color-primary-500));
+    outline-offset: 2px;
+  }
+
+  nb-icon {
+    font-size: 1rem;
+  }
+}
+
+.tag-pick__dot {
+  @include tag-chip-dot(0.55rem);
+
+  .is-on & {
+    background: var(--tag-ink, #fff);
+    box-shadow: none;
+  }
+}
+
+.tag-pick__clear {
+  align-self: flex-start;
+  margin-top: 0.25rem;
 }
 
 /* ---------- formatting help (popover) ---------- */

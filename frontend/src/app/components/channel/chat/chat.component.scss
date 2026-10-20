@@ -1,3 +1,5 @@
+@use '../../../utils/tag-chip' as *;
+
 // Hidden until the initial scroll-to-last-read is resolved so there is no
 // visible "flash at bottom then jump" on first load.
 .chat-hidden {
@@ -10,13 +12,154 @@
 
 /* ---------- banners ---------- */
 
+// With the tag bar pinned under the header, everything else that is pinned
+// there moves down by its height, and the top of the feed gets room for it.
+:host {
+  --tag-bar-height: 0px;
+}
+
+:host(.has-tag-bar) {
+  --tag-bar-height: 3.4rem;
+
+  .feed {
+    padding-top: var(--tag-bar-height);
+  }
+}
+
+/* ---------- tag filter bar ---------- */
+
+.tag-bar {
+  position: fixed;
+  top: var(--chrome-height, 0px);
+  // The desktop ad column sits on the left (RTL layout); leave it uncovered.
+  left: var(--ad-width, 0px);
+  right: 0;
+  z-index: 11;
+  height: var(--tag-bar-height);
+  display: flex;
+  align-items: center;
+  background: color-mix(in srgb, var(--background-basic-color-1) 86%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--border-basic-color-3);
+  box-shadow: 0 6px 16px -12px rgba(0, 0, 0, 0.35);
+}
+
+.tag-bar__inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 0.75rem;
+  min-width: 0;
+}
+
+.tag-bar__label {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--background-basic-color-3);
+  color: var(--text-hint-color);
+
+  nb-icon {
+    font-size: 1.05rem;
+  }
+}
+
+.tag-bar__scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  padding: 0.35rem 0.15rem;
+  // Fades the chips out at the scrolling edge instead of cutting one in half.
+  mask-image: linear-gradient(to left, #000 calc(100% - 1.5rem), transparent);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tag-filter {
+  @include tag-chip-soft;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  min-height: 2.2rem;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.12s;
+
+  &:hover:not(.is-on) {
+    background: color-mix(in srgb, var(--tag, #888) 26%, var(--background-basic-color-1));
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  &.is-on {
+    @include tag-chip-solid;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tag, var(--color-primary-500));
+    outline-offset: 2px;
+  }
+}
+
+.tag-filter--all {
+  --tag: var(--color-primary-500);
+  --tag-ink: #fff;
+}
+
+.tag-filter__dot {
+  @include tag-chip-dot(0.6rem);
+
+  .is-on & {
+    background: var(--tag-ink, #fff);
+    box-shadow: none;
+  }
+}
+
+.tag-filter__x {
+  font-size: 0.95rem;
+  margin-inline-start: -0.1rem;
+}
+
+.feed-empty__tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tag, #888) 16%, transparent);
+  color: var(--tag, var(--color-primary-500));
+
+  nb-icon {
+    font-size: 1.9rem;
+  }
+}
+
 .feed-banner {
   // Fixed under the header: the feed opens scrolled to its newest message, so
   // a banner in the flow at the top of the list would never be seen.
   position: fixed;
   // Just under the header. (It used to clear a separate attribution strip
   // too; that credit now lives inside the header itself.)
-  top: calc(var(--chrome-height, 0px) + 0.75rem);
+  top: calc(var(--chrome-height, 0px) + var(--tag-bar-height, 0px) + 0.75rem);
   inset-inline: 1rem;
   z-index: 12;
   display: flex;

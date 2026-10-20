@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom, Observable } from 'rxjs';
+import { firstValueFrom, Observable, Subject } from 'rxjs';
 import { Channel, ChannelFeatureFlags, ChannelSeoSettings } from '../models/channel.model';
 import { ResponseResult } from '../models/response-result.model';
 import { SlugService } from './slug.service';
@@ -21,8 +21,18 @@ export interface ChatMessage {
   views?: number;
   reactions?: Reactions;
   is_ads?: boolean;
+  /** Id of one of the channel's tags (ChannelTag), or absent. */
+  tag?: string;
 }
 export type ChatResponse = ChatMessage[];
+
+/** A label the channel's managers define; a post may carry one. */
+export interface ChannelTag {
+  id: string;
+  name: string;
+  /** #rrggbb */
+  color: string;
+}
 
 export interface ChatFile {
   url: string;
@@ -63,6 +73,20 @@ export class ChatService {
   // channel (the guard fetches /info before the components mount).
   private channelInfoSlug = '';
   private channelInfoRequestSlug = '';
+
+  /**
+   * The channel's tags, in the order the managers set. Kept as one array
+   * instance (updated in place on reload) so every card and the filter bar
+   * see a save at once.
+   */
+  readonly tags: ChannelTag[] = [];
+  private tagsRequest?: Promise<ChannelTag[]>;
+  private tagsSlug = '';
+
+  /** The feed's active tag filter (a tag id), or '' for every post. */
+  tagFilter = '';
+  /** Asks the feed to switch filter, e.g. from a tag chip on a card. */
+  readonly tagFilterRequests = new Subject<string>();
 
   constructor(private http: HttpClient, private slugService: SlugService) { }
 
@@ -130,7 +154,7 @@ export class ChatService {
     const page = this.firstPage;
     this.firstPage = undefined;
     // The prefetch never asks for deleted posts, so it cannot answer for the toggle.
-    if (!page || this.showDeleted || page.slug !== this.slug || page.limit !== limit || Date.now() - page.at > 10_000) return undefined;
+    if (!page || this.showDeleted || this.tagFilter || page.slug !== this.slug || page.limit !== limit || Date.now() - page.at > 10_000) return undefined;
     return page.request;
   }
 
@@ -148,6 +172,7 @@ export class ChatService {
       direction: direction
     };
     if (this.showDeleted) params['deleted'] = '1';
+    if (this.tagFilter) params['tag'] = this.tagFilter;
     return this.http.get<ChatResponse>(`/api/channel/${this.slug}/messages`, { params });
   }
 
@@ -164,6 +189,10 @@ export class ChatService {
    */
   clearCache(keepInfoFor?: string) {
     this.showDeleted = false;
+    this.tagFilter = '';
+    this.tags.splice(0);
+    this.tagsSlug = '';
+    this.tagsRequest = undefined;
     this.emojis = null;
     this.emojisRequest = undefined;
     if (!keepInfoFor || this.channelInfoSlug !== keepInfoFor) this.channelInfo = undefined;
@@ -193,6 +222,24 @@ export class ChatService {
       })
       .finally(() => { this.emojisRequest = undefined; });
     return this.emojisRequest;
+  }
+
+  getTags(reload: boolean = false): Promise<ChannelTag[]> {
+    if (!reload && this.tagsSlug === this.slug) return Promise.resolve(this.tags);
+    const requestedSlug = this.slug;
+    this.tagsRequest ??= firstValueFrom(this.http.get<ChannelTag[]>(`/api/channel/${requestedSlug}/tags/list`))
+      .then(list => {
+        if (requestedSlug !== this.slug) return this.tags;
+        this.tags.splice(0, this.tags.length, ...(list || []));
+        this.tagsSlug = requestedSlug;
+        return this.tags;
+      })
+      .finally(() => { this.tagsRequest = undefined; });
+    return this.tagsRequest;
+  }
+
+  tagById(id: string | undefined): ChannelTag | undefined {
+    return id ? this.tags.find(t => t.id === id) : undefined;
   }
 
   reportMessage(messageId: number, reason: string): Promise<ResponseResult> {

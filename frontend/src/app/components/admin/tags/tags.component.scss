@@ -1,0 +1,247 @@
+@use '../admin-shared' as *;
+@use '../../../utils/tag-chip' as *;
+
+.tags-tab {
+  @include admin-page;
+}
+
+.tags-tab__head {
+  @include admin-card-header;
+}
+
+.tags-tab__count {
+  @include admin-pill(var(--background-basic-color-3), var(--text-hint-color));
+}
+
+.tags-tab__lead {
+  @include admin-lead;
+}
+
+.tags-tab__loading {
+  min-height: 5rem;
+}
+
+.tags-tab__empty {
+  @include admin-empty;
+}
+
+.chip {
+  @include tag-chip-soft;
+  font-size: 0.85rem;
+}
+
+.chip__dot {
+  @include tag-chip-dot;
+}
+
+.chip--all {
+  --tag: var(--color-primary-500);
+  --tag-ink: #fff;
+  @include tag-chip-solid;
+}
+
+.chip--lg {
+  font-size: 0.95rem;
+  padding: 0.35rem 0.9rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- live preview of the filter bar ---------- */
+
+.tags-tab__preview {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  background: var(--background-basic-color-2);
+  border: 1px dashed var(--border-basic-color-4);
+}
+
+.tags-tab__preview-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-hint-color);
+}
+
+.preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ---------- the list ---------- */
+
+.tag-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tag-row {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border-basic-color-3);
+  border-radius: var(--border-radius);
+  background: var(--background-basic-color-1);
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &.is-open {
+    border-color: var(--color-primary-300);
+    box-shadow: 0 0 0 3px var(--color-primary-transparent-100, rgba(51, 102, 255, 0.08));
+  }
+}
+
+.tag-row__main {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.tag-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tag-row__actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.tag-row__error {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--color-danger-600);
+}
+
+.icon-btn {
+  @include admin-icon-button;
+  padding: 0;
+
+  &:disabled {
+    background: transparent !important;
+    opacity: 0.35;
+  }
+}
+
+.swatch {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px var(--background-basic-color-1), 0 0 0 3px var(--border-basic-color-4);
+  transition: transform 0.12s;
+
+  &:hover {
+    transform: scale(1.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 3px;
+  }
+}
+
+/* ---------- colour palette ---------- */
+
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-basic-color-3);
+}
+
+.palette--inline {
+  margin: 0.85rem 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.palette__swatch,
+.palette__custom {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+
+  &:hover {
+    transform: scale(1.08);
+  }
+
+  &.is-on {
+    box-shadow: 0 0 0 2px var(--background-basic-color-1), 0 0 0 4px var(--text-basic-color);
+  }
+
+  &:focus-visible,
+  &:focus-within {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 3px;
+  }
+
+  nb-icon {
+    font-size: 1.1rem;
+  }
+}
+
+.palette__custom {
+  background: conic-gradient(#e53935, #f9a825, #7cb342, #00897b, #0288d1, #5e35b1, #c2185b, #e53935);
+  color: #fff;
+  overflow: hidden;
+
+  input[type='color'] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  nb-icon {
+    pointer-events: none;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
+  }
+}
+
+/* ---------- new tag ---------- */
+
+.new-tag__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.new-tag__name {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.tags-tab__save {
+  @include admin-save-bar;
+}
+
+@media (max-width: 575.98px) {
+  .tag-row__main {
+    gap: 0.4rem;
+  }
+
+  .icon-btn {
+    min-width: 2.25rem;
+  }
+}

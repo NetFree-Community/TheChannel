@@ -101,6 +101,8 @@ func addNewPost(w http.ResponseWriter, r *http.Request) {
 	message.Text = body.Text
 	message.Views = 0
 	message.IsAds = body.IsAds
+	// Integrators may name the tag instead of knowing its id.
+	message.Tag = resolveTag(ctx, slug, body.Tag)
 
 	if err = setMessage(ctx, slug, &message, false); err != nil {
 		log.Printf("Failed to set new message: %v\n", err)

@@ -22,6 +22,7 @@ import { AdminService, EditMsg } from '../../../../services/admin.service';
 import { AutosizeModule } from "ngx-autosize";
 import { TimePickerComponent } from './time-picker/time-picker.component';
 import { MessageTimePipe } from '../../../../pipes/message-time.pipe';
+import { tagInk } from '../../../../utils/tag-colors';
 
 // Per-user client-side preference: the server never consumed this setting, and
 // the channel settings endpoint it used to arrive through is owner-only, so a
@@ -62,6 +63,9 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   input: string = '';
   isAds: boolean = false;
+  /** The tag the post will carry (a ChannelTag id), or '' for none. */
+  tag: string = '';
+  protected readonly ink = tagInk;
   schedulingMessage: Date | undefined = undefined;
   isSending: boolean = false;
   showMarkdownPreview: boolean = false;
@@ -72,6 +76,7 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('inputTextArea') inputTextArea!: ElementRef<HTMLTextAreaElement>;
   @ViewChild('helpPop') private helpPop?: NbPopoverDirective;
+  @ViewChild('tagPop') private tagPop?: NbPopoverDirective;
 
   @Output() inputHeightChanged = new EventEmitter<number>();
 
@@ -134,6 +139,7 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
         this.message = undefined;
         this.input = '';
         this.isAds = false;
+        this.tag = '';
         this.attachments = [];
         this.schedulingMessage = undefined;
         return;
@@ -159,6 +165,7 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
         this.message = edit.message;
         this.input = (edit.prepend || '') + (this.message?.text || '');
         this.isAds = this.message?.is_ads || false;
+        this.tag = this.message?.tag || '';
       }
     });
   }
@@ -289,7 +296,7 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
     // A rejected save must leave the composer untouched — reporting success here
     // would clear the textarea and lose whatever the user just wrote.
     const res = await firstValueFrom(this.adminService.editMessage({
-      ...this.message, text: this.input, deleted: false, is_ads: this.isAds,
+      ...this.message, text: this.input, deleted: false, is_ads: this.isAds, tag: this.tag || undefined,
     }));
     if (!res?.success) return false;
     this.cancelUpdateMessage();
@@ -307,6 +314,7 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
       text: this.input,
       file: undefined,
       is_ads: this.isAds,
+      tag: this.tag || undefined,
       timestamp: this.schedulingMessage || undefined,
     };
 
@@ -317,7 +325,7 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
         // list once the server accepted it. The entry itself goes along too,
         // so the service can find it in the server's current list.
         await this.adminService.editScheduledMessage(this.message, {
-          ...this.message, text: this.input, is_ads: this.isAds, timestamp: this.schedulingMessage,
+          ...this.message, text: this.input, is_ads: this.isAds, tag: this.tag || undefined, timestamp: this.schedulingMessage,
         });
       } else {
         await this.adminService.setScheduledMessage(m);
@@ -336,6 +344,7 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
       text: this.input,
       file: undefined,
       is_ads: this.isAds,
+      tag: this.tag || undefined,
     };
 
     this.message = await firstValueFrom(this.adminService.addMessage(newMessage));
@@ -355,9 +364,27 @@ export class InputFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.attachments = [];
     this.message = undefined;
     this.isAds = false;
+    this.tag = '';
     this.schedulingMessage = undefined;
     this.adminService.setEditMessage(undefined);
   }
+
+  /** The chosen tag, while the channel still has it. */
+  get selectedTag() {
+    return this.chatService.tagById(this.tag);
+  }
+
+  pickTag(id: string) {
+    this.tag = id;
+    this.closeTagPicker();
+  }
+
+  closeTagPicker() {
+    this.tagPop?.hide();
+  }
+
+  /** The tag picker popover is open. */
+  tagPickerShown = false;
 
   removeAttachment(attachment: Attachment) {
     this.attachments = this.attachments.filter((file) => file !== attachment);

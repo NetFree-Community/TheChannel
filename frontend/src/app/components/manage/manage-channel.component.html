@@ -161,6 +161,7 @@
               @case ('users') { <app-privileg-dashboard (accessDenied)="onAccessDenied()"></app-privileg-dashboard> }
               @case ('statistics') { <app-statistics (accessDenied)="onAccessDenied()"></app-statistics> }
               @case ('emojis') { <app-emojis></app-emojis> }
+              @case ('tags') { <app-tags></app-tags> }
               @case ('magnet-ads') { <app-magnet-ads (accessDenied)="onAccessDenied()"></app-magnet-ads> }
               @case ('storage') { <app-channel-storage [slug]="slug" (accessDenied)="onAccessDenied()"></app-channel-storage> }
               @case ('reports') { <app-reports [status]="'open'" (accessDenied)="onAccessDenied()"></app-reports> }

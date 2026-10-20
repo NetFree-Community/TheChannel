@@ -1,0 +1,37 @@
+// The look of a channel tag, shared by the feed's filter bar, the tag on a
+// message card, the composer's picker and the manage screen. The element sets
+// --tag (the tag's #rrggbb) and, where it can be shown solid, --tag-ink (the
+// readable text colour for that background, see tagInk()).
+
+// Quiet: a coloured dot on a soft tint of the colour; the text stays the
+// theme's own colour, so a light tag (yellow) is as readable as a dark one.
+@mixin tag-chip-soft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.7rem 0.2rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--tag, #888) 45%, transparent);
+  background: color-mix(in srgb, var(--tag, #888) 14%, var(--background-basic-color-1));
+  color: var(--text-basic-color);
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+@mixin tag-chip-dot($size: 0.6rem) {
+  flex: 0 0 auto;
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+  background: var(--tag, #888);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tag, #888) 25%, transparent);
+}
+
+// Selected: the tag's colour, solid.
+@mixin tag-chip-solid {
+  background: var(--tag, var(--color-primary-500));
+  border-color: var(--tag, var(--color-primary-500));
+  color: var(--tag-ink, #fff);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--tag, var(--color-primary-500)) 40%, transparent);
+}

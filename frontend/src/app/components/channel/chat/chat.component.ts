@@ -1,5 +1,5 @@
 
-import { Component, OnInit, NgZone, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, NgZone, OnDestroy, HostListener, HostBinding } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   NbButtonModule,
@@ -11,7 +11,8 @@ import {
 import { MessageComponent } from "./message/message.component";
 import { MagnetAdSlotComponent } from "./magnet-ad-slot/magnet-ad-slot.component";
 import { firstValueFrom, interval, Subscription } from 'rxjs';
-import { ChatMessage, ChatService, FEED_PAGE_SIZE } from '../../../services/chat.service';
+import { ChannelTag, ChatMessage, ChatService, FEED_PAGE_SIZE } from '../../../services/chat.service';
+import { tagInk } from '../../../utils/tag-colors';
 import { AuthService } from '../../../services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NotificationsService } from '../../../services/notifications.service';
@@ -107,6 +108,63 @@ export class ChatComponent implements OnInit, OnDestroy {
     private share: ShareService,
     private nav: Router,
   ) { }
+
+  /** The channel's tags; the filter bar shows only when there are any. */
+  get tags(): ChannelTag[] {
+    return this.chatService.tags;
+  }
+
+  /** The tag the feed is filtered by, or '' for every post. */
+  get activeTag(): string {
+    return this.chatService.tagFilter;
+  }
+
+  get activeTagInfo(): ChannelTag | undefined {
+    return this.chatService.tagById(this.chatService.tagFilter);
+  }
+
+  @HostBinding('class.has-tag-bar')
+  get hasTagBar(): boolean {
+    return this.tags.length > 0;
+  }
+
+  protected readonly ink = tagInk;
+  private tagFilterSub?: Subscription;
+
+  /**
+   * Shows only the posts of one tag ('' = all). The feed is reloaded from the
+   * server, which pages through that tag's own index, so a rare tag still
+   * fills the screen instead of a handful of matches out of the last page.
+   */
+  async setTagFilter(id: string) {
+    if (id === this.chatService.tagFilter) return;
+    // A page already in flight belongs to the old filter; let it land, then
+    // replace the whole list.
+    while (this.isLoading) await new Promise(r => setTimeout(r, 50));
+    this.chatService.tagFilter = id;
+    this.lastReadMessageId = 0;
+    this.hasOldMessages = true;
+    this.hasNewMessages = false;
+    this.thereNewMessages = false;
+    this.newMessagesCount = 0;
+    await this.loadMessages({ resetList: true });
+    this.scrollToBottom(false);
+  }
+
+  /** A filtered feed only takes posts of its tag. */
+  private matchesFilter(m: ChatMessage): boolean {
+    return !this.chatService.tagFilter || m.tag === this.chatService.tagFilter;
+  }
+
+  /** The list of tags changed (the managers saved): drop a filter on a tag that is gone. */
+  private reloadTags() {
+    this.chatService.getTags(true)
+      .then(tags => {
+        const f = this.chatService.tagFilter;
+        if (f && !tags.some(t => t.id === f)) this.setTagFilter('');
+      })
+      .catch(() => null);
+  }
 
   /** Staff only: deleted posts are back in the feed, marked, to restore one. */
   get showingDeleted(): boolean {
@@ -272,6 +330,9 @@ export class ChatComponent implements OnInit, OnDestroy {
     });
 
     this.chatService.getEmojisList(true).catch(() => null);
+    this.chatService.getTags(true).catch(() => null);
+    // A tag tapped on a card; the bar above shows the filter and clears it.
+    this.tagFilterSub = this.chatService.tagFilterRequests.subscribe(id => this.zone.run(() => this.setTagFilter(id)));
 
     this.magnetAds.loadSettings()
       .catch(() => null)
@@ -403,8 +464,12 @@ export class ChatComponent implements OnInit, OnDestroy {
           // disabled page instead of reconnecting into it.
           this.onChannelGone(true);
           break;
+        case 'tags-updated':
+          this.zone.run(() => this.reloadTags());
+          break;
         case 'new-message':
           if (this.hasNewMessages) break;
+          if (!this.matchesFilter(message.message)) break;
           if (this.messages.some(m => m.id === message.message.id)) break; // dedup after reconnect
           this.zone.run(() => {
             this.messages.unshift(message.message);
@@ -450,9 +515,13 @@ export class ChatComponent implements OnInit, OnDestroy {
         case 'edit-message':
           this.zone.run(() => {
             const index = this.messages.findIndex(m => m.id === message.message.id);
-            if (index !== -1) {
+            if (index !== -1 && !this.matchesFilter(message.message)) {
+              // Re-tagged away from the tag this feed shows.
+              this.messages.splice(index, 1);
+              this.rebuildItems();
+            } else if (index !== -1) {
               this.messages[index] = message.message;
-            } else if (!message.message.deleted) {
+            } else if (!message.message.deleted && this.matchesFilter(message.message)) {
               // Not in the list: this is a message that was deleted (the feed
               // drops deleted messages, see 'delete-message') and has now been
               // republished. Put it back where it falls in the loaded window
@@ -493,6 +562,7 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.chatService.sseClose();
     this.subLastHeartbeat?.unsubscribe();
     this.schedulingSub?.unsubscribe();
+    this.tagFilterSub?.unsubscribe();
     clearTimeout(this.fragmentTimer);
     this.fragmentSub?.unsubscribe();
   }
