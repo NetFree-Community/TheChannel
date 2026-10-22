@@ -19,6 +19,13 @@
           <nb-icon icon="download-outline"></nb-icon>
           רשימת דיוור (CSV)
         </a>
+        <!-- Everyone who ever signed in with Google, with the channels they
+             entered. Not a mailing list: readers never opted in. -->
+        <a nbButton ghost status="basic" size="small" href="/api/super-admin/signins.csv" download
+           title="כל מי שהתחבר עם גוגל, והערוצים שנכנס אליהם (לא לדיוור)">
+          <nb-icon icon="download-outline"></nb-icon>
+          כל המתחברים (CSV)
+        </a>
         @if (!loading) {
           <button nbButton ghost status="basic" size="small" type="button" (click)="load()">
             <nb-icon icon="refresh-outline"></nb-icon>
