@@ -155,6 +155,10 @@ func createChannelSelfService(w http.ResponseWriter, r *http.Request) {
 		Slug        string `json:"slug"`
 		Name        string `json:"name"`
 		Description string `json:"description"`
+		// Optional: lets a client accept the terms in the same request. The
+		// app accepts them first through POST /api/me/consent.
+		AcceptTerms bool  `json:"accept_terms"`
+		Marketing   *bool `json:"marketing"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -175,6 +179,25 @@ func createChannelSelfService(w http.ResponseWriter, r *http.Request) {
 	// address in Google's casing; every grant below must use the canonical
 	// form or the owner would not match their own channel.
 	ownerEmail := normEmail(s.Email)
+
+	// Nobody opens a channel without having agreed to the terms of service and
+	// the privacy policy. 428 tells the app to show the consent dialog.
+	consent, err := dbGetOwnerConsent(ctx, ownerEmail)
+	if err != nil {
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
+	if consent == nil {
+		if !body.AcceptTerms {
+			http.Error(w, "terms not accepted", http.StatusPreconditionRequired)
+			return
+		}
+		marketing := body.Marketing != nil && *body.Marketing
+		if _, err := dbSaveOwnerConsent(ctx, ownerEmail, sessionDisplayName(s), marketing, "channel_create"); err != nil {
+			http.Error(w, "error", http.StatusInternalServerError)
+			return
+		}
+	}
 
 	reason, err := slugAvailability(ctx, body.Slug)
 	if err != nil {

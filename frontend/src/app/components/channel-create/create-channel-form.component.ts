@@ -12,7 +12,7 @@ import {
   NbIconModule,
   NbInputModule,
 } from '@nebular/theme';
-import { Subject, Subscription, of } from 'rxjs';
+import { Subject, Subscription, firstValueFrom, of } from 'rxjs';
 import { catchError, debounceTime, map, switchMap } from 'rxjs/operators';
 import {
   CHANNEL_DESCRIPTION_MAX,
@@ -30,12 +30,15 @@ import {
 import { ShareService } from '../../services/share.service';
 import { NetfreeRequestComponent } from '../shared/netfree-request.component';
 import { MyChannelsService } from '../../services/my-channels.service';
+import { ConsentService } from '../../services/consent.service';
+import { AuthService } from '../../services/auth.service';
+import { OwnerConsentDialogComponent } from './owner-consent-dialog.component';
 
 /** `unknown`: the live check could not run (throttled, offline); the server decides on submit. */
 type SlugState = 'empty' | 'checking' | 'available' | 'unavailable' | 'unknown';
 
 /** What the error alert offers besides its sentence. */
-type FormErrorKind = '' | 'limit' | 'auth';
+type FormErrorKind = '' | 'limit' | 'auth' | 'consent';
 
 /**
  * The channel-opening card: a signed-in user POSTs /api/channels/create and
@@ -132,6 +135,14 @@ export class CreateChannelFormComponent implements OnInit, AfterViewInit, OnDest
     },
   ];
 
+  /**
+   * Whether this account already accepted the terms (and answered the
+   * mailing-list question). null until the server answered; the dialog is
+   * shown right away when it says no, and again on submit if it was put off.
+   */
+  private consentAccepted: boolean | null = null;
+  private consentDialogOpen = false;
+
   // True once the user edits the slug by hand: from then on the name no longer
   // overwrites it.
   private slugTouched = false;
@@ -150,6 +161,8 @@ export class CreateChannelFormComponent implements OnInit, AfterViewInit, OnDest
     private share: ShareService,
     private myChannels: MyChannelsService,
     private router: Router,
+    private consent: ConsentService,
+    private auth: AuthService,
   ) {}
 
   /**
@@ -183,6 +196,7 @@ export class CreateChannelFormComponent implements OnInit, AfterViewInit, OnDest
   }
 
   ngOnInit(): void {
+    this.checkConsent();
     // No distinctUntilChanged here: queueSlugCheck() flips the field to
     // 'checking' on every keystroke, and dropping a re-check of the last
     // checked slug (type a letter and backspace it within the debounce) left
@@ -364,6 +378,11 @@ export class CreateChannelFormComponent implements OnInit, AfterViewInit, OnDest
     }
 
     this.formError = '';
+    if (!(await this.ensureConsent())) {
+      this.formErrorKind = 'consent';
+      this.formError = 'כדי לפתוח ערוץ צריך לאשר את תנאי השימוש ומדיניות הפרטיות.';
+      return;
+    }
     this.submitting = true;
     try {
       const channel = await this.channelService.createChannel(
@@ -406,6 +425,54 @@ export class CreateChannelFormComponent implements OnInit, AfterViewInit, OnDest
     this.created.emit(this.createdSlug);
   }
 
+  /** The consent alert's button. */
+  async reviewConsent(): Promise<void> {
+    if (await this.openConsent()) {
+      this.formError = '';
+      this.formErrorKind = '';
+    }
+  }
+
+  /**
+   * Right after the Google sign-in that brought the user here, before they
+   * type anything: the welcome card with the terms and the mailing list.
+   * A failed lookup shows nothing; submit asks again if it has to.
+   */
+  private async checkConsent(): Promise<void> {
+    try {
+      const state = await this.consent.get();
+      this.consentAccepted = state.terms_accepted;
+    } catch {
+      return;
+    }
+    if (!this.consentAccepted) this.openConsent();
+  }
+
+  private async ensureConsent(): Promise<boolean> {
+    if (this.consentAccepted) return true;
+    return this.openConsent();
+  }
+
+  private async openConsent(): Promise<boolean> {
+    if (this.consentDialogOpen) return false;
+    this.consentDialogOpen = true;
+    try {
+      const user = this.auth.userInfo;
+      const name = (user?.publicName || user?.username || '').trim().split(/\s+/)[0] ?? '';
+      const ref = this.dialogService.open(OwnerConsentDialogComponent, {
+        context: { name: name.includes('@') ? '' : name },
+        closeOnBackdropClick: false,
+        closeOnEsc: false,
+        autoFocus: false,
+      });
+      const accepted = (await firstValueFrom(ref.onClose)) === true;
+      if (accepted) this.consentAccepted = true;
+      return accepted;
+    } finally {
+      this.consentDialogOpen = false;
+    }
+  }
+
   /** The session expired mid-form: go through login and come back here. */
   relogin(): void {
     try {
@@ -425,6 +492,14 @@ export class CreateChannelFormComponent implements OnInit, AfterViewInit, OnDest
       : (err?.error?.message || '');
 
     switch (err?.status) {
+      case 428:
+        // The server has no acceptance on record (stored elsewhere, or
+        // cleared): ask again; the next click goes through.
+        this.consentAccepted = false;
+        this.formErrorKind = 'consent';
+        this.formError = 'כדי לפתוח ערוץ צריך לאשר את תנאי השימוש ומדיניות הפרטיות.';
+        this.openConsent();
+        return;
       case 409:
         // The server answers 409 for two unrelated things: 'slug already
         // taken' and the per-account creation lock ('another channel is

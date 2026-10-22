@@ -122,6 +122,7 @@ func cleanupOwnedChannel(t *testing.T, slug, email string) {
 			return kept
 		})
 		rdb.Del(cctx, "channel_create:lock:"+email)
+		rdb.HDel(cctx, ownerConsentsKey, normEmail(email))
 	})
 }
 
@@ -130,7 +131,7 @@ func createChannelAs(t *testing.T, email, slug string) *httptest.ResponseRecorde
 	cleanupOwnedChannel(t, slug, email)
 	sess := Session{ID: "mail-" + slug, Email: email, Username: email, PublicName: "בעל הערוץ"}
 	r := requestAs(t, sess, "", http.MethodPost, "/api/channels/create",
-		strings.NewReader(`{"slug":"`+slug+`","name":"ערוץ הבדיקה","description":"תיאור"}`), nil)
+		strings.NewReader(`{"slug":"`+slug+`","name":"ערוץ הבדיקה","description":"תיאור","accept_terms":true}`), nil)
 	w := httptest.NewRecorder()
 	createChannelSelfService(w, r)
 	return w

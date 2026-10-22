@@ -115,6 +115,12 @@
               <nb-icon aria-hidden="true" icon="grid-outline"></nb-icon>
               הערוצים שלי
             </button>
+          } @else if (formErrorKind === 'consent') {
+            <button nbButton size="small" status="danger" appearance="outline" type="button"
+                    class="create-card__alert-action" (click)="reviewConsent()">
+              <nb-icon aria-hidden="true" icon="checkmark-square-2-outline"></nb-icon>
+              לאישור התנאים
+            </button>
           } @else if (formErrorKind === 'auth') {
             <button nbButton size="small" status="danger" appearance="outline" type="button"
                     class="create-card__alert-action" (click)="relogin()">
@@ -259,6 +265,8 @@
 
         <p class="create-form__foot">
           הערוץ נפתח מיד, בחינם, ונרשם על שמכם. שם, תיאור ולוגו אפשר לשנות אחר כך.
+          פתיחת ערוץ כפופה ל<a href="/terms" target="_blank" rel="noopener">תנאי השימוש</a>
+          ול<a href="/privacy" target="_blank" rel="noopener">מדיניות הפרטיות</a>.
         </p>
       </form>
     </nb-card-body>
