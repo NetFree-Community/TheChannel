@@ -11,12 +11,21 @@
           }
         }
       </h2>
-      @if (!loading) {
-        <button nbButton ghost status="basic" size="small" type="button" (click)="load()">
-          <nb-icon icon="refresh-outline"></nb-icon>
-          רענון
-        </button>
-      }
+      <div class="sa-card-actions">
+        <!-- Every channel opener's terms and mailing-list answers; the
+             mailing list is the rows with marketing = yes. -->
+        <a nbButton ghost status="primary" size="small" href="/api/super-admin/consents.csv" download
+           title="מי אישר תנאי שימוש ומי הסכים לקבל דיוור">
+          <nb-icon icon="download-outline"></nb-icon>
+          רשימת דיוור (CSV)
+        </a>
+        @if (!loading) {
+          <button nbButton ghost status="basic" size="small" type="button" (click)="load()">
+            <nb-icon icon="refresh-outline"></nb-icon>
+            רענון
+          </button>
+        }
+      </div>
     </div>
   </nb-card-header>
 

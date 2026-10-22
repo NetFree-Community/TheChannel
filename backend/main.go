@@ -161,6 +161,10 @@ func main() {
 		// Every channel the user holds a role on, with names and logos: what
 		// the "my channels" page and the channel switcher list.
 		r.Get("/api/my-channels", listMyChannels)
+		// Terms, privacy and mailing-list answers of a channel opener
+		// (owner_consent.go).
+		r.Get("/api/me/consent", getMyConsent)
+		r.Post("/api/me/consent", setMyConsent)
 	})
 
 	// Super admin routes
@@ -177,6 +181,7 @@ func main() {
 		r.Get("/channels/{slug}/users", superAdminGetChannelUsers)
 		r.Post("/channels/{slug}/users", superAdminSetChannelUsers)
 		r.Get("/users/list", getPrivilegeUsersList)
+		r.Get("/consents.csv", exportOwnerConsents)
 		r.Post("/users/set", setPrivilegeUsers)
 		r.Get("/global-settings/get", getGlobalSettings)
 		r.Post("/global-settings/set", setGlobalSettings)
