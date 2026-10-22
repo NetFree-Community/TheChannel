@@ -182,6 +182,7 @@ func main() {
 		r.Post("/channels/{slug}/users", superAdminSetChannelUsers)
 		r.Get("/users/list", getPrivilegeUsersList)
 		r.Get("/consents.csv", exportOwnerConsents)
+		r.Get("/signins.csv", exportSignIns)
 		r.Post("/users/set", setPrivilegeUsers)
 		r.Get("/global-settings/get", getGlobalSettings)
 		r.Post("/global-settings/set", setGlobalSettings)
